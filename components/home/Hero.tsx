@@ -96,9 +96,14 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.2 }}
             className="relative h-[440px] hidden lg:block"
           >
-            {/* Main hero card — AI & ML (static, like PHP) */}
+            {/* Main hero card — AI & ML
+                PHP parity: rotate(-2deg) at rest → translateY(-6px) rotate(0) on hover,
+                spring ease 0.4s. */}
             <div
-              className="absolute top-0 left-0 right-0 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white p-6 shadow-cardHover overflow-hidden h-[230px]"
+              className="hero-card-tilt absolute top-0 left-0 right-10 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white p-6 shadow-cardHover overflow-hidden h-[230px]
+                         -rotate-2 hover:rotate-0 hover:-translate-y-1.5
+                         transition-transform duration-[400ms] [transition-timing-function:cubic-bezier(.34,1.56,.64,1)]
+                         [box-shadow:0_20px_60px_rgba(14,165,233,.3)]"
             >
               <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_60%)]" />
               <div aria-hidden className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
@@ -116,18 +121,25 @@ export function Hero() {
               </div>
             </div>
 
-            {/* Floating card 1 — Live Projects (static) */}
+            {/* Floating card 1 — Live Projects
+                PHP parity: rotate(2deg) at rest → straightens + lifts on hover. */}
             <div
-              className="absolute bottom-12 left-4 glass rounded-md p-4 shadow-cardHover max-w-[220px]"
+              className="absolute bottom-16 left-4 glass rounded-md p-4 shadow-cardHover w-[220px]
+                         rotate-2 hover:rotate-0 hover:-translate-y-1.5
+                         transition-transform duration-[400ms] [transition-timing-function:cubic-bezier(.34,1.56,.64,1)]"
             >
               <div className="text-2xl">🎉</div>
               <div className="mt-2 heading text-sm text-slate-900">Live Projects</div>
               <div className="text-[11px] text-slate-500">Industry-grade Experience</div>
             </div>
 
-            {/* Floating card 2 — 95% Placement (static) */}
+            {/* Floating card 2 — 95% Placement
+                PHP parity: rotate(-1deg) at rest → straightens + lifts on hover. */}
             <div
-              className="absolute bottom-0 right-0 bg-white rounded-md p-4 shadow-cardHover w-[200px]"
+              className="absolute bottom-0 right-0 bg-white rounded-md p-4 shadow-cardHover w-[210px]
+                         -rotate-1 hover:rotate-0 hover:-translate-y-1.5
+                         transition-transform duration-[400ms] [transition-timing-function:cubic-bezier(.34,1.56,.64,1)]
+                         [box-shadow:0_12px_40px_rgba(0,0,0,.08)]"
             >
               <div className="flex -space-x-2 mb-2">
                 {['#bae6fd','#fcd34d','#86efac','#c4b5fd'].map((c, i) => (
@@ -142,11 +154,12 @@ export function Hero() {
               </div>
             </div>
 
-            {/* Rocket accent (static) */}
+            {/* Rocket accent — small floating chip top-right */}
             <div
-              className="absolute top-2 right-2 h-12 w-12 rounded-md bg-white/90 backdrop-blur flex items-center justify-center shadow-cardHover"
+              className="absolute -top-3 -right-1 h-12 w-12 rounded-md bg-white/95 backdrop-blur flex items-center justify-center shadow-cardHover
+                         rotate-6 hover:rotate-0 transition-transform duration-[400ms] [transition-timing-function:cubic-bezier(.34,1.56,.64,1)]"
             >
-              <Rocket className="h-6 w-6 text-brand-600" />
+              <Rocket className="h-5 w-5 text-brand-600" />
             </div>
           </motion.div>
         </div>

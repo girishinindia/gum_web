@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { GraduationCap, Menu, X, ArrowRight, UserRound } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
@@ -32,17 +33,19 @@ export function HeaderShell({ languages }: Props) {
       )}
     >
       <nav className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 flex items-center justify-between gap-6">
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <span className="h-10 w-10 rounded-md bg-gradient-to-br from-brand-500 to-accent flex items-center justify-center shadow-btn">
-            <GraduationCap className="h-5 w-5 text-white" />
+        {/* Brand — same logo as the existing PHP site (tagline is baked into the SVG itself) */}
+        <Link href="/" className="flex items-center gap-3 shrink-0 group">
+          <span className="h-12 w-12 rounded-md bg-gradient-to-br from-brand-500 to-accent flex items-center justify-center shadow-btn group-hover:scale-105 transition-transform">
+            <GraduationCap className="h-6 w-6 text-white" />
           </span>
-          <span className="flex flex-col leading-none">
-            <span className="heading text-lg sm:text-xl text-brand-700">
-              Grow<span className="text-slate-900">Up</span><span className="text-gradient">More</span>
-            </span>
-            <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium mt-0.5">Don&apos;t just learn, apply!</span>
-          </span>
+          <Image
+            src="/images/GM_Logo_Dark.svg"
+            alt="Grow Up More — Don't just learn, apply!"
+            width={220}
+            height={56}
+            priority
+            className="h-12 w-auto"
+          />
         </Link>
 
         {/* Center links — desktop */}
