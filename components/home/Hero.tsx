@@ -12,7 +12,7 @@ const STATS = [
 
 export function Hero() {
   return (
-    <section className="relative pt-28 pb-14 overflow-hidden">
+    <section className="relative pt-10 sm:pt-14 pb-14 overflow-hidden">
 
       <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-[1.1fr_1fr] gap-10 lg:gap-14 items-center">

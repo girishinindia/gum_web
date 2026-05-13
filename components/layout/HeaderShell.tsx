@@ -28,23 +28,23 @@ export function HeaderShell({ languages }: Props) {
   return (
     <header
       className={cn(
-        'fixed top-0 inset-x-0 z-50 transition-all duration-300 ease-out',
-        scrolled ? 'glass shadow-glass py-2' : 'bg-transparent py-3',
+        'sticky top-0 inset-x-0 z-50 transition-all duration-300 ease-out',
+        scrolled ? 'glass shadow-glass py-2' : 'bg-white/30 backdrop-blur-sm py-3',
       )}
     >
       <nav className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 flex items-center justify-between gap-6">
         {/* Brand — same logo as the existing PHP site (tagline is baked into the SVG itself) */}
-        <Link href="/" className="flex items-center gap-3 shrink-0 group">
-          <span className="h-12 w-12 rounded-md bg-gradient-to-br from-brand-500 to-accent flex items-center justify-center shadow-btn group-hover:scale-105 transition-transform">
-            <GraduationCap className="h-6 w-6 text-white" />
+        <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
+          <span className="h-10 w-10 rounded-md bg-gradient-to-br from-brand-500 to-accent flex items-center justify-center shadow-btn group-hover:scale-105 transition-transform">
+            <GraduationCap className="h-5 w-5 text-white" />
           </span>
           <Image
             src="/images/GM_Logo_Dark.svg"
             alt="Grow Up More — Don't just learn, apply!"
-            width={220}
-            height={56}
+            width={210}
+            height={50}
             priority
-            className="h-12 w-auto"
+            className="h-11 w-auto"
           />
         </Link>
 
