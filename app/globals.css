@@ -66,11 +66,12 @@
 
 html {
   scroll-behavior: smooth;
-  /* Belt-and-braces: keep horizontal overflow clipped at the root too so a
-     stray child can't introduce a horizontal scrollbar / page jitter. */
-  overflow-x: hidden;
-  /* `position: relative` on <html> creates a containing block for nothing
-     useful here, so we leave it static. */
+  /* IMPORTANT — do NOT add `overflow-x: hidden` here. Setting any kind of
+     `overflow` on the scroll root creates a containing block that resets
+     `position: sticky` anchors on descendants. The desktop header relies
+     on `sticky top-0`; clipping happens via `body { overflow-x: hidden }`
+     below, which is enough to kill horizontal page jitter without
+     breaking sticky. */
 }
 
 body {
