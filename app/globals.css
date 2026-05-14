@@ -166,6 +166,23 @@ body::before {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+  /* Inline-block + small padding-top gives the background-clipped glyphs
+     enough box height that ascenders/matras don't get cropped — most
+     visible in Devanagari (हिन्दी) where the matra above the letterform
+     would otherwise sit outside the clip region. Negative margin keeps
+     the surrounding layout untouched for Latin scripts. */
+  display: inline-block;
+  padding-top: 0.08em;
+  margin-top: -0.08em;
+}
+
+/* Languages with tall ascenders / matras — give the gradient span a touch
+   more vertical room than the base 0.08em. Add other Brahmic scripts here
+   as we expand. */
+:where(:lang(hi), :lang(mr), :lang(ne), :lang(sa)) .text-gradient {
+  padding-top: 0.18em;
+  margin-top: -0.18em;
+  line-height: inherit;
 }
 
 /* Custom scrollbar */

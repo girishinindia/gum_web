@@ -4,9 +4,22 @@ import { motion } from 'framer-motion';
 import { Search, Sparkles, Flame, ArrowRight, PlayCircle, Brain, Rocket } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
 import { useT } from '@/lib/i18n/useT';
+import { useLanguage } from '@/components/layout/LanguageProvider';
+import { cn } from '@/lib/cn';
+
+/**
+ * Languages whose script needs taller line-boxes to avoid clipping
+ * ascenders / matras. Devanagari (Hindi) needs ~1.35 line-height plus a
+ * little top padding because the matras (ि ी े ै ो ौ) sit above the
+ * letterform and the gradient-clipped span has no internal padding to
+ * accommodate them. Add other Brahmic scripts here as we add them.
+ */
+const DEVANAGARI_LIKE = new Set(['hi', 'mr', 'ne', 'sa']);
 
 export function Hero() {
   const t = useT();
+  const { active } = useLanguage();
+  const isDevanagari = DEVANAGARI_LIKE.has(active?.iso_code ?? 'en');
   const STATS = [
     { value: '50K',  suffix: '+',   label: t.hero.stat1Label },
     { value: '95',   suffix: '%',   label: t.hero.stat2Label },
@@ -33,11 +46,24 @@ export function Hero() {
 
             <motion.h1
               initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-              className="mt-6 heading text-[40px] sm:text-5xl lg:text-[64px] xl:text-[72px] text-slate-900 leading-[1.04] tracking-tight"
+              // Devanagari needs taller line-boxes + extra top breathing room
+              // so the matras above the letterforms (e.g. ी ौ े) don't get
+              // clipped by the tight Latin-style line-height. We also drop
+              // the `text-gradient` span's negative bleed by ensuring the
+              // line-box height is enough — see the `.text-gradient` rule
+              // in globals.css for the matching `padding-top` it gets when
+              // the language is Devanagari (via the `lang` attr).
+              lang={active?.iso_code ?? 'en'}
+              className={cn(
+                'heading text-[40px] sm:text-5xl lg:text-[64px] xl:text-[72px] text-slate-900 tracking-tight',
+                isDevanagari
+                  ? 'mt-8 leading-[1.35] sm:leading-[1.32] lg:leading-[1.3]'
+                  : 'mt-6 leading-[1.04]',
+              )}
             >
               {t.hero.titleA} <span className="text-gradient">{t.hero.titleB}</span><br />
-              {t.hero.titleC} <span className="text-gradient">{t.hero.titleD}</span><br />
-              <span className="text-slate-900">{t.hero.titleE}</span>
+              {t.hero.titleC} <span className="text-gradient">{t.hero.titleD}</span>
+              {t.hero.titleE ? <><br /><span className="text-slate-900">{t.hero.titleE}</span></> : null}
             </motion.h1>
 
             <motion.p
