@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { ButtonLink } from '@/components/ui/Button';
-import { api } from '@/lib/api';
+import { api, subCategoryName, sortSubCategoriesByEnglish } from '@/lib/api';
 import {
   Database, Brain, Code2, Shield, Cloud, Smartphone, Palette, LineChart, Bot, Layers, Sparkles,
   Globe, Server, Wrench, Gamepad2, Cog, ArrowRight, type LucideIcon,
@@ -55,7 +55,7 @@ const BADGES = [
 
 export async function Categories() {
   const live = await api.subCategories();
-  const items = (live ?? []).slice(0, 12);
+  const items = sortSubCategoriesByEnglish(live ?? []).slice(0, 12);
   if (items.length === 0) return null;
 
   return (
@@ -83,20 +83,23 @@ export async function Categories() {
             const Icon = ICON_BY_SLUG[c.slug] ?? Layers;
             const palette = TILE_PALETTES[i % TILE_PALETTES.length];
             const badge   = BADGES[i % BADGES.length];
+            const displayName = subCategoryName(c);
             return (
-              <Reveal key={c.slug || c.name} delay={(i % 6) * 0.04}>
+              <Reveal key={c.id ?? c.slug} delay={(i % 6) * 0.04}>
                 <Link
                   href={`/courses?category=${c.slug}`}
                   className="group relative block rounded-md bg-white border border-slate-200 shadow-card p-5 hover:-translate-y-1 hover:shadow-cardHover hover:border-brand-200 transition-all text-center"
                 >
                   <span className={`absolute top-3 right-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-bold tracking-wider ${badge.cls}`}>
-                    {badge.label === 'POPULAR' || badge.label === 'HOT' || badge.label === 'HOTTEST' ? '⚡' : badge.label === 'BEST' || badge.label === 'BESTEST' ? '⚡' : '⚡'} {badge.label}
+                    ⚡ {badge.label}
                   </span>
                   <div className={`mx-auto inline-flex h-14 w-14 items-center justify-center rounded-md ${palette.chip} mt-2`}>
                     <Icon className="h-6 w-6" />
                   </div>
-                  <h3 className="mt-4 heading text-sm text-slate-900 group-hover:text-brand-700 transition-colors leading-tight">{c.name}</h3>
-                  <p className="mt-1.5 text-[11px] text-slate-500">{c.course_count ?? 0} Courses</p>
+                  <h3 className="mt-4 heading text-sm text-slate-900 group-hover:text-brand-700 transition-colors leading-tight">{displayName}</h3>
+                  {typeof c.course_count === 'number' && (
+                    <p className="mt-1.5 text-[11px] text-slate-500">{c.course_count} Courses</p>
+                  )}
                 </Link>
               </Reveal>
             );

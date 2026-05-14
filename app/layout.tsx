@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { Sora, Outfit, JetBrains_Mono } from 'next/font/google';
+import { ViewportRouter } from '@/components/layout/ViewportRouter';
 import './globals.css';
 
 const sora      = Sora({       subsets: ['latin'], weight: ['300','400','500','600','700','800'], variable: '--font-sora',      display: 'swap' });
@@ -25,6 +27,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div aria-hidden className="orb orb--1" />
         <div aria-hidden className="orb orb--2" />
         <div aria-hidden className="orb orb--3" />
+        {/* Live viewport watcher — hot-swaps between /m and desktop URLs when */}
+        {/* the window crosses the lg breakpoint (1024px). Suspense is required */}
+        {/* because useSearchParams suspends during render. */}
+        <Suspense fallback={null}>
+          <ViewportRouter />
+        </Suspense>
         {children}
       </body>
     </html>

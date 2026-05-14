@@ -1,16 +1,15 @@
-import { api } from '@/lib/api';
+import { api, sortSubCategoriesByEnglish } from '@/lib/api';
 import { HeaderShell } from './HeaderShell';
 
 /**
- * Server component — fetches the languages the platform serves material in
- * (is_active = true && for_material = true) and hands them to the client-side
- * shell so the language switcher is server-rendered with no flash.
+ * Server component — fetches sub-categories for the Courses mega-menu and
+ * passes them to the client shell.
  *
- * Strict API-only: if the API returns nothing, the switcher is hidden.
- * No hardcoded fallbacks.
+ * Languages live in the parent <LanguageProvider> (set up in the marketing
+ * layout), so the Header no longer needs to fetch them — it just consumes
+ * the active language via the `useT()` / `useLanguage()` hooks in the shell.
  */
 export async function Header() {
-  const live = await api.materialLanguages();
-  const languages = live ?? [];
-  return <HeaderShell languages={languages} />;
+  const liveCats = await api.subCategories();
+  return <HeaderShell categories={sortSubCategoriesByEnglish(liveCats ?? [])} />;
 }

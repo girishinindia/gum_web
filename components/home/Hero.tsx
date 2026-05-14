@@ -3,14 +3,15 @@
 import { motion } from 'framer-motion';
 import { Search, Sparkles, Flame, ArrowRight, PlayCircle, Brain, Rocket } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
-
-const STATS = [
-  { value: '50K',  suffix: '+',   label: 'Students'  },
-  { value: '95',   suffix: '%',   label: 'Placement' },
-  { value: '4.9',  suffix: '/5',  label: 'Rating'    },
-];
+import { useT } from '@/lib/i18n/useT';
 
 export function Hero() {
+  const t = useT();
+  const STATS = [
+    { value: '50K',  suffix: '+',   label: t.hero.stat1Label },
+    { value: '95',   suffix: '%',   label: t.hero.stat2Label },
+    { value: '4.9',  suffix: '/5',  label: t.hero.stat3Label },
+  ];
   return (
     <section className="relative pt-10 sm:pt-14 pb-14 overflow-hidden">
 
@@ -23,10 +24,10 @@ export function Hero() {
               className="inline-flex items-center gap-2"
             >
               <span className="inline-flex items-center gap-1.5 bg-white/70 backdrop-blur border border-brand-200 rounded-full px-3.5 py-1.5 text-[12px] font-semibold text-brand-800">
-                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> New Batches Starting Soon
+                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> {t.hero.badgeNew}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 border border-orange-200 text-orange-700 px-2.5 py-1 text-[11px] font-bold tracking-wide">
-                <Flame className="h-3 w-3" /> HOT
+                <Flame className="h-3 w-3" /> {t.hero.badgeHot}
               </span>
             </motion.div>
 
@@ -34,16 +35,16 @@ export function Hero() {
               initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
               className="mt-6 heading text-[40px] sm:text-5xl lg:text-[64px] xl:text-[72px] text-slate-900 leading-[1.04] tracking-tight"
             >
-              Master the <span className="text-gradient">IT Skills</span><br />
-              That <span className="text-gradient">Launch Real</span><br />
-              <span className="text-slate-900">Careers.</span>
+              {t.hero.titleA} <span className="text-gradient">{t.hero.titleB}</span><br />
+              {t.hero.titleC} <span className="text-gradient">{t.hero.titleD}</span><br />
+              <span className="text-slate-900">{t.hero.titleE}</span>
             </motion.h1>
 
             <motion.p
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
               className="mt-6 max-w-xl text-base sm:text-lg text-slate-600 leading-relaxed"
             >
-              Industry-ready courses across 20+ tech domains — Data Science, AI/ML, Cyber Security, Full Stack &amp; more. Learn in your language, land your dream job.
+              {t.hero.desc}
             </motion.p>
 
             <motion.div
@@ -51,10 +52,10 @@ export function Hero() {
               className="mt-7 flex flex-wrap items-center gap-3"
             >
               <ButtonLink href="/courses" variant="primary" size="lg" className="rounded-full">
-                Explore Courses <ArrowRight className="h-4 w-4" />
+                {t.common.explore} <ArrowRight className="h-4 w-4" />
               </ButtonLink>
               <ButtonLink href="#how-it-works" variant="outline" size="lg" className="rounded-full">
-                <PlayCircle className="h-5 w-5" /> Watch Demo
+                <PlayCircle className="h-5 w-5" /> {t.common.watchDemo}
               </ButtonLink>
             </motion.div>
 
@@ -67,7 +68,7 @@ export function Hero() {
                 <Search className="h-4 w-4 text-slate-500" />
                 <input
                   type="text"
-                  placeholder="Search courses — Python, AI, Full Stack, Cyber Security…"
+                  placeholder={t.common.searchHint}
                   className="flex-1 bg-transparent outline-none text-sm placeholder:text-slate-400 py-2"
                 />
                 <kbd className="hidden sm:inline-flex font-mono text-[10px] bg-white border border-slate-200 rounded-full px-2.5 py-1 text-slate-500">Ctrl K</kbd>

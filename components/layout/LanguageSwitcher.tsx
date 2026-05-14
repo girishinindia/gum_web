@@ -3,29 +3,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { Globe, ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import type { Language } from '@/lib/api';
-
-interface Props {
-  languages: Language[];
-  className?: string;
-}
+import { useLanguage } from './LanguageProvider';
 
 /**
- * Header language switcher.
- * Receives pre-filtered (is_active && for_material) languages from the server
- * so there's no client-side fetch flash.
- * Layout mirrors the existing PHP site: name on left, native script in a
- * lighter color on the right, current row highlighted with brand blue.
+ * Header language switcher — now driven by <LanguageProvider> so the mega-menu
+ * and any other section can react to language changes.
  */
-export function LanguageSwitcher({ languages, className }: Props) {
+export function LanguageSwitcher({ className }: { className?: string }) {
+  const { languages, active, setActive } = useLanguage();
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState<string>(() => languages[0]?.iso_code || 'en');
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
-      if (!wrapRef.current) return;
-      if (!wrapRef.current.contains(e.target as Node)) setOpen(false);
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
     }
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false); }
     document.addEventListener('mousedown', onDocClick);
@@ -35,8 +26,6 @@ export function LanguageSwitcher({ languages, className }: Props) {
       document.removeEventListener('keydown', onKey);
     };
   }, []);
-
-  const current = languages.find((l) => l.iso_code === active) ?? languages[0];
 
   if (!languages.length) return null;
 
@@ -54,7 +43,7 @@ export function LanguageSwitcher({ languages, className }: Props) {
         aria-expanded={open}
       >
         <Globe className="h-4 w-4" />
-        <span>{current?.name || 'English'}</span>
+        <span>{active?.name || 'English'}</span>
         <ChevronDown className={cn('h-3.5 w-3.5 opacity-60 transition-transform', open && 'rotate-180')} />
       </button>
 
@@ -65,7 +54,7 @@ export function LanguageSwitcher({ languages, className }: Props) {
         >
           <ul className="py-1.5 max-h-[340px] overflow-y-auto">
             {languages.map((l) => {
-              const isActive = l.iso_code === active;
+              const isActive = l.iso_code === active?.iso_code;
               return (
                 <li key={l.id ?? l.iso_code}>
                   <button
