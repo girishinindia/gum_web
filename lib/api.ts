@@ -7,6 +7,38 @@
 
 const BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5001/api/v1').replace(/\/+$/, '');
 
+/**
+ * Resolve the API base URL for the current call site.
+ *
+ * Server-side (SSR / RSC) → returns BASE as-is. `localhost` correctly
+ * refers to the host running the Next.js process, which is where the API
+ * is normally co-deployed in dev.
+ *
+ * Client-side (browser) → if BASE points at `localhost`/`127.0.0.1` but
+ * the page itself was loaded from a different host (LAN IP, another dev's
+ * machine, a tunnel), rewrite `localhost` to the page's actual hostname
+ * so the browser doesn't try to hit its own loopback address (which would
+ * return nothing on a teammate's box).
+ *
+ * Why this matters: when multiple developers test over the same Wi-Fi
+ * with one machine hosting the API and others opening the site over LAN,
+ * client-side requests to `http://localhost:5001/...` would silently fail
+ * on every non-host machine — producing empty mega-menus, missing
+ * language switchers, blank categories, etc.
+ */
+export function apiBase(): string {
+  if (typeof window === 'undefined') return BASE;
+  const swapped = BASE.replace(
+    /^(https?:\/\/)(localhost|127\.0\.0\.1)(?=[:/]|$)/i,
+    `$1${window.location.hostname}`,
+  );
+  if (process.env.NODE_ENV !== 'production' && swapped !== BASE) {
+    // eslint-disable-next-line no-console
+    console.info(`[api] rewriting BASE host → ${window.location.hostname} for client fetches`);
+  }
+  return swapped;
+}
+
 interface ApiResponse<T> {
   success: boolean;
   data?:   T;
@@ -17,11 +49,18 @@ interface ApiResponse<T> {
 async function request<T>(path: string, opts: { revalidate?: number } = {}): Promise<T | null> {
   const revalidate = opts.revalidate ?? 60; // default: re-fetch every 60s
   try {
-    const res = await fetch(`${BASE}${path}`, { next: { revalidate } });
+    // Use `apiBase()` so client-side calls automatically swap localhost
+    // for the page hostname when the user is on a different machine than
+    // the API host. Server-side calls still use the unmodified BASE.
+    const res = await fetch(`${apiBase()}${path}`, { next: { revalidate } });
     if (!res.ok) return null;
     const json = (await res.json()) as ApiResponse<T>;
     return json.success ? (json.data ?? null) : null;
-  } catch {
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.warn(`[api] fetch failed for ${path}:`, err);
+    }
     return null;
   }
 }
@@ -113,23 +152,10 @@ export interface Language {
 //
 // We flatten those into the `SubCategory` shape the mega-menu already renders.
 export async function fetchSubCategoriesForLanguage(languageId: number): Promise<SubCategory[]> {
-  // Resolve the API base for *this* fetch. If `BASE` points at localhost
-  // but the page is being viewed from a different host (e.g. someone
-  // testing the dev server from their phone over the LAN at 192.168.x.x),
-  // `localhost` would refer to the phone's own loopback and the request
-  // would fail silently — which is exactly why the categories list
-  // appeared in English on some devices after a language switch. Swap
-  // `localhost` for `window.location.hostname` in that situation so the
-  // browser hits the dev server on the same LAN address it's already
-  // loading the HTML from.
-  let base = BASE;
-  if (typeof window !== 'undefined') {
-    base = base.replace(
-      /^(https?:\/\/)(localhost|127\.0\.0\.1)(?=[:/]|$)/i,
-      `$1${window.location.hostname}`,
-    );
-  }
-  const url = `${base}/sub-category-translations?language_id=${encodeURIComponent(languageId)}&is_active=true&limit=200&sort=name&order=asc`;
+  // Use the shared `apiBase()` helper so this client-side fetch hits the
+  // right host even when the page is being loaded from a teammate's
+  // machine over the LAN (it auto-rewrites `localhost` → page hostname).
+  const url = `${apiBase()}/sub-category-translations?language_id=${encodeURIComponent(languageId)}&is_active=true&limit=200&sort=name&order=asc`;
   try {
     const res = await fetch(url);
     if (!res.ok) return [];
@@ -162,7 +188,9 @@ export interface AnnouncementRow {
 }
 
 export async function recentAnnouncementsCount(days = 7): Promise<number> {
-  const url = `${BASE}/announcements?status=published&limit=50&sort=created_at&order=desc`;
+  // Same `apiBase()` helper as the other fetches — keeps multi-machine
+  // LAN testing working without needing per-developer env overrides.
+  const url = `${apiBase()}/announcements?status=published&limit=50&sort=created_at&order=desc`;
   try {
     const res = await fetch(url, { next: { revalidate: 300 } });
     if (!res.ok) return 0;
