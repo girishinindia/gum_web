@@ -113,7 +113,23 @@ export interface Language {
 //
 // We flatten those into the `SubCategory` shape the mega-menu already renders.
 export async function fetchSubCategoriesForLanguage(languageId: number): Promise<SubCategory[]> {
-  const url = `${BASE}/sub-category-translations?language_id=${encodeURIComponent(languageId)}&is_active=true&limit=200&sort=name&order=asc`;
+  // Resolve the API base for *this* fetch. If `BASE` points at localhost
+  // but the page is being viewed from a different host (e.g. someone
+  // testing the dev server from their phone over the LAN at 192.168.x.x),
+  // `localhost` would refer to the phone's own loopback and the request
+  // would fail silently — which is exactly why the categories list
+  // appeared in English on some devices after a language switch. Swap
+  // `localhost` for `window.location.hostname` in that situation so the
+  // browser hits the dev server on the same LAN address it's already
+  // loading the HTML from.
+  let base = BASE;
+  if (typeof window !== 'undefined') {
+    base = base.replace(
+      /^(https?:\/\/)(localhost|127\.0\.0\.1)(?=[:/]|$)/i,
+      `$1${window.location.hostname}`,
+    );
+  }
+  const url = `${base}/sub-category-translations?language_id=${encodeURIComponent(languageId)}&is_active=true&limit=200&sort=name&order=asc`;
   try {
     const res = await fetch(url);
     if (!res.ok) return [];

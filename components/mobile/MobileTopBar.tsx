@@ -66,12 +66,15 @@ export function MobileTopBar({ unreadCount = 0, onOpenDrawer, onOpenLanguage, cl
         className,
       )}
     >
-      <div className="px-3 h-12 flex items-center justify-between gap-2">
+      {/* `min-w-0` on the row + the brand link lets the brand shrink before
+          the right-side actions get clipped — guarantees the hamburger is
+          always visible on narrow Android viewports (~360 – 380 px). */}
+      <div className="px-3 h-12 flex items-center justify-between gap-2 min-w-0">
         {/* Brand — same icon-before-logo treatment as the desktop HeaderShell.
-            Sized ~10% larger than the original: 32→36 px square, 18→20 px
-            glyph, 28→~31 px wordmark — closer to the desktop sm: sizing. */}
-        <Link href="/m" className="flex items-center gap-1.5 shrink-0">
-          <span className="h-9 w-9 rounded-md bg-gradient-to-br from-brand-500 to-accent flex items-center justify-center shadow-btn">
+            Logo image is allowed to shrink (no shrink-0 on the image) so the
+            right-side actions never get pushed off-screen. */}
+        <Link href="/m" className="flex items-center gap-1.5 shrink min-w-0 overflow-hidden">
+          <span className="h-9 w-9 rounded-md bg-gradient-to-br from-brand-500 to-accent flex items-center justify-center shadow-btn shrink-0">
             <GraduationCap className="h-5 w-5 text-white" />
           </span>
           <Image
@@ -80,12 +83,12 @@ export function MobileTopBar({ unreadCount = 0, onOpenDrawer, onOpenLanguage, cl
             width={154}
             height={35}
             priority
-            className="h-[1.95rem] w-auto"
+            className="h-[1.95rem] w-auto max-w-[140px] sm:max-w-none shrink"
           />
         </Link>
 
-        {/* Right actions */}
-        <div className="flex items-center gap-1">
+        {/* Right actions — `shrink-0` so they're never clipped */}
+        <div className="flex items-center gap-1 shrink-0">
           <Link
             href="/m/search"
             aria-label={t.common.search}
@@ -105,16 +108,17 @@ export function MobileTopBar({ unreadCount = 0, onOpenDrawer, onOpenLanguage, cl
               </span>
             )}
           </Link>
-          {/* Language pill — opens the dedicated bottom-sheet popup instead of
-              the drawer, so picking a language is a focused single-tap flow. */}
+          {/* Language pill — icon-only on narrow phones, icon + ISO label on
+              tablets / wider phones. Opens the dedicated bottom-sheet popup
+              instead of the drawer for a focused single-tap flow. */}
           <button
             type="button"
             onClick={onOpenLanguage}
             aria-label={`Language: ${iso}`}
-            className="inline-flex items-center gap-1 px-2.5 h-9 rounded-full bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-semibold hover:bg-brand-50 active:scale-95 transition-all"
+            className="inline-flex items-center gap-1 h-9 px-2 sm:px-2.5 rounded-full bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-semibold hover:bg-brand-50 active:scale-95 transition-all"
           >
-            <Globe className="h-3.5 w-3.5" />
-            {iso}
+            <Globe className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+            <span className="hidden sm:inline">{iso}</span>
           </button>
           <button
             type="button"

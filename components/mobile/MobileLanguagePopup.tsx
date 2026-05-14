@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Globe, Check, X } from 'lucide-react';
 import { useLanguage } from '@/components/layout/LanguageProvider';
 import { cn } from '@/lib/cn';
@@ -24,6 +25,13 @@ interface Props {
  */
 export function MobileLanguagePopup({ open, onClose }: Props) {
   const { languages, active, setActive } = useLanguage();
+  const [mounted, setMounted] = useState(false);
+
+  // Portal to <body> after hydration so neither an ancestor's `transform`,
+  // `filter`, `overflow`, nor the page's `pt-[58px]` content padding can
+  // hijack the sheet's viewport-bottom anchor. This was the root cause of
+  // the "only the popup header shows" bug on some Android phones.
+  useEffect(() => setMounted(true), []);
 
   // ESC closes on desktop; body-scroll-lock keeps the page from scrolling
   // behind the sheet while it's open.
@@ -46,27 +54,30 @@ export function MobileLanguagePopup({ open, onClose }: Props) {
     setTimeout(onClose, 120);
   }
 
-  return (
+  const sheet = (
     <>
-      {/* Scrim */}
+      {/* Scrim — z-index sits above the bottom-nav (z-60) and the top app
+          bar (z-50) so taps elsewhere on the page are properly intercepted. */}
       <div
         aria-hidden
         onClick={onClose}
         className={cn(
-          'fixed inset-0 z-[70] bg-slate-900/45 backdrop-blur-sm transition-opacity duration-300',
+          'fixed inset-0 z-[80] bg-slate-900/45 backdrop-blur-sm transition-opacity duration-300',
           open ? 'opacity-100' : 'opacity-0 pointer-events-none',
         )}
       />
 
-      {/* Sheet */}
+      {/* Sheet — z-[85] above scrim. `max-h-[85svh]` uses the small-viewport
+          unit so Android Chrome's collapsing address bar can't clip the
+          sheet's content area. */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Choose language"
         className={cn(
-          'fixed left-0 right-0 bottom-0 z-[75]',
+          'fixed left-0 right-0 bottom-0 z-[85]',
           'bg-white rounded-t-3xl shadow-[0_-12px_40px_rgba(15,23,42,0.18)]',
-          'max-h-[80vh] flex flex-col',
+          'max-h-[85svh] flex flex-col',
           'transition-transform duration-300 ease-out',
           open ? 'translate-y-0' : 'translate-y-full',
         )}
@@ -135,4 +146,10 @@ export function MobileLanguagePopup({ open, onClose }: Props) {
       </div>
     </>
   );
+
+  // SSR / pre-hydration: render in-tree so server HTML matches. After
+  // hydration, relocate to <body> so no ancestor can clip the sheet.
+  if (!mounted) return sheet;
+  if (typeof document === 'undefined') return sheet;
+  return createPortal(sheet, document.body);
 }
