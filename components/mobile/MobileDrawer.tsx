@@ -1,13 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
+import { useState } from 'react';
 import {
   X, BookOpen, Radio, Video, Calendar, FileText, MessagesSquare, UserSquare2, Star, Megaphone,
   Globe, Info, Users as UsersIcon, MessageCircle, LifeBuoy, FileQuestion, Monitor, LogIn,
-  ChevronRight, type LucideIcon,
+  LogOut, ChevronRight, type LucideIcon,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n/useT';
 import { useLanguage } from '@/components/layout/LanguageProvider';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { setViewMode } from '@/lib/device';
 import { cn } from '@/lib/cn';
 
@@ -36,7 +39,29 @@ interface Row {
  */
 export function MobileDrawer({ open, onClose, onOpenLanguage }: Props) {
   const t = useT();
+  const router = useRouter();
+  const pathname = usePathname();
   const { active } = useLanguage();
+  // Auth state drives the footer — Sign-in CTA when logged out, name
+  // + Log-out button when logged in. Mirrors the desktop UserMenu but
+  // adapted to the drawer's stacked layout.
+  const { user, signedIn, loading, logout } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
+  // Pass current path to /m/login so successful sign-in returns the
+  // user to the page they were on.
+  const loginHref = pathname && pathname !== '/m/login' && pathname !== '/m/signup'
+    ? `/m/login?next=${encodeURIComponent(pathname)}`
+    : '/m/login';
+
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    try { await logout(); } finally {
+      setSigningOut(false);
+      onClose();
+      router.replace('/m/login');
+    }
+  }
 
   const SECONDARY: Row[] = [
     { href: '/m/bundles',       label: t.secondary.bundles,       Icon: BookOpen       },
@@ -136,15 +161,46 @@ export function MobileDrawer({ open, onClose, onOpenLanguage }: Props) {
           </button>
         </div>
 
-        {/* Footer — sign in */}
+        {/* Footer — auth action.
+            Signed out → primary Login pill (existing behaviour).
+            Signed in  → user identity row + destructive Log-out button. */}
         <footer className="px-3 pt-2 pb-[max(env(safe-area-inset-bottom),12px)] border-t border-slate-200/60 bg-white/50">
-          <Link
-            href="/login"
-            onClick={onClose}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-white px-5 py-2.5 text-sm font-semibold shadow-btn active:scale-95 transition-all"
-          >
-            <LogIn className="h-4 w-4" /> {t.common.login}
-          </Link>
+          {signedIn && !loading && user ? (
+            <div className="flex items-center gap-2.5">
+              {/* User identity chip — avatar + name, takes most of the row */}
+              <div className="flex items-center gap-2 flex-1 min-w-0 rounded-md bg-white/80 border border-slate-200 px-2.5 py-2">
+                <span className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500 to-accent text-white text-sm font-bold flex items-center justify-center shrink-0">
+                  {(user.first_name || user.email || 'U').charAt(0).toUpperCase()}
+                </span>
+                <span className="flex flex-col min-w-0">
+                  <span className="text-[12.5px] font-semibold text-slate-900 truncate">
+                    {`${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || user.email}
+                  </span>
+                  <span className="text-[10.5px] text-slate-500 truncate">{user.email}</span>
+                </span>
+              </div>
+              {/* Destructive log-out — kept compact (icon-only with label
+                  on wider phones) so it doesn't compete with the avatar. */}
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                aria-label="Log out"
+                className="h-10 px-3 inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-[12px] font-bold shadow-sm active:scale-95 transition-all disabled:opacity-60"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{signingOut ? '…' : 'Log out'}</span>
+              </button>
+            </div>
+          ) : (
+            <Link
+              href={loginHref}
+              onClick={onClose}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-white px-5 py-2.5 text-sm font-semibold shadow-btn active:scale-95 transition-all"
+            >
+              <LogIn className="h-4 w-4" /> {t.common.login}
+            </Link>
+          )}
         </footer>
       </aside>
     </>

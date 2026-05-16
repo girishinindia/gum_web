@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import {
   Sparkles, Flame, ArrowRight, BookOpen, Radio, Video, FileText, Megaphone,
+  Calendar, MessagesSquare, UserSquare2, Star,
   type LucideIcon,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n/useT';
@@ -20,14 +21,21 @@ import { useT } from '@/lib/i18n/useT';
 export function MobileHero() {
   const t = useT();
 
-  // Same chip set + order as the desktop secondary-nav strip. Labels come
-  // from `t.secondary.*` so a Hindi user sees "कोर्स बंडल / वेबिनार / लाइव सत्र".
+  // Complete mirror of the desktop secondary-nav strip — 9 items in the
+  // same order. Labels come from `t.secondary.*` so a Hindi user sees
+  // "कोर्स बंडल / वेबिनार / लाइव सत्र / कोर्स बैच / ब्लॉग …" without any
+  // string duplication. The chip row is horizontally scrollable so all
+  // nine fit on a 360-px phone with comfortable swipe access.
   const CHIPS: { href: string; label: string; Icon: LucideIcon; accent: string }[] = [
-    { href: '/m/bundles',       label: t.secondary.bundles,       Icon: BookOpen,  accent: 'from-brand-100 to-brand-50 text-brand-700'       },
-    { href: '/m/webinars',      label: t.secondary.webinars,      Icon: Radio,     accent: 'from-amber-100 to-amber-50 text-amber-700'       },
-    { href: '/m/live-sessions', label: t.secondary.liveSessions,  Icon: Video,     accent: 'from-emerald-100 to-emerald-50 text-emerald-700' },
-    { href: '/m/blog',          label: t.secondary.blogs,         Icon: FileText,  accent: 'from-violet-100 to-violet-50 text-violet-700'    },
-    { href: '/m/announcements', label: t.secondary.announcements, Icon: Megaphone, accent: 'from-rose-100 to-rose-50 text-rose-700'          },
+    { href: '/m/bundles',       label: t.secondary.bundles,       Icon: BookOpen,        accent: 'from-brand-100 to-brand-50 text-brand-700'       },
+    { href: '/m/webinars',      label: t.secondary.webinars,      Icon: Radio,           accent: 'from-amber-100 to-amber-50 text-amber-700'       },
+    { href: '/m/live-sessions', label: t.secondary.liveSessions,  Icon: Video,           accent: 'from-emerald-100 to-emerald-50 text-emerald-700' },
+    { href: '/m/batches',       label: t.secondary.batches,       Icon: Calendar,        accent: 'from-sky-100 to-sky-50 text-sky-700'             },
+    { href: '/m/blog',          label: t.secondary.blogs,         Icon: FileText,        accent: 'from-violet-100 to-violet-50 text-violet-700'    },
+    { href: '/m/discussion',    label: t.secondary.discussion,    Icon: MessagesSquare,  accent: 'from-indigo-100 to-indigo-50 text-indigo-700'    },
+    { href: '/m/instructors',   label: t.secondary.instructors,   Icon: UserSquare2,     accent: 'from-fuchsia-100 to-fuchsia-50 text-fuchsia-700' },
+    { href: '/m/reviews',       label: t.secondary.reviews,       Icon: Star,            accent: 'from-yellow-100 to-yellow-50 text-yellow-700'    },
+    { href: '/m/announcements', label: t.secondary.announcements, Icon: Megaphone,       accent: 'from-rose-100 to-rose-50 text-rose-700'          },
   ];
 
   return (

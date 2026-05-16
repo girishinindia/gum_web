@@ -24,7 +24,11 @@ const UPCOMING = [
 
 export default function DashboardPage() {
   return (
-    <div className="max-w-7xl">
+    // Same container width + horizontal gutters every marketing page
+    // uses (home, courses, bundles, instructors). Vertical padding
+    // mirrors the marketing section rhythm so the dashboard sits in
+    // the same visual cadence as the rest of the site.
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <Eyebrow>Welcome back, Anjali</Eyebrow>
       <h1 className="mt-3 heading text-3xl sm:text-4xl text-slate-900 leading-tight tracking-tight">
         Today&apos;s plan — <span className="text-gradient">3 modules left</span> to finish your weekly goal

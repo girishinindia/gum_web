@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   GraduationCap, Menu, X, ArrowRight, UserRound,
@@ -11,6 +12,8 @@ import {
 import { ButtonLink } from '@/components/ui/Button';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { CoursesMegaMenu } from './CoursesMegaMenu';
+import { UserMenu } from './UserMenu';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { useT } from '@/lib/i18n/useT';
 import type { SubCategory } from '@/lib/api';
 import { cn } from '@/lib/cn';
@@ -40,6 +43,20 @@ function SECONDARY_ITEMS(t: ReturnType<typeof useT>): { href: string; label: str
 
 export function HeaderShell({ categories }: Props) {
   const t = useT();
+  // Auth-aware right-side action — Login pill when signed-out, user
+  // avatar + dropdown menu when signed-in. `loading` covers the brief
+  // hydration window where we don't yet know which state to render;
+  // we keep the Login pill during loading so the chrome never flickers
+  // an empty slot.
+  const { signedIn, loading } = useAuth();
+  // `?next=<current-path>` — so a successful login bounces the user back
+  // to the page they were on (instead of always landing on /dashboard).
+  // Direct visits to /login still default to /dashboard (handled by the
+  // login page itself). `||` covers the rare case where pathname is null.
+  const pathname = usePathname();
+  const loginHref = pathname && pathname !== '/login' && pathname !== '/signup'
+    ? `/login?next=${encodeURIComponent(pathname)}`
+    : '/login';
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -104,9 +121,13 @@ export function HeaderShell({ categories }: Props) {
         {/* Right actions */}
         <div className="flex items-center gap-2">
           <LanguageSwitcher className="hidden md:block" />
-          <ButtonLink href="/login" variant="primary" size="md" className="hidden sm:inline-flex rounded-full">
-            <UserRound className="h-4 w-4" /> {t.common.login} <ArrowRight className="h-4 w-4" />
-          </ButtonLink>
+          {signedIn && !loading ? (
+            <UserMenu className="hidden sm:block" />
+          ) : (
+            <ButtonLink href={loginHref} variant="primary" size="md" className="hidden sm:inline-flex rounded-full">
+              <UserRound className="h-4 w-4" /> {t.common.login} <ArrowRight className="h-4 w-4" />
+            </ButtonLink>
+          )}
           <button
             type="button"
             aria-label={t.common.menu}
@@ -163,12 +184,16 @@ export function HeaderShell({ categories }: Props) {
             ))}
           </ul>
 
-          {/* Language switcher + login */}
+          {/* Language switcher + auth action */}
           <div className="pt-3 mt-3 border-t border-slate-200/70 flex flex-col gap-2.5">
             <LanguageSwitcher />
-            <ButtonLink href="/login" variant="primary" size="md" className="w-full rounded-full">
-              <UserRound className="h-4 w-4" /> {t.common.login}
-            </ButtonLink>
+            {signedIn && !loading ? (
+              <UserMenu className="w-full" />
+            ) : (
+              <ButtonLink href={loginHref} variant="primary" size="md" className="w-full rounded-full">
+                <UserRound className="h-4 w-4" /> {t.common.login}
+              </ButtonLink>
+            )}
           </div>
         </div>
       )}

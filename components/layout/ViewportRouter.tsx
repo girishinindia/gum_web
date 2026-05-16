@@ -92,6 +92,14 @@ export function ViewportRouter() {
         '/discussion', '/m/discussion',
         '/live-sessions', '/m/live-sessions',
         '/batches', '/m/batches',
+        // Auth pages have full mirrors on both portals — keep the resize
+        // swap working so a teammate flipping their dev viewport doesn't
+        // get stranded on the wrong layout mid-signup.
+        '/login', '/m/login',
+        '/signup', '/m/signup',
+        '/forgot-password', '/m/forgot-password',
+        '/reset-password',  '/m/reset-password',
+        '/verify-email',    '/m/verify-email',
       ];
       const head = pathname.split('?')[0];
       const baseMatch = HAS_MIRROR.some((r) => head === r || head.startsWith(r + '/'));

@@ -76,7 +76,7 @@ export default function MobileDiscussionPage() {
           <div className="heading mt-1.5 text-[14px]">Join the conversation</div>
           <p className="text-[11px] opacity-90 mt-0.5">Sign in to post questions and answer your peers.</p>
           <Link
-            href="/login"
+            href="/m/login?next=%2Fm%2Fdiscussion"
             className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-white text-brand-700 px-3.5 py-1.5 text-[11.5px] font-bold active:scale-95 transition-all"
           >
             Sign in
