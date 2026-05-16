@@ -33,19 +33,30 @@ function Inner() {
   const [lastName,  setLastName]  = useState('');
   const [email,     setEmail]     = useState('');
   const [mobile,    setMobile]    = useState('');
-  const [password,  setPassword]  = useState('');
+  const [password,         setPassword]        = useState('');
+  const [confirmPassword,  setConfirmPassword] = useState('');
   const [agree,     setAgree]     = useState(false);
   const [error,     setError]     = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErr,  setFieldErr]  = useState<Record<string, string | undefined>>({});
 
+  // Local match check — same shape as the desktop helper. Kept inline
+  // rather than in the shared validation lib because /reset-password
+  // and other one-field flows wouldn't use it.
+  function validateConfirm(pw: string, cf: string): { ok: boolean; msg?: string } {
+    if (!cf) return { ok: false, msg: 'Confirm your password.' };
+    if (pw !== cf) return { ok: false, msg: "Passwords don't match." };
+    return { ok: true };
+  }
+
   function check(): boolean {
     const errs: Record<string, string | undefined> = {};
-    errs.firstName = validateName(firstName, 'First name').msg;
-    errs.lastName  = validateName(lastName, 'Last name').msg;
-    errs.email     = validateEmail(email).msg;
-    errs.mobile    = validateMobile(mobile).msg;
-    errs.password  = validatePassword(password).msg;
+    errs.firstName       = validateName(firstName, 'First name').msg;
+    errs.lastName        = validateName(lastName, 'Last name').msg;
+    errs.email           = validateEmail(email).msg;
+    errs.mobile          = validateMobile(mobile).msg;
+    errs.password        = validatePassword(password).msg;
+    errs.confirmPassword = validateConfirm(password, confirmPassword).msg;
     setFieldErr(errs);
     const r = combine(
       validateName(firstName, 'First name'),
@@ -53,6 +64,7 @@ function Inner() {
       validateEmail(email),
       validateMobile(mobile),
       validatePassword(password),
+      validateConfirm(password, confirmPassword),
     );
     if (!r.ok) { setError(r.msg!); return false; }
     if (!agree) { setError('Please accept the Terms and Privacy Policy.'); return false; }
@@ -162,9 +174,31 @@ function Inner() {
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            onBlur={() => setFieldErr((p) => ({ ...p, password: validatePassword(password).msg }))}
+            onBlur={() => setFieldErr((p) => ({
+              ...p,
+              password: validatePassword(password).msg,
+              // Recheck the confirm field whenever password changes so
+              // we don't leave a stale-OK confirm in place.
+              confirmPassword: confirmPassword
+                ? validateConfirm(password, confirmPassword).msg
+                : p.confirmPassword,
+            }))}
             placeholder="Password (8–20 chars)"
             withStrength
+            maxLength={20}
+          />
+        </FieldGroup>
+
+        <FieldGroup error={fieldErr.confirmPassword}>
+          <PasswordField
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            onBlur={() => setFieldErr((p) => ({
+              ...p,
+              confirmPassword: validateConfirm(password, confirmPassword).msg,
+            }))}
+            placeholder="Re-enter password"
             maxLength={20}
           />
         </FieldGroup>

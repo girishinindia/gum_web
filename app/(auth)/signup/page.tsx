@@ -44,13 +44,24 @@ function SignupInner() {
   const [lastName,  setLastName]    = useState('');
   const [email,     setEmail]       = useState('');
   const [mobile,    setMobile]      = useState('');
-  const [password,  setPassword]    = useState('');
+  const [password,         setPassword]        = useState('');
+  const [confirmPassword,  setConfirmPassword] = useState('');
   const [agree,     setAgree]       = useState(false);
   const [error,     setError]       = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   // Per-field errors surface only after the user blurs / submits — avoids
   // shouting "required" the instant the form appears.
   const [fieldErr, setFieldErr] = useState<Record<string, string | undefined>>({});
+
+  // Match check is local — not part of the shared `validatePassword`
+  // helper because the latter is reused on /reset-password where there
+  // is no "second" field to compare against. Empty → "Confirm your
+  // password.", mismatch → "Passwords don't match."
+  function validateConfirm(pw: string, cf: string): { ok: boolean; msg?: string } {
+    if (!cf) return { ok: false, msg: 'Confirm your password.' };
+    if (pw !== cf) return { ok: false, msg: "Passwords don't match." };
+    return { ok: true };
+  }
 
   function check(): boolean {
     const errs: Record<string, string | undefined> = {};
@@ -60,12 +71,15 @@ function SignupInner() {
       validateEmail(email),
       validateMobile(mobile),
       validatePassword(password),
+      validateConfirm(password, confirmPassword),
     );
-    if (!validateName(firstName, 'First name').ok) errs.firstName = validateName(firstName, 'First name').msg;
-    if (!validateName(lastName,  'Last name').ok)  errs.lastName  = validateName(lastName, 'Last name').msg;
-    if (!validateEmail(email).ok)                  errs.email     = validateEmail(email).msg;
-    if (!validateMobile(mobile).ok)                errs.mobile    = validateMobile(mobile).msg;
-    if (!validatePassword(password).ok)            errs.password  = validatePassword(password).msg;
+    if (!validateName(firstName, 'First name').ok) errs.firstName       = validateName(firstName, 'First name').msg;
+    if (!validateName(lastName,  'Last name').ok)  errs.lastName        = validateName(lastName, 'Last name').msg;
+    if (!validateEmail(email).ok)                  errs.email           = validateEmail(email).msg;
+    if (!validateMobile(mobile).ok)                errs.mobile          = validateMobile(mobile).msg;
+    if (!validatePassword(password).ok)            errs.password        = validatePassword(password).msg;
+    const cfm = validateConfirm(password, confirmPassword);
+    if (!cfm.ok)                                    errs.confirmPassword = cfm.msg;
     setFieldErr(errs);
     if (!r.ok) { setError(r.msg ?? 'Please fix the highlighted fields.'); return false; }
     if (!agree) { setError('Please accept the Terms and Privacy Policy.'); return false; }
@@ -172,13 +186,40 @@ function SignupInner() {
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            onBlur={() => setFieldErr((p) => ({ ...p, password: validatePassword(password).msg }))}
+            onBlur={() => setFieldErr((p) => ({
+              ...p,
+              password: validatePassword(password).msg,
+              // Re-check the confirm field too — typing into Password
+              // after entering Confirm should not leave the confirm
+              // field stale-green when it suddenly stops matching.
+              confirmPassword: confirmPassword
+                ? validateConfirm(password, confirmPassword).msg
+                : p.confirmPassword,
+            }))}
             placeholder="8–20 characters"
             withStrength
             maxLength={20}
           />
           {fieldErr.password && (
             <div className="mt-1 text-[11.5px] text-rose-600">{fieldErr.password}</div>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-[12px] font-semibold text-slate-700 mb-1.5">Confirm password</label>
+          <PasswordField
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            onBlur={() => setFieldErr((p) => ({
+              ...p,
+              confirmPassword: validateConfirm(password, confirmPassword).msg,
+            }))}
+            placeholder="Re-enter your password"
+            maxLength={20}
+          />
+          {fieldErr.confirmPassword && (
+            <div className="mt-1 text-[11.5px] text-rose-600">{fieldErr.confirmPassword}</div>
           )}
         </div>
 
