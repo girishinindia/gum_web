@@ -459,7 +459,16 @@ function EducationForm({
           </Field>
         </Grid>
         <div className="mt-2 flex flex-wrap gap-4 text-[12px] text-slate-700">
-          <Check label="Currently studying" checked={currentlyStudying} onChange={(v) => { setCurrentlyStudying(v); setFieldErrors((p) => ({ ...p, endDate: undefined })); }} />
+          <Check label="Currently studying" checked={currentlyStudying} onChange={(v) => {
+            setCurrentlyStudying(v);
+            // When toggling ON, also clear the local endDate state so a
+            // subsequent submit cannot accidentally ship a stale value
+            // (the Server enforces the invariant too, but cleaning up
+            // the local state keeps the UI honest if the user toggles
+            // back OFF later).
+            if (v) setEndDate('');
+            setFieldErrors((p) => ({ ...p, endDate: undefined }));
+          }} />
           <Check label="Highest qualification" checked={isHighest} onChange={setIsHighest} />
         </div>
       </Group>
