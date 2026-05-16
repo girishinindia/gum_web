@@ -33,6 +33,25 @@ const nextConfig = {
     };
     return config;
   },
+
+  // Phase 43.8 — the editor's prebuilt CJS bundle holds its own copy of
+  // React's internals (`__SECRET_INTERNALS_…`), which goes stale when
+  // Next.js webpack-tree-shakes the project's React. The crash is
+  //   "Cannot read properties of undefined (reading 'ReactCurrentOwner')"
+  // at the `<FilerobotImageEditor>` render point. Listing the package +
+  // its peers under `transpilePackages` makes Next.js re-compile them
+  // through SWC against the SAME React instance the rest of the app
+  // uses, which restores the shared internals lookup.
+  transpilePackages: [
+    'react-filerobot-image-editor',
+    'react-konva',
+    'konva',
+    'react-reconciler',
+  ],
+
+  // `serverExternalPackages` is for app-router server components only.
+  // We still want it so any server-side touchpoint avoids the package,
+  // but transpilePackages is what fixes the runtime React error.
   serverExternalPackages: [
     'react-filerobot-image-editor',
     'react-konva',
