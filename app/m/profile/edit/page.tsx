@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import {
-  getMyProfile, updateMyProfile, updateMe,
+  getMyProfile, updateMyProfile, updateMyProfileWithImages, updateMe,
   listEducation,
   listSkills,
   listLanguages,
@@ -190,34 +190,23 @@ export default function MobileProfileEditPage() {
           </div>
         )}
 
-        {/* ── Identity strip — name + role chip. No "Camera" change-photo
-            button yet (multipart upload route is wired but no UI). */}
-        <div className="rounded-md bg-white border border-slate-200 p-4 flex items-center gap-3 shadow-card">
-          {profile?.profile_image_url || user.profile_image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={(profile?.profile_image_url || user.profile_image_url) as string}
-              alt={displayName}
-              className="h-16 w-16 rounded-full object-cover"
-            />
-          ) : (
-            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-brand-500 to-accent text-white heading text-2xl flex items-center justify-center">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="heading text-base text-slate-900 truncate">{displayName}</div>
-            <div className="text-[12px] text-slate-600 truncate">{headline}</div>
-            <div className="text-[11px] text-slate-500 truncate">{user.email}</div>
-          </div>
-          <button
-            type="button"
-            aria-label="Change photo"
-            className="h-9 w-9 rounded-full bg-brand-50 text-brand-700 inline-flex items-center justify-center active:scale-95"
-          >
-            <Camera className="h-4 w-4" />
-          </button>
-        </div>
+        {/* ── Identity strip — name + role chip + change-photo button.
+            Phase 32.3 wires the multipart upload UI; tapping the Camera
+            badge opens the system picker and PUTs `/user-profiles/me`
+            multipart with the chosen image. Local blob preview keeps
+            feedback instant while the network round-trip runs. */}
+        <IdentityStrip
+          displayName={displayName}
+          headline={headline}
+          email={user.email}
+          avatarUrl={profile?.profile_image_url || user.profile_image_url || null}
+          onAvatarUpdated={(next) => {
+            setProfile(next);
+            if (next.profile_image_url !== undefined) {
+              updateUser({ profile_image_url: next.profile_image_url ?? null });
+            }
+          }}
+        />
 
         {/* ── Sticky section nav — horizontal pill tab strip. Tapping
             a pill swaps the active section below (profile-v5 tabbed
@@ -298,6 +287,12 @@ export default function MobileProfileEditPage() {
                 setEducation((prev) => prev.map((r) => (r.id === row.id ? row : r)))
               }
               onRemoved={(id) => setEducation((prev) => prev.filter((r) => r.id !== id))}
+              // Bug 3b fix: on save error, re-fetch from server so the UI
+              // matches what's actually persisted (matches desktop wiring).
+              onRefetch={async () => {
+                const fresh = await listEducation();
+                setEducation(fresh);
+              }}
             />
           </Card>
         )}
@@ -549,6 +544,99 @@ function BasicInfoCard({
         </Field>
       </div>
     </Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// IdentityStrip — mobile avatar + name card with photo picker
+//
+// Mirrors the desktop IdentityCard upload flow. The hidden <input
+// type="file"> lives inside a <label>, so tapping the Camera badge opens
+// the system picker without any extra refs. We show a local blob URL
+// preview the moment the user picks, then swap it for the persisted CDN
+// URL once the multipart PUT comes back. Errors render inline below.
+// ═══════════════════════════════════════════════════════════════════════
+
+function IdentityStrip({
+  displayName, headline, email, avatarUrl, onAvatarUpdated,
+}: {
+  displayName: string;
+  headline:    string;
+  email:       string;
+  avatarUrl:   string | null;
+  onAvatarUpdated: (next: UserProfile) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [err,  setErr]  = useState<string | null>(null);
+  const [previewUrl, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
+  }, [previewUrl]);
+
+  async function onPicked(file: File | null) {
+    if (!file) return;
+    if (!/^image\/(jpe?g|png|gif|webp|svg\+xml)$/i.test(file.type)) {
+      setErr('Please pick an image (JPG, PNG, GIF, WebP, or SVG).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErr('Image is too large — please pick one under 5 MB.');
+      return;
+    }
+    setErr(null);
+    const blob = URL.createObjectURL(file);
+    setPreview(blob);
+    setBusy(true);
+    try {
+      const next = await updateMyProfileWithImages({}, file, null);
+      onAvatarUpdated(next);
+      setTimeout(() => { setPreview(null); URL.revokeObjectURL(blob); }, 800);
+    } catch (e) {
+      URL.revokeObjectURL(blob);
+      setPreview(null);
+      setErr(e instanceof Error ? e.message : 'Could not upload.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const shownUrl = previewUrl ?? avatarUrl;
+
+  return (
+    <div className="rounded-md bg-white border border-slate-200 p-4 flex items-center gap-3 shadow-card">
+      {shownUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={shownUrl}
+          alt={displayName}
+          className={cn('h-16 w-16 rounded-full object-cover', busy && 'opacity-60')}
+        />
+      ) : (
+        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-brand-500 to-accent text-white heading text-2xl flex items-center justify-center">
+          {displayName.charAt(0).toUpperCase()}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="heading text-base text-slate-900 truncate">{displayName}</div>
+        <div className="text-[12px] text-slate-600 truncate">{headline}</div>
+        <div className="text-[11px] text-slate-500 truncate">{email}</div>
+        {err && <div className="mt-1 text-[11px] text-rose-600">{err}</div>}
+      </div>
+      <label
+        aria-label="Change photo"
+        className="h-9 w-9 rounded-full bg-brand-50 text-brand-700 inline-flex items-center justify-center active:scale-95 cursor-pointer"
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+        <input
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          disabled={busy}
+          onChange={(e) => onPicked(e.target.files?.[0] ?? null)}
+        />
+      </label>
+    </div>
   );
 }
 

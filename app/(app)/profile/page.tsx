@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { useAuth } from '@/components/auth/AuthProvider';
 import {
-  getMyProfile, updateMyProfile, updateMe,
+  getMyProfile, updateMyProfile, updateMyProfileWithImages, updateMe,
   listEducation,
   listSkills,
   listLanguages,
@@ -235,6 +235,14 @@ export default function ProfilePage() {
             mobile={user.mobile}
             avatarUrl={profile?.profile_image_url || user.profile_image_url || null}
             headline={headline}
+            onAvatarUpdated={(next) => {
+              setProfile(next);
+              // Mirror new URL into AuthProvider so the header avatar
+              // (which reads from AuthProvider state) refreshes too.
+              if (next.profile_image_url !== undefined) {
+                updateUser({ profile_image_url: next.profile_image_url ?? null });
+              }
+            }}
           />
 
           {/* ── BASIC INFO ── */}
@@ -293,6 +301,10 @@ export default function ProfilePage() {
                   setEducation((prev) => prev.map((r) => (r.id === row.id ? row : r)))
                 }
                 onRemoved={(id) => setEducation((prev) => prev.filter((r) => r.id !== id))}
+                onRefetch={async () => {
+                  const fresh = await listEducation();
+                  setEducation(fresh);
+                }}
               />
             </Card>
           )}
@@ -424,38 +436,100 @@ function needsStub(s: SectionMeta): boolean {
 // ═══════════════════════════════════════════════════════════════════════
 
 function IdentityCard({
-  displayName, email, mobile, avatarUrl, headline,
+  displayName, email, mobile, avatarUrl, headline, onAvatarUpdated,
 }: {
   displayName: string; email: string; mobile: string;
   avatarUrl: string | null; headline: string;
+  onAvatarUpdated: (next: UserProfile) => void;
 }) {
+  // Avatar upload state. Local preview is shown the instant the user
+  // picks a file (via `URL.createObjectURL`), so they get feedback even
+  // while the multipart PUT is in flight. After save we drop the blob
+  // URL — `avatarUrl` from props picks up the CDN URL the server stored.
+  const [busy, setBusy]       = useState(false);
+  const [err,  setErr]        = useState<string | null>(null);
+  const [previewUrl, setPreview] = useState<string | null>(null);
+  // Cleanup any leftover blob URL on unmount or when preview clears, so
+  // we don't leak memory across re-renders.
+  useEffect(() => {
+    return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
+  }, [previewUrl]);
+
+  async function onPicked(file: File | null) {
+    if (!file) return;
+    if (!/^image\/(jpe?g|png|gif|webp|svg\+xml)$/i.test(file.type)) {
+      setErr('Please pick an image (JPG, PNG, GIF, WebP, or SVG).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErr('Image is too large — please pick one under 5 MB.');
+      return;
+    }
+    setErr(null);
+    const blob = URL.createObjectURL(file);
+    setPreview(blob);
+    setBusy(true);
+    try {
+      // Empty patch + file = "just update the photo" (server ignores
+      // missing JSON fields). The route is wrapped with the multipart
+      // coerceNullStrings middleware so we don't need to worry about
+      // accidentally clearing other columns.
+      const next = await updateMyProfileWithImages({}, file, null);
+      onAvatarUpdated(next);
+      // Hold the preview for a beat so there's no flicker — the new
+      // `avatarUrl` prop will take over on the next render.
+      setTimeout(() => { setPreview(null); URL.revokeObjectURL(blob); }, 800);
+    } catch (e) {
+      URL.revokeObjectURL(blob);
+      setPreview(null);
+      setErr(e instanceof Error ? e.message : 'Could not upload.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Use the local preview while uploading; fall back to the persisted URL
+  // (or the initial-letter placeholder) the rest of the time.
+  const shownUrl = previewUrl ?? avatarUrl;
+
   return (
     <div className="rounded-md bg-white border border-slate-200 shadow-card p-6 flex items-center gap-5">
       <div className="relative">
-        {avatarUrl ? (
+        {shownUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={avatarUrl}
+            src={shownUrl}
             alt={displayName}
-            className="h-24 w-24 rounded-full object-cover shadow-cardHover"
+            className={cn('h-24 w-24 rounded-full object-cover shadow-cardHover', busy && 'opacity-60')}
           />
         ) : (
           <div className="h-24 w-24 rounded-full bg-gradient-to-br from-brand-500 to-accent text-white heading text-3xl flex items-center justify-center shadow-cardHover">
             {displayName.charAt(0).toUpperCase()}
           </div>
         )}
-        <button
-          type="button"
-          aria-label="Change photo"
-          className="absolute bottom-0 right-0 h-9 w-9 rounded-full bg-white border border-slate-200 shadow flex items-center justify-center text-brand-700 hover:bg-brand-50"
-        >
-          <Camera className="h-4 w-4" />
-        </button>
+
+        {/* Hidden file input + clickable camera badge. */}
+        <label className="absolute bottom-0 right-0 h-9 w-9 rounded-full bg-white border border-slate-200 shadow flex items-center justify-center text-brand-700 hover:bg-brand-50 cursor-pointer">
+          {busy
+            ? <Loader2 className="h-4 w-4 animate-spin" />
+            : <Camera className="h-4 w-4" />}
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            disabled={busy}
+            onChange={(e) => onPicked(e.target.files?.[0] ?? null)}
+            aria-label="Change profile photo"
+          />
+        </label>
       </div>
       <div className="flex-1">
         <h2 className="heading text-xl text-slate-900">{displayName}</h2>
         <div className="text-sm text-slate-600 mt-0.5">{headline}</div>
         <div className="text-[12px] text-slate-500 mt-1 truncate">{email} · {mobile}</div>
+        {err && (
+          <div className="mt-2 text-[12px] text-rose-600">{err}</div>
+        )}
       </div>
     </div>
   );

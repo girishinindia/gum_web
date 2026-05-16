@@ -48,12 +48,19 @@ const GRADE_TYPES: { value: GradeType; label: string }[] = [
 ];
 
 export function EducationList({
-  rows, onAdded, onUpdated, onRemoved,
+  rows, onAdded, onUpdated, onRemoved, onRefetch,
 }: {
   rows:      UserEducation[];
   onAdded:   (row: UserEducation) => void;
   onUpdated: (row: UserEducation) => void;
   onRemoved: (id: number) => void;
+  // Bug 3b fix: optional callback the parent provides to re-fetch the
+  // full list from the server. We call it after a save error to undo
+  // any optimistic state divergence — e.g. if the user toggled
+  // "currently studying" and the server rejected the patch, we want the
+  // UI to revert to the persisted truth rather than show the failed
+  // edits as if they had taken.
+  onRefetch?: () => Promise<void> | void;
 }) {
   const [mode, setMode] = useState<{ kind: 'idle' } | { kind: 'add' } | { kind: 'edit'; row: UserEducation }>({ kind: 'idle' });
   const [levels, setLevels] = useState<EducationLevel[]>([]);
@@ -95,6 +102,14 @@ export function EducationList({
       setMode({ kind: 'idle' });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save.');
+      // Bug 3b fix: on error, ask the parent to re-fetch from the server so
+      // the visible row reflects what's actually persisted. Without this,
+      // a 400 (e.g. "currently studying" toggling end_date to "null") would
+      // leave the optimistically-updated row in place, which the user reads
+      // as "my edits don't persist."
+      if (onRefetch) {
+        try { await onRefetch(); } catch { /* surface the original error */ }
+      }
     }
   }
 

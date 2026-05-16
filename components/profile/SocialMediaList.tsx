@@ -16,17 +16,21 @@ import { validateUrl, validateUsername } from '@/lib/auth/validation';
 import { cn } from '@/lib/cn';
 
 /**
- * Social media list — adds rows of `{ platform, url, username }` to
- * `user_social_medias`. The platform dropdown is populated from the
- * `/social-medias` API endpoint (master `social_medias` table). We use
- * the platform `code` ('linkedin', 'github', …) as the value we send
- * back to `user_social_medias.platform`, and fall back to a colour /
- * icon lookup by code for visual rendering.
+ * Social media list — adds rows of `{ social_media_id, profile_url,
+ * username }` to `user_social_medias`. The platform dropdown is
+ * populated from `/social-medias` (master `social_medias` table). The
+ * value we send to the server is the master row's numeric `id`, not the
+ * `code` string — Phase 31.2 caught a long-standing mismatch where the
+ * client was sending `{ platform: code, url }` and the server, which
+ * speaks FK ids, would error with "Expected number, received nan".
  *
  * Icon strategy
  *   • If the master row has `icon` (a CDN URL), render that as an <img>.
  *   • Otherwise look up the platform `code` in a local Lucide map. If
  *     no match either, render a generic Globe.
+ *   • For RENDERING existing rows we read `row.social_media` (the
+ *     server-joined master row) — that gives us the icon URL + name
+ *     without an extra lookup.
  *
  * URL validation is best-effort (we accept anything starting with
  * `http`/`https` to avoid blocking edge cases) — final validation
@@ -61,7 +65,10 @@ export function SocialMediaList({
 }) {
   const [platforms, setPlatforms] = useState<SocialMediaPlatform[]>([]);
   const [loadingPlatforms, setLoadingPlatforms] = useState(true);
-  const [platformCode, setPlatformCode] = useState('');
+  // Bug 5 fix — track the FK id (number) instead of the code. The picker
+  // still visually keys on `code` for icon lookup, but the value we send
+  // to the server is `social_media_id`. Empty string = "nothing picked".
+  const [platformId, setPlatformId] = useState<string>('');
   const [url,      setUrl]      = useState('');
   const [username, setUsername] = useState('');
   const [busy,     setBusy]     = useState(false);
@@ -81,7 +88,7 @@ export function SocialMediaList({
         // Default to the first platform in the API list so the form
         // submits with a valid value even if the user doesn't touch
         // the dropdown.
-        if (list.length > 0) setPlatformCode(list[0].code);
+        if (list.length > 0) setPlatformId(String(list[0].id));
       } catch (e) {
         if (!cancelled) {
           console.error('[SocialMediaList] listSocialMediaPlatforms failed', e);
@@ -93,18 +100,19 @@ export function SocialMediaList({
     return () => { cancelled = true; };
   }, []);
 
-  // Quick lookup: code → master row (used to render placeholder + icon).
-  const platformByCode = useMemo(() => {
+  // Quick lookup: id → master row. The form value (platformId) is a FK
+  // id string; this map lets us pull the master row for icon/placeholder.
+  const platformById = useMemo(() => {
     const map: Record<string, SocialMediaPlatform> = {};
-    for (const p of platforms) map[p.code] = p;
+    for (const p of platforms) map[String(p.id)] = p;
     return map;
   }, [platforms]);
 
-  const selected = platformByCode[platformCode];
+  const selected = platformById[platformId];
 
   function runValidation(): Record<string, string | undefined> {
     const errs: Record<string, string | undefined> = {};
-    if (!platformCode) errs.platform = 'Pick a platform first.';
+    if (!platformId) errs.platform = 'Pick a platform first.';
     if (!url.trim()) {
       errs.url = 'URL is required.';
     } else {
@@ -130,10 +138,10 @@ export function SocialMediaList({
     setError(null);
     try {
       const created = await addSocialMedia({
-        platform: platformCode,
-        url:      url.trim(),
-        username: username.trim() || null,
-        is_public: true,
+        social_media_id: Number(platformId),
+        profile_url:     url.trim(),
+        username:        username.trim() || null,
+        is_primary:      false,
       });
       onAdded(created);
       setUrl(''); setUsername('');
@@ -166,14 +174,24 @@ export function SocialMediaList({
       {rows.length > 0 && (
         <ul className="space-y-2 mb-4">
           {rows.map((row) => {
-            const meta = platformByCode[row.platform];
+            // After the FK migration, the server joins `social_media` on
+            // read. Prefer the joined row for name/icon; fall back to the
+            // local master list keyed by the FK id. The `code` lookup is
+            // still used by `PlatformIcon` for its local Lucide fallback.
+            const joined = row.social_media ?? null;
+            const fromMaster = row.social_media_id != null
+              ? platformById[String(row.social_media_id)]
+              : undefined;
+            const code = joined?.code ?? fromMaster?.code ?? '';
+            const name = joined?.name ?? fromMaster?.name ?? code ?? 'Platform';
+            const iconUrl = joined?.icon ?? fromMaster?.icon ?? null;
             return (
               <li key={row.id} className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2.5">
-                <PlatformIcon code={row.platform} iconUrl={meta?.icon ?? null} />
+                <PlatformIcon code={code} iconUrl={iconUrl} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-slate-900">{meta?.name ?? row.platform}</div>
-                  <a href={row.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[12px] text-slate-600 truncate hover:text-brand-700 max-w-full">
-                    <span className="truncate">{row.username ? `@${row.username} · ` : ''}{row.url}</span>
+                  <div className="text-sm font-semibold text-slate-900">{name}</div>
+                  <a href={row.profile_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[12px] text-slate-600 truncate hover:text-brand-700 max-w-full">
+                    <span className="truncate">{row.username ? `@${row.username} · ` : ''}{row.profile_url}</span>
                     <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
                   </a>
                 </div>
@@ -190,10 +208,10 @@ export function SocialMediaList({
       <form onSubmit={add} className="rounded-md border border-slate-200 bg-white p-3 space-y-2">
         <div className="grid sm:grid-cols-[200px_1fr] gap-2">
           <SearchableSelect<SocialMediaPlatform>
-            value={platformCode}
-            onChange={setPlatformCode}
+            value={platformId}
+            onChange={setPlatformId}
             options={platforms}
-            getValue={(p) => p.code}
+            getValue={(p) => String(p.id)}
             getLabel={(p) => p.name}
             getSublabel={(p) => p.platform_type || null}
             renderLeading={(p) => <PlatformIcon code={p.code} iconUrl={p.icon ?? null} compact />}

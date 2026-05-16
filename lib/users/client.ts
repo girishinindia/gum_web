@@ -148,6 +148,69 @@ async function callMultipart<T>(path: string, fd: FormData, method: 'POST' | 'PA
   return (json.data as T) ?? (json as unknown as T);
 }
 
+// ── Pagination helper for reference-table dropdowns ─────────────────
+//
+// `call<T[]>` unwraps `json.data` and discards `json.pagination`, which
+// means callers can't tell whether they got the whole list or just one
+// page. For dropdowns that need EVERY row (cities, states, social-media
+// platforms, etc), use this helper instead — it reads the full envelope
+// and walks pages until exhausted.
+//
+// Why this matters: the server has reasonable `maxLimit` caps (500 for
+// states/countries, 2000 for cities). Tamil Nadu (largest Indian state)
+// has ~892 cities, so one page is enough today. But if a state ever
+// exceeds 2000 active cities, or the server cap changes, this loop
+// quietly keeps working. Also tolerates `paginated()` envelopes that
+// don't include `totalPages`.
+interface PaginatedEnvelope<T> {
+  success: boolean;
+  data: T[];
+  pagination?: { total: number; page: number; limit: number; totalPages: number };
+}
+
+async function callListAll<T>(basePath: string, perPage = 500): Promise<T[]> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const tok = getAccessToken();
+  if (tok) headers['Authorization'] = `Bearer ${tok}`;
+
+  const out: T[] = [];
+  let page = 1;
+  // Safety stop: prevent runaway loops if the server misreports totals.
+  const HARD_PAGE_CAP = 50;
+  while (page <= HARD_PAGE_CAP) {
+    const sep = basePath.includes('?') ? '&' : '?';
+    const url = `${apiBase()}${basePath}${sep}page=${page}&limit=${perPage}`;
+    let res: Response;
+    try {
+      res = await fetch(url, { method: 'GET', headers, cache: 'no-store' });
+    } catch (networkErr) {
+      throw new UserApiError('Network error. Please check your connection.', 0, networkErr);
+    }
+    let json: PaginatedEnvelope<T> & { error?: string; message?: string; details?: unknown };
+    try { json = await res.json(); }
+    catch { throw new UserApiError(`Server error (${res.status})`, res.status); }
+    if (!res.ok || json.success === false) {
+      const msg = json.error || json.message || `Request failed (${res.status})`;
+      throw new UserApiError(msg, res.status, json.details);
+    }
+    const rows = Array.isArray(json.data) ? json.data : [];
+    out.push(...rows);
+
+    // Stop when we've collected everything (or got a partial page).
+    const total = json.pagination?.total;
+    const totalPages = json.pagination?.totalPages;
+    if (typeof totalPages === 'number') {
+      if (page >= totalPages) break;
+    } else if (typeof total === 'number') {
+      if (out.length >= total) break;
+    } else if (rows.length < perPage) {
+      break;
+    }
+    page += 1;
+  }
+  return out;
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // /users/me — identity + roles + max_role_level
 // ═══════════════════════════════════════════════════════════════════════
@@ -267,6 +330,34 @@ export async function getMyProfile(): Promise<UserProfile> {
 /** PUT /api/v1/user-profiles/me — upsert (server treats it as create-or-update). */
 export async function updateMyProfile(patch: Partial<UserProfile>): Promise<UserProfile> {
   return call<UserProfile>('/user-profiles/me', { method: 'PUT', body: patch });
+}
+
+/**
+ * Multipart variant of `updateMyProfile` — used when uploading a new
+ * profile or cover image. The server route at PUT `/user-profiles/me`
+ * is wrapped with `upload.fields([profile_image, cover_image])`, so we
+ * pack both the JSON patch fields AND the file(s) into one FormData
+ * request. Lets the user save their identity edits + avatar in one
+ * round-trip.
+ *
+ * Pass `null` for an image to leave it unchanged; the server only acts
+ * when the multipart part is actually present.
+ *
+ * The fields object accepts the same `Partial<UserProfile>` as the JSON
+ * variant. To explicitly *clear* `profile_image_url` server-side, set
+ * `patch.profile_image_url = null` — `buildFormData` will encode it as
+ * the literal string `"null"` and the server's `coerceNullStrings`
+ * middleware will turn it back into real null before update.
+ */
+export async function updateMyProfileWithImages(
+  patch: Partial<UserProfile>,
+  profileImage?: File | null,
+  coverImage?: File | null,
+): Promise<UserProfile> {
+  const fd = buildFormData(patch as Record<string, unknown>);
+  if (profileImage) fd.append('profile_image', profileImage);
+  if (coverImage)   fd.append('cover_image',   coverImage);
+  return callMultipart<UserProfile>('/user-profiles/me', fd, 'PUT');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -736,23 +827,49 @@ export async function deleteProject(id: number): Promise<void> {
 // /user-social-medias
 // ═══════════════════════════════════════════════════════════════════════
 
+// Bug 5 fix — Phase 31.2:
+//
+// The previous shape `{ platform, url, is_public, display_order }` was a
+// historical mismatch — the live `user_social_medias` table is FK-driven
+// and the server schema requires `social_media_id` + `profile_url`. The
+// client was sending strings the server then tried to coerce to numbers,
+// producing the Zod error `Expected number, received nan`.
+//
+// On read, the server joins the master row so we get `social_media: {…}`
+// alongside the FK id. On write, callers must supply `social_media_id`.
 export interface UserSocialMedia {
-  id?:           number;
-  user_id?:      number;
-  platform:      string;   // 'linkedin' | 'github' | 'twitter' | 'instagram' | 'youtube' | …
-  url:           string;
-  username?:     string | null;
-  is_public?:    boolean;
-  display_order?: number;
+  id?:                number;
+  user_id?:           number;
+  social_media_id:    number;          // FK → master `social_medias.id` (required on write)
+  profile_url:        string;          // required on write
+  username?:          string | null;
+  is_primary?:        boolean;
+  is_verified?:       boolean;
+  // Server-joined master row on read — useful for rendering name + icon.
+  social_media?: {
+    id:        number;
+    name:      string;
+    code?:     string;
+    icon?:     string | null;
+    base_url?: string | null;
+  } | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export async function listSocialMedias(): Promise<UserSocialMedia[]> {
   return call<UserSocialMedia[]>('/user-social-medias/me');
 }
-export async function addSocialMedia(row: UserSocialMedia): Promise<UserSocialMedia> {
-  return call<UserSocialMedia>('/user-social-medias/me', { method: 'POST', body: row });
+export async function addSocialMedia(
+  body: Pick<UserSocialMedia, 'social_media_id' | 'profile_url'> &
+        Partial<Pick<UserSocialMedia, 'username' | 'is_primary' | 'is_verified'>>,
+): Promise<UserSocialMedia> {
+  return call<UserSocialMedia>('/user-social-medias/me', { method: 'POST', body });
 }
-export async function updateSocialMedia(id: number, patch: Partial<UserSocialMedia>): Promise<UserSocialMedia> {
+export async function updateSocialMedia(
+  id: number,
+  patch: Partial<Pick<UserSocialMedia, 'social_media_id' | 'profile_url' | 'username' | 'is_primary' | 'is_verified'>>,
+): Promise<UserSocialMedia> {
   return call<UserSocialMedia>(`/user-social-medias/me/${id}`, { method: 'PATCH', body: patch });
 }
 export async function deleteSocialMedia(id: number): Promise<void> {
@@ -950,27 +1067,33 @@ export interface City {
  * Server's `maxLimit` for this endpoint is 500 (`country.controller.ts`).
  * 500 is plenty — ISO 3166-1 has ~250 territories.
  */
+// Bug 2 fix — Phase 31.1:
+//
+// We previously filtered `is_active=true` on every dropdown query. That
+// made any city/state/country that was later DEACTIVATED in admin silently
+// disappear from the user's dropdown — including the one already stored
+// on their profile. The user's experience was "the dropdown is missing
+// cities" even though the rows existed.
+//
+// We now request ALL non-soft-deleted rows. Inactive ones still show but
+// stay disabled at the admin level — that's a separate workflow concern.
+//
+// We also page through the full list defensively via `callListAll`, so
+// the dropdown always reflects reality even if a state grows past the
+// current server `maxLimit`. Tamil Nadu (~892 cities) fits in a single
+// `limit=2000` page today, but pagination is a free safety net.
 export async function listCountries(): Promise<Country[]> {
-  return call<Country[]>('/countries?is_active=true&limit=500&sort=name&ascending=true');
+  return callListAll<Country>('/countries?sort=name&ascending=true', 500);
 }
 
-/**
- * GET /states?country_id=X&is_active=true
- *
- * Server's `maxLimit` is 500. Even India (largest state count) has ~36.
- */
+/** GET /states?country_id=X — sorted by name, all pages, includes inactive. */
 export async function listStates(countryId: number): Promise<State[]> {
-  return call<State[]>(`/states?country_id=${countryId}&is_active=true&limit=500&sort=name&ascending=true`);
+  return callListAll<State>(`/states?country_id=${countryId}&sort=name&ascending=true`, 500);
 }
 
-/**
- * GET /cities?state_id=X&is_active=true
- *
- * Server's `maxLimit` is 2000 to fit large states (Tamil Nadu ~891 cities,
- * UP ~688). Without this, the dropdown would silently truncate at 100 rows.
- */
+/** GET /cities?state_id=X — sorted by name, all pages, includes inactive. */
 export async function listCities(stateId: number): Promise<City[]> {
-  return call<City[]>(`/cities?state_id=${stateId}&is_active=true&limit=2000&sort=name&ascending=true`);
+  return callListAll<City>(`/cities?state_id=${stateId}&sort=name&ascending=true`, 2000);
 }
 
 /**
