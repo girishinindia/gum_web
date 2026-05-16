@@ -13,6 +13,7 @@ import { FieldError } from '@/components/ui/FieldError';
 import {
   validateRequired, validateMaxLen, validateNumberRange,
   validateUrl, validateDate, validateDateRange,
+  validateText, validateTokenList,
 } from '@/lib/auth/validation';
 import { cn } from '@/lib/cn';
 
@@ -260,22 +261,36 @@ function ProjectForm({
     const errs: Record<string, string | undefined> = {};
     const t1 = validateRequired(title, 'Project title');
     if (!t1.ok) errs.title = t1.msg;
-    const t2 = validateMaxLen(title, 500, 'Project title');
-    if (!t2.ok) errs.title = t2.msg;
+    const t2 = validateText(title, { label: 'Project title', minLen: 2, maxLen: 500 });
+    if (!t2.ok && !errs.title) errs.title = t2.msg;
+    // Phase 43.9 — `text` rejects pure special-char garbage on free-text
+    // fields (role / organization / client / industry).
+    const text = (v: string, key: string, max: number, label: string) => {
+      const r = validateText(v, { label, minLen: 2, maxLen: max });
+      if (!r.ok) errs[key] = r.msg;
+    };
+    // `tokens` is for comma-separated tech-stack fields. Each token has
+    // to look like a real name (e.g. "C++", "Next.js", "Postgres-14").
+    const tokens = (v: string, key: string, maxItems: number, label: string) => {
+      const r = validateTokenList(v, { label, maxItems, maxItemLen: 60 });
+      if (!r.ok) errs[key] = r.msg;
+    };
+    // Prose fields stay on validateMaxLen — they're free-form and we
+    // don't want to false-reject English sentences full of punctuation.
     const cap = (v: string, key: string, max: number, label: string) => {
       const r = validateMaxLen(v, max, label);
       if (!r.ok) errs[key] = r.msg;
     };
-    cap(role,             'role',             300,  'Role in project');
-    cap(organization,     'organization',     500,  'Organization');
-    cap(clientName,       'clientName',       500,  'Client');
-    cap(industry,         'industry',         300,  'Industry');
-    cap(technologies,     'technologies',     2000, 'Technologies used');
-    cap(tools,            'tools',            2000, 'Tools used');
-    cap(languages,        'languages',        1000, 'Programming languages');
-    cap(frameworks,       'frameworks',       1000, 'Frameworks');
-    cap(databases,        'databases',        500,  'Databases');
-    cap(platform,         'platform',         200,  'Platform');
+    text(role,         'role',         300,  'Role in project');
+    text(organization, 'organization', 500,  'Organization');
+    text(clientName,   'clientName',   500,  'Client');
+    text(industry,     'industry',     300,  'Industry');
+    tokens(technologies, 'technologies', 50, 'Technologies used');
+    tokens(tools,        'tools',        50, 'Tools used');
+    tokens(languages,    'languages',    30, 'Programming languages');
+    tokens(frameworks,   'frameworks',   30, 'Frameworks');
+    tokens(databases,    'databases',    20, 'Databases');
+    tokens(platform,     'platform',     10, 'Platform');
     cap(description,      'description',      5000, 'Description');
     cap(objectives,       'objectives',       3000, 'Objectives');
     cap(responsibilities, 'responsibilities', 5000, 'Responsibilities');

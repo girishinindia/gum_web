@@ -14,7 +14,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { FieldError } from '@/components/ui/FieldError';
 import {
   validateMaxLen, validateRequired, validateDate, validateDateRange,
-  validateGrade, validateFile,
+  validateGrade, validateFile, validateText,
 } from '@/lib/auth/validation';
 import { cn } from '@/lib/cn';
 
@@ -284,13 +284,16 @@ function EducationForm({
     if (!r1.ok) errs.educationLevelId = r1.msg;
     const r2 = validateRequired(institutionName, 'Institution name');
     if (!r2.ok) errs.institutionName = r2.msg;
-    const r3 = validateMaxLen(institutionName, 500, 'Institution name');
-    if (!r3.ok) errs.institutionName = r3.msg;
-    const r4 = validateMaxLen(board, 500, 'Board / University');
+    // Phase 43.9 — `validateText` rejects pure-special-char garbage
+    // ("@#$%^", "$%^&*"), enforces min length, and caps max length.
+    // Order matters: required first, then content/shape.
+    const r3 = validateText(institutionName, { label: 'Institution name', minLen: 2, maxLen: 500 });
+    if (!r3.ok && !errs.institutionName) errs.institutionName = r3.msg;
+    const r4 = validateText(board, { label: 'Board / University', minLen: 2, maxLen: 500 });
     if (!r4.ok) errs.board = r4.msg;
-    const r5 = validateMaxLen(fieldOfStudy, 500, 'Field of study');
+    const r5 = validateText(fieldOfStudy, { label: 'Field of study', minLen: 2, maxLen: 500 });
     if (!r5.ok) errs.fieldOfStudy = r5.msg;
-    const r6 = validateMaxLen(specialization, 500, 'Specialization');
+    const r6 = validateText(specialization, { label: 'Specialization', minLen: 2, maxLen: 500 });
     if (!r6.ok) errs.specialization = r6.msg;
     const gradeR = validateGrade(grade, gradeType || null);
     if (!gradeR.ok) errs.grade = gradeR.msg;

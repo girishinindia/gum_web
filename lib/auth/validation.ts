@@ -117,6 +117,90 @@ export function validateMaxLen(value: string | null | undefined, max: number, la
   return { ok: true };
 }
 
+/**
+ * Phase 43.9 — free-text validator for human-typed fields like
+ * institution / board / role / department / industry / tech-stack
+ * tokens. Catches the common "garbage" cases — pure special characters
+ * (`@#$%^`), strings with no letters or digits at all, and stuff that's
+ * too short to be a real word.
+ *
+ * Empty values pass (combine with `validateRequired` to enforce
+ * presence). Default options match the most common usage:
+ *
+ *   • `minLen`            — at least 2 chars (after trim)
+ *   • `requireAlphanumeric` — must contain at least one letter or digit
+ *   • `allowSpecials`     — punctuation the field is allowed to include
+ *     besides letters/digits/whitespace. Default `.,&'/()-+#@` covers
+ *     org names ("Tata & Sons"), addresses, version tags ("Next.js 15+"),
+ *     etc. Pass a more restrictive string for stricter fields.
+ *
+ * The check is intentionally lenient — we don't want to false-reject
+ * non-English names or unusual but legitimate strings. The goal is
+ * just to catch obvious junk input.
+ */
+export function validateText(
+  value: string | null | undefined,
+  {
+    label = 'This field',
+    minLen = 2,
+    maxLen = 500,
+    requireAlphanumeric = true,
+    allowSpecials = ".,&'/()\\-+#@",
+  }: {
+    label?: string;
+    minLen?: number;
+    maxLen?: number;
+    requireAlphanumeric?: boolean;
+    allowSpecials?: string;
+  } = {},
+): ValidationResult {
+  const v = (value ?? '').trim();
+  if (!v) return { ok: true };
+  if (v.length < minLen) return { ok: false, msg: `${label} must be at least ${minLen} characters.` };
+  if (v.length > maxLen) return { ok: false, msg: `${label} must be at most ${maxLen} characters.` };
+  if (requireAlphanumeric && !/[\p{L}\p{N}]/u.test(v)) {
+    return { ok: false, msg: `${label} must contain letters or digits — special characters alone aren't enough.` };
+  }
+  // Build an "allowed-chars" regex: letters (any script), digits, spaces,
+  // and the explicit specials. Anything outside that set fails.
+  // We escape the specials so regex meta-chars don't blow up.
+  const escaped = allowSpecials.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const allowed = new RegExp(`^[\\p{L}\\p{N}\\s${escaped}]+$`, 'u');
+  if (!allowed.test(v)) {
+    return { ok: false, msg: `${label} contains characters that aren't allowed.` };
+  }
+  return { ok: true };
+}
+
+/**
+ * Phase 43.9 — comma/newline-separated tech-stack tokens. Each token
+ * goes through `validateText` with a tight charset that still allows
+ * the punctuation tech names actually use (e.g. "C++", "C#", ".NET",
+ * "Node.js", "React-Native"). Empty passes.
+ */
+export function validateTokenList(
+  value: string | null | undefined,
+  { label = 'List', maxItems = 30, maxItemLen = 60 }: { label?: string; maxItems?: number; maxItemLen?: number } = {},
+): ValidationResult {
+  const v = (value ?? '').trim();
+  if (!v) return { ok: true };
+  const tokens = v.split(/[,\n]/).map(t => t.trim()).filter(Boolean);
+  if (tokens.length === 0) return { ok: true };
+  if (tokens.length > maxItems) return { ok: false, msg: `${label} can have at most ${maxItems} items.` };
+  for (const t of tokens) {
+    const r = validateText(t, {
+      label,
+      minLen: 1,
+      maxLen: maxItemLen,
+      requireAlphanumeric: true,
+      // Tech tokens use a different punctuation set than prose.
+      allowSpecials: '.+#-_/',
+    });
+    if (!r.ok) return { ok: false, msg: `${label}: "${t}" — ${r.msg!.replace(`${label} `, '')}` };
+  }
+  return { ok: true };
+}
+
 /** Integer or numeric range. Empty / null pass (use `validateRequired` to require). */
 export function validateNumberRange(
   value: number | string | null | undefined,

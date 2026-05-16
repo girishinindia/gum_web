@@ -12,6 +12,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { FieldError } from '@/components/ui/FieldError';
 import {
   validateRequired, validateMaxLen, validateDate, validateDateRange,
+  validateText, validateTokenList,
 } from '@/lib/auth/validation';
 import { cn } from '@/lib/cn';
 
@@ -234,23 +235,36 @@ function ExperienceForm({
     const errs: Record<string, string | undefined> = {};
     const c1 = validateRequired(companyName, 'Company');
     if (!c1.ok) errs.companyName = c1.msg;
-    const c2 = validateMaxLen(companyName, 500, 'Company');
-    if (!c2.ok) errs.companyName = c2.msg;
+    const c2 = validateText(companyName, { label: 'Company', minLen: 2, maxLen: 500 });
+    if (!c2.ok && !errs.companyName) errs.companyName = c2.msg;
     const t1 = validateRequired(jobTitle, 'Job title');
     if (!t1.ok) errs.jobTitle = t1.msg;
-    const t2 = validateMaxLen(jobTitle, 500, 'Job title');
-    if (!t2.ok) errs.jobTitle = t2.msg;
-    const d1 = validateMaxLen(department, 300, 'Department');
+    const t2 = validateText(jobTitle, { label: 'Job title', minLen: 2, maxLen: 500 });
+    if (!t2.ok && !errs.jobTitle) errs.jobTitle = t2.msg;
+    // Phase 43.9 — department / location / salary are free-text but
+    // must contain real words. `validateText` rejects "$%^&*" garbage.
+    const d1 = validateText(department, { label: 'Department', minLen: 2, maxLen: 300 });
     if (!d1.ok) errs.department = d1.msg;
-    const l1 = validateMaxLen(location, 500, 'Location');
+    const l1 = validateText(location, { label: 'Location', minLen: 2, maxLen: 500 });
     if (!l1.ok) errs.location = l1.msg;
+    // Description + achievements are prose — keep them generous: allow
+    // newlines and a wider punctuation set via validateText defaults.
     const desc = validateMaxLen(description, 5000, 'Description');
     if (!desc.ok) errs.description = desc.msg;
     const ach = validateMaxLen(achievements, 5000, 'Key achievements');
     if (!ach.ok) errs.achievements = ach.msg;
-    const sk = validateMaxLen(skillsUsed, 2000, 'Skills used');
+    // Tech tokens: "html5, css3, …" — comma-separated, each must look
+    // like a real tech name.
+    const sk = validateTokenList(skillsUsed, { label: 'Skills used', maxItems: 30, maxItemLen: 60 });
     if (!sk.ok) errs.skillsUsed = sk.msg;
-    const sal = validateMaxLen(salaryRange, 100, 'Salary range');
+    // Salary range: allow digits, currency symbols, hyphens, slashes,
+    // and common words like "lakh", "p.a." → custom specials.
+    const sal = validateText(salaryRange, {
+      label: 'Salary range',
+      minLen: 2,
+      maxLen: 100,
+      allowSpecials: '.,-+/()₹$€£¥ ',
+    });
     if (!sal.ok) errs.salaryRange = sal.msg;
     const sR = validateRequired(startDate, 'Start date');
     if (!sR.ok) errs.startDate = sR.msg;
