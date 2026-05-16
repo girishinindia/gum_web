@@ -36,6 +36,7 @@ import { ExperienceList }     from '@/components/profile/ExperienceList';
 import { ProjectsList }       from '@/components/profile/ProjectsList';
 import { InstructorBioCard }  from '@/components/profile/InstructorBioCard';
 import { KycBankCard }        from '@/components/profile/KycBankCard';
+import { ImageEditorModal }   from '@/components/profile/ImageEditorModal';
 import { cn } from '@/lib/cn';
 
 /**
@@ -569,27 +570,36 @@ function IdentityStrip({
   const [busy, setBusy] = useState(false);
   const [err,  setErr]  = useState<string | null>(null);
   const [previewUrl, setPreview] = useState<string | null>(null);
+  // Phase 39.1 — picked file goes to the editor modal first, not direct
+  // upload. The user crops / filters / resizes; the edited File is what
+  // we actually upload.
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   useEffect(() => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
   }, [previewUrl]);
 
-  async function onPicked(file: File | null) {
+  function onPicked(file: File | null) {
     if (!file) return;
     if (!/^image\/(jpe?g|png|gif|webp|svg\+xml)$/i.test(file.type)) {
       setErr('Please pick an image (JPG, PNG, GIF, WebP, or SVG).');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setErr('Image is too large — please pick one under 5 MB.');
+    if (file.size > 10 * 1024 * 1024) {
+      setErr('Image is too large — please pick one under 10 MB.');
       return;
     }
     setErr(null);
-    const blob = URL.createObjectURL(file);
+    setPendingFile(file);
+  }
+
+  async function onEditComplete(editedFile: File) {
+    setPendingFile(null);
+    const blob = URL.createObjectURL(editedFile);
     setPreview(blob);
     setBusy(true);
     try {
-      const next = await updateMyProfileWithImages({}, file, null);
+      const next = await updateMyProfileWithImages({}, editedFile, null);
       onAvatarUpdated(next);
       setTimeout(() => { setPreview(null); URL.revokeObjectURL(blob); }, 800);
     } catch (e) {
@@ -636,6 +646,16 @@ function IdentityStrip({
           onChange={(e) => onPicked(e.target.files?.[0] ?? null)}
         />
       </label>
+
+      {pendingFile && (
+        <ImageEditorModal
+          file={pendingFile}
+          onClose={() => setPendingFile(null)}
+          onEditComplete={onEditComplete}
+          aspectRatio={1}
+          title="Edit profile photo"
+        />
+      )}
     </div>
   );
 }

@@ -39,6 +39,7 @@ import { ProjectsList }       from '@/components/profile/ProjectsList';
 import { InstructorBioCard }  from '@/components/profile/InstructorBioCard';
 import { KycBankCard }        from '@/components/profile/KycBankCard';
 import { FieldError }         from '@/components/ui/FieldError';
+import { ImageEditorModal }   from '@/components/profile/ImageEditorModal';
 import { validateMaxLen, validateAge, validateRequired } from '@/lib/auth/validation';
 import { cn } from '@/lib/cn';
 
@@ -442,31 +443,42 @@ function IdentityCard({
   avatarUrl: string | null; headline: string;
   onAvatarUpdated: (next: UserProfile) => void;
 }) {
-  // Avatar upload state. Local preview is shown the instant the user
-  // picks a file (via `URL.createObjectURL`), so they get feedback even
-  // while the multipart PUT is in flight. After save we drop the blob
-  // URL — `avatarUrl` from props picks up the CDN URL the server stored.
+  // Avatar upload state. Flow:
+  //   pick file → open editor (crop / filters / resize) → user clicks Save
+  //   → edited File goes to upload. Local preview is shown the instant the
+  //   user confirms in the editor, so they get feedback even while the
+  //   multipart PUT is in flight. After save we drop the blob URL —
+  //   `avatarUrl` from props picks up the CDN URL the server stored.
   const [busy, setBusy]       = useState(false);
   const [err,  setErr]        = useState<string | null>(null);
   const [previewUrl, setPreview] = useState<string | null>(null);
+  // `pendingFile` drives the editor modal — non-null means the editor is open.
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   // Cleanup any leftover blob URL on unmount or when preview clears, so
   // we don't leak memory across re-renders.
   useEffect(() => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
   }, [previewUrl]);
 
-  async function onPicked(file: File | null) {
+  function onPicked(file: File | null) {
     if (!file) return;
     if (!/^image\/(jpe?g|png|gif|webp|svg\+xml)$/i.test(file.type)) {
       setErr('Please pick an image (JPG, PNG, GIF, WebP, or SVG).');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setErr('Image is too large — please pick one under 5 MB.');
+    if (file.size > 10 * 1024 * 1024) {
+      // Tolerate larger originals — the editor will downscale on export.
+      setErr('Image is too large — please pick one under 10 MB.');
       return;
     }
     setErr(null);
-    const blob = URL.createObjectURL(file);
+    // Defer to the editor modal — actual upload happens in `onEditComplete`.
+    setPendingFile(file);
+  }
+
+  async function onEditComplete(editedFile: File) {
+    setPendingFile(null);
+    const blob = URL.createObjectURL(editedFile);
     setPreview(blob);
     setBusy(true);
     try {
@@ -474,7 +486,7 @@ function IdentityCard({
       // missing JSON fields). The route is wrapped with the multipart
       // coerceNullStrings middleware so we don't need to worry about
       // accidentally clearing other columns.
-      const next = await updateMyProfileWithImages({}, file, null);
+      const next = await updateMyProfileWithImages({}, editedFile, null);
       onAvatarUpdated(next);
       // Hold the preview for a beat so there's no flicker — the new
       // `avatarUrl` prop will take over on the next render.
@@ -531,6 +543,19 @@ function IdentityCard({
           <div className="mt-2 text-[12px] text-rose-600">{err}</div>
         )}
       </div>
+
+      {/* Editor modal — only renders when the user has just picked a
+          file. Filerobot does its own crop / filters / resize UI; on
+          Save we get back the edited File and start the upload. */}
+      {pendingFile && (
+        <ImageEditorModal
+          file={pendingFile}
+          onClose={() => setPendingFile(null)}
+          onEditComplete={onEditComplete}
+          aspectRatio={1}
+          title="Edit profile photo"
+        />
+      )}
     </div>
   );
 }

@@ -422,7 +422,13 @@ function ExperienceForm({
           </Field>
         </Grid>
         <label className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-slate-700 cursor-pointer">
-          <input type="checkbox" checked={isCurrent} onChange={(e) => { setIsCurrent(e.target.checked); setFieldErrors((p) => ({ ...p, endDate: undefined })); }} className="rounded accent-brand-500" />
+          <input type="checkbox" checked={isCurrent} onChange={(e) => {
+            const next = e.target.checked;
+            setIsCurrent(next);
+            // Phase 38.1 — clear endDate state on toggle ON.
+            if (next) setEndDate('');
+            setFieldErrors((p) => ({ ...p, endDate: undefined }));
+          }} className="rounded accent-brand-500" />
           I currently work here
         </label>
       </Group>

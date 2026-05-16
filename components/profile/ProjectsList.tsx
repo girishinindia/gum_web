@@ -483,7 +483,15 @@ function ProjectForm({
           </Field>
         </Grid>
         <label className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-slate-700 cursor-pointer">
-          <input type="checkbox" checked={isOngoing} onChange={(e) => { setIsOngoing(e.target.checked); setFieldErrors((p) => ({ ...p, endDate: undefined })); }} className="rounded accent-brand-500" />
+          <input type="checkbox" checked={isOngoing} onChange={(e) => {
+            const next = e.target.checked;
+            setIsOngoing(next);
+            // Phase 38.1 — clear endDate state on toggle ON so a later
+            // submit cannot ship a stale value (server + DB enforce
+            // the invariant too).
+            if (next) setEndDate('');
+            setFieldErrors((p) => ({ ...p, endDate: undefined }));
+          }} className="rounded accent-brand-500" />
           Still in progress
         </label>
       </Group>
