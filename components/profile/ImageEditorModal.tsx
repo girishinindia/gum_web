@@ -1,77 +1,74 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, RotateCw, Loader2 } from 'lucide-react';
 
 /**
- * Profile-image editor modal.
+ * Profile-image editor modal — Phase 43.10 rewrite.
  *
- * Wraps `react-filerobot-image-editor` (Scaleflex) — a full Photoshop-lite
- * editor with native UI for:
- *   • Crop  (with locked 1:1 aspect ratio for avatars)
- *   • Rotate / flip horizontal / flip vertical
- *   • Resize the final output
- *   • Finetune  (brightness, contrast, hue, saturation, value, warmth, blur)
- *   • Filters   (Instagram-style presets — Vintage, Lomo, Mono, etc.)
+ * Was: `react-filerobot-image-editor` (Scaleflex). Beautiful UI but the
+ * library ships a prebuilt Konva + react-reconciler bundle that holds
+ * its own snapshot of React's `__SECRET_INTERNALS_…`. Next.js's webpack
+ * tree-shakes / hoists a fresh React copy and the editor's internal
+ * lookup goes stale, crashing with
+ *   "Cannot read properties of undefined (reading 'ReactCurrentOwner')"
+ * Tried transpilePackages, version pinning across the whole tree, and a
+ * `canvas: false` webpack alias — none of them stuck.
  *
- * Why dynamic import: the editor pulls in Konva + canvas helpers (~250 KB
- * gzipped). Loading it lazily means it doesn't bloat the initial profile
- * page bundle — it only downloads when the user actually clicks
- * "change photo". The Suspense fallback shows a small spinner.
+ * Now: `react-easy-crop`. Single-file canvas component, no Konva, no
+ * reconciler. We do crop + zoom + rotation here, and resize the output
+ * via a vanilla `<canvas>` so the persisted avatar is bounded to
+ * 1024×1024 JPEG @ 90% quality (same target as the old editor + the
+ * Flutter side's image_cropper pipeline).
  *
- * Why this is a separate component: both `IdentityCard` (desktop) and
- * `IdentityStrip` (mobile) need the same flow, and `ProfilePage` for
- * future use cases (cover image, document scan crop, etc).
- *
- * Lifecycle:
+ * External contract is unchanged:
  *   parent → opens modal with `file`
- *   user   → edits + clicks "Save" in the editor toolbar
- *   editor → onSave callback fires with `{ imageBase64, fullName, mimeType }`
- *   modal  → converts back to File and calls `onEditComplete(editedFile)`
- *   parent → closes modal + uploads the file
+ *   user   → drags / zooms / rotates → clicks "Save"
+ *   modal  → calls `onEditComplete(editedFile)` with a fresh File
+ *   parent → uploads via the existing `updateMyProfileWithImages` path
  *
  * If the user closes without saving, `onClose()` fires with no file.
  */
 
-// `react-filerobot-image-editor` uses `window` and `document` extensively,
-// so it cannot be SSR'd. `dynamic` with `ssr: false` keeps it client-only.
-const FilerobotImageEditor = dynamic(
-  () => import('react-filerobot-image-editor').then((m) => m.default),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full text-slate-500">
-        <Loader2 className="h-5 w-5 animate-spin mr-2" />
-        Loading editor…
-      </div>
-    ),
-  },
-);
-
-// Note: the package exports `TABS` and `TOOLS` as runtime objects too, but
-// we type-only import to avoid pulling them into the initial bundle.
-type SavedImageData = {
-  imageBase64?: string;
-  fullName?: string;
-  mimeType?: string;
-  extension?: string;
-};
+// Dynamic import keeps the cropper out of the initial profile-page
+// bundle (it pulls a small amount of touch-gesture / drag code).
+// `ssr: false` because react-easy-crop reads `window` for pinch zoom.
+const Cropper = dynamic(() => import('react-easy-crop'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full text-slate-500 bg-slate-100">
+      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+      Loading editor…
+    </div>
+  ),
+});
 
 export interface ImageEditorModalProps {
   /** Source file the user just picked. Required — modal can't open without one. */
   file: File | null;
-  /** Called when the user saves the edited image. Always JPEG with locked square aspect. */
+  /** Called when the user saves the edited image. Always JPEG. */
   onEditComplete: (editedFile: File) => void;
   /** Close without saving. */
   onClose: () => void;
   /**
    * Aspect ratio to lock the crop to. Default `1` (square) is right for
-   * avatars. Pass `null` to leave free-form, or another ratio for covers.
+   * avatars. Pass another ratio for covers (e.g. 16/9). Cannot be null
+   * here — react-easy-crop requires a number.
    */
-  aspectRatio?: number | null;
+  aspectRatio?: number;
   /** Optional title shown in the modal header. */
   title?: string;
+  /** Max output size in pixels (longest edge). Default 1024 — matches
+   *  the server-side avatar resize target. */
+  outputSize?: number;
+}
+
+interface CroppedArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export function ImageEditorModal({
@@ -80,15 +77,27 @@ export function ImageEditorModal({
   onClose,
   aspectRatio = 1,
   title = 'Edit photo',
+  outputSize = 1024,
 }: ImageEditorModalProps) {
   const [src, setSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState<number>(1);
+  const [rotation, setRotation] = useState<number>(0);
+  const [croppedArea, setCroppedArea] = useState<CroppedArea | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  // Convert the picked File → ObjectURL the editor can consume. Revoked on
-  // unmount so we don't leak memory across opens.
+  // Convert the picked File → ObjectURL the cropper consumes. Revoked
+  // on unmount so we don't leak across opens.
   useEffect(() => {
     if (!file) { setSrc(null); return; }
     const url = URL.createObjectURL(file);
     setSrc(url);
+    // Reset transforms whenever the source changes — each open starts
+    // from "no crop / no zoom / no rotation".
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setRotation(0);
+    setCroppedArea(null);
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
@@ -101,30 +110,27 @@ export function ImageEditorModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  if (!file || !src) return null;
+  // react-easy-crop fires `onCropComplete` with both the pixel area and
+  // the percentage area; we only need the pixel one for the canvas draw.
+  const onCropComplete = useCallback((_pct: CroppedArea, pixels: CroppedArea) => {
+    setCroppedArea(pixels);
+  }, []);
 
-  /**
-   * Filerobot's save callback. The library returns a base64 dataURL; we
-   * convert it back to a real File so the existing
-   * `updateMyProfileWithImages` upload path keeps working unchanged.
-   */
-  function handleSave(saved: SavedImageData) {
-    if (!saved.imageBase64) { onClose(); return; }
-    const [header, b64] = saved.imageBase64.split(',');
-    const mimeMatch = /:(.*?);/.exec(header || '');
-    const mime = saved.mimeType ?? mimeMatch?.[1] ?? 'image/jpeg';
-    const binary = atob(b64 || '');
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-
-    // Use the original picked name's stem so the server log shows a
-    // meaningful filename; force .jpg extension since we always export
-    // JPEG (smaller file, no transparency needed for avatars).
-    const baseName = (saved.fullName ?? file!.name).replace(/\.[^.]+$/, '');
-    const ext = saved.extension ?? 'jpg';
-    const editedFile = new File([bytes], `${baseName}.${ext}`, { type: mime });
-    onEditComplete(editedFile);
+  async function handleSave() {
+    if (!file || !src || !croppedArea) { onClose(); return; }
+    setSaving(true);
+    try {
+      const blob = await renderCroppedImage(src, croppedArea, rotation, outputSize);
+      if (!blob) { onClose(); return; }
+      const baseName = file.name.replace(/\.[^.]+$/, '');
+      const edited = new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
+      onEditComplete(edited);
+    } finally {
+      setSaving(false);
+    }
   }
+
+  if (!file || !src) return null;
 
   return (
     <div
@@ -133,10 +139,8 @@ export function ImageEditorModal({
       aria-modal="true"
       aria-label={title}
     >
-      <div className="relative w-full h-full max-w-6xl max-h-[92vh] bg-white rounded-md shadow-cardHover overflow-hidden flex flex-col">
-        {/* Header — title + close. The editor's own toolbar has Save/Cancel
-            inside, so we only need the close affordance for users who
-            opened the modal by mistake. */}
+      <div className="relative w-full max-w-3xl bg-white rounded-xl shadow-cardHover overflow-hidden flex flex-col" style={{ maxHeight: '92vh' }}>
+        {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200">
           <h2 className="heading text-base text-slate-900 flex-1 truncate">{title}</h2>
           <button
@@ -149,49 +153,158 @@ export function ImageEditorModal({
           </button>
         </div>
 
-        {/* Editor body — flex-1 so it fills the modal height. The library
-            renders its full toolbar (Finetune, Filters, Resize, Adjust,
-            Watermark, Annotate) and its own Save button along the top. */}
-        <div className="flex-1 min-h-0">
-          <FilerobotImageEditor
-            source={src}
-            onSave={handleSave as never}
-            onClose={onClose}
-            // Required by FilerobotImageEditorConfig type. `previewPixelRatio`
-            // controls the on-screen render resolution; `savingPixelRatio`
-            // controls the exported file resolution. We use the device pixel
-            // ratio for preview (sharp on Retina) and cap saving at 2 to keep
-            // avatar files small.
-            previewPixelRatio={typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1}
-            savingPixelRatio={2}
-            // Keep the avatar workflow on rails — 1:1 crop is forced by
-            // default. Caller can override via `aspectRatio` (e.g. set to
-            // 16/9 for cover images, or null for free-form).
-            Crop={
-              aspectRatio == null
-                ? undefined
-                : { ratio: aspectRatio, autoResize: false, presetsItems: [], presetsFolders: [] }
-            }
-            // Tabs in the toolbar — order matters; first one is auto-selected.
-            // We list Finetune first so the user lands on brightness/contrast
-            // sliders, the most common "fix this dark photo" use case.
-            tabsIds={['Finetune', 'Filters', 'Adjust', 'Resize', 'Watermark', 'Annotate'] as never}
-            defaultTabId={'Finetune' as never}
-            defaultToolId={'Brightness' as never}
-            // Save settings — JPEG @ 90% quality is the sweet spot for
-            // avatars (visibly identical to PNG, ~5× smaller). Filename is
-            // overridden in `handleSave` anyway.
-            defaultSavedImageType="jpeg"
-            defaultSavedImageQuality={0.9}
-            forceToPngInEllipticalCrop={false}
-            // UI polish — slightly tighter density inside the modal and
-            // hide the "Open from URL" button (we always start from a
-            // user-picked File).
-            useBackendTranslations={false}
-            avoidChangesNotSavedAlertOnLeave={true}
+        {/* Cropper canvas — fills available height */}
+        <div className="relative bg-slate-900" style={{ height: '60vh' }}>
+          <Cropper
+            image={src}
+            crop={crop}
+            zoom={zoom}
+            rotation={rotation}
+            aspect={aspectRatio}
+            cropShape="round"
+            showGrid={false}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onRotationChange={setRotation}
+            onCropComplete={onCropComplete}
           />
+        </div>
+
+        {/* Controls */}
+        <div className="px-4 py-3 border-t border-slate-200 flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-medium text-slate-600 w-14 shrink-0">Zoom</label>
+            <input
+              type="range"
+              min={1}
+              max={4}
+              step={0.01}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="flex-1 accent-sky-600"
+            />
+            <span className="text-xs text-slate-500 w-10 text-right">{zoom.toFixed(1)}x</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-medium text-slate-600 w-14 shrink-0">Rotate</label>
+            <input
+              type="range"
+              min={0}
+              max={360}
+              step={1}
+              value={rotation}
+              onChange={(e) => setRotation(Number(e.target.value))}
+              className="flex-1 accent-sky-600"
+            />
+            <button
+              type="button"
+              onClick={() => setRotation((r) => (r + 90) % 360)}
+              className="text-xs font-medium text-slate-700 hover:text-sky-700 inline-flex items-center gap-1"
+              aria-label="Rotate 90°"
+            >
+              <RotateCw className="h-3.5 w-3.5" /> 90°
+            </button>
+          </div>
+
+          {/* Action bar */}
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-md"
+              disabled={saving}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || !croppedArea}
+              className="px-4 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-md inline-flex items-center gap-2 disabled:opacity-60"
+            >
+              {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Canvas rendering — produce the cropped + rotated + resized JPEG.
+//
+// Algorithm:
+//   1. Load the source image as <Image>.
+//   2. Compute the bounding box of the rotated image (so rotation
+//      doesn't clip when the image isn't a multiple of 90°).
+//   3. Draw the rotated image onto a buffer canvas.
+//   4. Read out the pixel region the user cropped (in image-space).
+//   5. Resample to a max edge of `outputSize` while preserving aspect.
+//   6. Export as JPEG @ 0.9 — same quality target as the old editor.
+// ════════════════════════════════════════════════════════════════════
+async function renderCroppedImage(
+  src: string,
+  area: CroppedArea,
+  rotationDeg: number,
+  maxEdge: number,
+): Promise<Blob | null> {
+  const img = await loadImage(src);
+  const radians = (rotationDeg * Math.PI) / 180;
+
+  // Bounding box of the rotated image
+  const { width: rotW, height: rotH } = rotatedSize(img.width, img.height, radians);
+
+  // Buffer canvas at rotated size, draw image rotated about its center.
+  const buf = document.createElement('canvas');
+  buf.width = rotW;
+  buf.height = rotH;
+  const bctx = buf.getContext('2d');
+  if (!bctx) return null;
+  bctx.translate(rotW / 2, rotH / 2);
+  bctx.rotate(radians);
+  bctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+  // Crop region from the buffer.
+  const crop = document.createElement('canvas');
+  crop.width = area.width;
+  crop.height = area.height;
+  const cctx = crop.getContext('2d');
+  if (!cctx) return null;
+  cctx.drawImage(buf, area.x, area.y, area.width, area.height, 0, 0, area.width, area.height);
+
+  // Resize to maxEdge (longest side). Keeps avatars ≤ 1024×1024.
+  const scale = Math.min(1, maxEdge / Math.max(area.width, area.height));
+  const outW = Math.round(area.width * scale);
+  const outH = Math.round(area.height * scale);
+
+  const out = document.createElement('canvas');
+  out.width = outW;
+  out.height = outH;
+  const octx = out.getContext('2d');
+  if (!octx) return null;
+  octx.imageSmoothingEnabled = true;
+  octx.imageSmoothingQuality = 'high';
+  octx.drawImage(crop, 0, 0, outW, outH);
+
+  return new Promise((resolve) => {
+    out.toBlob((b) => resolve(b), 'image/jpeg', 0.9);
+  });
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = (e) => reject(e);
+    img.src = src;
+  });
+}
+
+function rotatedSize(w: number, h: number, rad: number) {
+  const sin = Math.abs(Math.sin(rad));
+  const cos = Math.abs(Math.cos(rad));
+  return { width: w * cos + h * sin, height: w * sin + h * cos };
 }

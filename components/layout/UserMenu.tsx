@@ -70,8 +70,15 @@ export function UserMenu({ className }: { className?: string }) {
   if (!user) return null;
 
   const fullName    = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
-  const displayName = fullName || user.email?.split('@')[0] || 'User';
+  const displayName = user.display_name || fullName || user.email?.split('@')[0] || 'User';
   const initial     = displayName.charAt(0).toUpperCase();
+  // Phase 43.11 — when the user uploads a new profile photo from the
+  // /profile editor, `IdentityCard.onAvatarUpdated` mirrors the new URL
+  // into AuthProvider via `updateUser({ profile_image_url })`. We pick
+  // it up here so the header pill (and the dropdown's identity header)
+  // re-render with the actual photo instead of the initial-letter
+  // placeholder.
+  const avatarUrl = user.profile_image_url ?? null;
 
   // Role gates — `max_role_level` is populated by `/users/me` (see
   // AuthProvider.enrichWithMe). Roles tier:
@@ -106,9 +113,27 @@ export function UserMenu({ className }: { className?: string }) {
           open && 'border-brand-300 shadow-md',
         )}
       >
-        <span className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500 to-accent text-white text-sm font-bold flex items-center justify-center shadow-btn">
-          {initial}
-        </span>
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- avatar
+          // URLs may be CDN/Bunny.net signed paths that we don't want to
+          // proxy through next/image's loader.
+          <img
+            src={avatarUrl}
+            alt={displayName}
+            className="h-8 w-8 rounded-full object-cover shadow-btn"
+            onError={(e) => {
+              // Fall back to the initial-letter pill if the image fails
+              // (e.g. CDN cold cache, expired signature). We hide the
+              // broken <img> and let the user's next reload swap it
+              // back in.
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        ) : (
+          <span className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500 to-accent text-white text-sm font-bold flex items-center justify-center shadow-btn">
+            {initial}
+          </span>
+        )}
         <span className="hidden sm:inline text-sm font-semibold text-slate-800 max-w-[120px] truncate">
           {displayName}
         </span>
