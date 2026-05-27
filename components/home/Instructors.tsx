@@ -5,8 +5,51 @@ import { Eyebrow } from '@/components/ui/Eyebrow';
 import { ButtonLink } from '@/components/ui/Button';
 import { FEATURED_INSTRUCTORS } from '@/lib/homeContent';
 import { cn } from '@/lib/cn';
+import type { InstructorProfile } from '@/lib/api';
 
-export function Instructors() {
+const ACCENT_GRADIENTS = [
+  'from-brand-500 to-brand-700',
+  'from-rose-500 to-amber-500',
+  'from-emerald-500 to-brand-500',
+  'from-violet-500 to-brand-500',
+  'from-amber-500 to-rose-500',
+  'from-brand-600 to-accent',
+];
+
+function initials(name: string): string {
+  return name.split(/\s+/).map(w => w[0]?.toUpperCase() ?? '').join('').slice(0, 2);
+}
+
+function formatStudents(n: number): string {
+  if (n >= 1000) return `${Math.round(n / 1000)}k+`;
+  return `${n}+`;
+}
+
+function toBadge(p: InstructorProfile): string {
+  if (p.is_verified) return 'Top Rated';
+  if (p.is_featured) return 'Bestseller';
+  return 'Mentor';
+}
+
+function toCard(p: InstructorProfile, idx: number) {
+  const name = p.users?.full_name ?? 'Instructor';
+  return {
+    id:       p.user_id ?? p.id,
+    name,
+    title:    p.instructor_type ?? '',
+    courses:  p.course_count ?? 0,
+    students: formatStudents(p.student_count ?? 0),
+    rating:   p.rating_average ?? 0,
+    badge:    toBadge(p),
+    initial:  initials(name),
+    accent:   ACCENT_GRADIENTS[idx % ACCENT_GRADIENTS.length],
+    avatarUrl: p.users?.avatar_url ?? null,
+  };
+}
+
+interface Props { data?: InstructorProfile[] | null }
+
+export function Instructors({ data }: Props) {
   return (
     <section id="instructors" className="py-14 sm:py-16">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
@@ -28,18 +71,23 @@ export function Instructors() {
         </Reveal>
 
         <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {FEATURED_INSTRUCTORS.map((p, i) => (
+          {(data && data.length > 0 ? data.map((p, i) => toCard(p, i)) : FEATURED_INSTRUCTORS.map(p => ({ ...p, avatarUrl: null as string | null }))).map((p, i) => (
             <Reveal key={p.id} delay={(i % 6) * 0.05}>
               <Link
                 href={`/instructors/${p.id}`}
                 className="group block rounded-md bg-white border border-slate-200 shadow-card p-5 text-center hover:-translate-y-1 hover:shadow-cardHover hover:border-brand-200 transition-all"
               >
-                <div className={cn(
-                  'mx-auto h-20 w-20 rounded-full bg-gradient-to-br text-white heading text-2xl flex items-center justify-center shadow-btn',
-                  p.accent,
-                )}>
-                  {p.initial}
-                </div>
+                {p.avatarUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={p.avatarUrl} alt={p.name} className="mx-auto h-20 w-20 rounded-full object-cover shadow-btn" />
+                ) : (
+                  <div className={cn(
+                    'mx-auto h-20 w-20 rounded-full bg-gradient-to-br text-white heading text-2xl flex items-center justify-center shadow-btn',
+                    p.accent,
+                  )}>
+                    {p.initial}
+                  </div>
+                )}
                 <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-brand-50 text-brand-700 px-2 py-0.5 text-[10px] font-bold">
                   <BadgeCheck className="h-3 w-3" /> {p.badge}
                 </div>

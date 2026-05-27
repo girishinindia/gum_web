@@ -5,10 +5,39 @@ import { Eyebrow } from '@/components/ui/Eyebrow';
 import { ButtonLink } from '@/components/ui/Button';
 import { BUNDLES } from '@/lib/homeContent';
 import { cn } from '@/lib/cn';
+import type { Bundle } from '@/lib/api';
 
 function inr(n: number) { return `₹${n.toLocaleString('en-IN')}`; }
 
-export function Bundles() {
+const COVER_GRADIENTS = [
+  'from-brand-700 via-brand-600 to-brand-500',
+  'from-emerald-700 via-emerald-600 to-brand-500',
+  'from-violet-700 via-rose-600 to-amber-500',
+];
+
+function toCard(b: Bundle, idx: number) {
+  const price = b.price ?? 0;
+  const originalPrice = b.original_price ?? price;
+  const savePercent = b.discount_percent ?? (originalPrice > 0 ? Math.round((1 - price / originalPrice) * 100) : 0);
+  return {
+    id:           b.id,
+    slug:         b.slug,
+    name:         b.name,
+    desc:         b.description ?? '',
+    courseCount:   b.course_count ?? 0,
+    students:     b.student_count ?? 0,
+    rating:       b.rating_average ?? 0,
+    price,
+    originalPrice,
+    savePercent,
+    cover:        b.thumbnail_url || COVER_GRADIENTS[idx % COVER_GRADIENTS.length],
+    hasThumbnail: !!b.thumbnail_url,
+  };
+}
+
+interface Props { data?: Bundle[] | null }
+
+export function Bundles({ data }: Props) {
   return (
     <section id="bundles" className="py-14 sm:py-16">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
@@ -30,7 +59,7 @@ export function Bundles() {
         </Reveal>
 
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {BUNDLES.map((b, i) => (
+          {(data && data.length > 0 ? data.map((b, i) => toCard(b, i)) : BUNDLES.map(b => ({ ...b, hasThumbnail: false }))).map((b, i) => (
             <Reveal key={b.id} delay={(i % 3) * 0.08}>
               <Link
                 href={`/bundles/${b.slug}`}
@@ -41,17 +70,31 @@ export function Bundles() {
                   SAVE {b.savePercent}%
                 </div>
 
-                <div className={cn('relative h-32 bg-gradient-to-br', b.cover)}>
-                  <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
-                  <div aria-hidden className="absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
-                  <div className="relative h-full flex items-end p-5">
-                    <div className="text-white">
-                      <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur border border-white/25 rounded-full px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-wider">
-                        <Layers className="h-3 w-3" /> {b.courseCount} courses
+                {b.hasThumbnail ? (
+                  <div className="relative h-32 bg-slate-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={b.cover} alt={b.name} className="absolute inset-0 w-full h-full object-cover" />
+                    <div className="relative h-full flex items-end p-5">
+                      <div className="text-white drop-shadow-md">
+                        <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur border border-white/25 rounded-full px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-wider">
+                          <Layers className="h-3 w-3" /> {b.courseCount} courses
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className={cn('relative h-32 bg-gradient-to-br', b.cover)}>
+                    <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
+                    <div aria-hidden className="absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+                    <div className="relative h-full flex items-end p-5">
+                      <div className="text-white">
+                        <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur border border-white/25 rounded-full px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-wider">
+                          <Layers className="h-3 w-3" /> {b.courseCount} courses
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="p-5">
                   <h3 className="heading text-lg font-semibold text-slate-900 group-hover:text-brand-700 transition-colors">

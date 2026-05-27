@@ -5,8 +5,33 @@ import { Eyebrow } from '@/components/ui/Eyebrow';
 import { ButtonLink } from '@/components/ui/Button';
 import { BLOG_POSTS } from '@/lib/homeContent';
 import { cn } from '@/lib/cn';
+import type { BlogPost } from '@/lib/api';
 
-export function LatestBlog() {
+const COVER_GRADIENTS = [
+  'from-brand-600 to-accent',
+  'from-violet-600 to-rose-500',
+  'from-emerald-600 to-brand-500',
+];
+
+function toCard(p: BlogPost, idx: number) {
+  const dt = p.published_at ? new Date(p.published_at) : null;
+  return {
+    id:       p.id,
+    slug:     p.slug,
+    title:    p.title,
+    excerpt:  p.excerpt ?? '',
+    category: p.blog_categories?.name ?? '',
+    readMin:  p.reading_time_min ?? 5,
+    date:     dt ? dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
+    cover:    p.featured_image_url || COVER_GRADIENTS[idx % COVER_GRADIENTS.length],
+    hasThumbnail: !!p.featured_image_url,
+    author:   p.users ? `${p.users.first_name} ${p.users.last_name}`.trim() : '',
+  };
+}
+
+interface Props { data?: BlogPost[] | null }
+
+export function LatestBlog({ data }: Props) {
   return (
     <section id="blog" className="py-14 sm:py-16">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
@@ -28,19 +53,31 @@ export function LatestBlog() {
         </Reveal>
 
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {BLOG_POSTS.map((p, i) => (
+          {(data && data.length > 0 ? data.map((p, i) => toCard(p, i)) : BLOG_POSTS.map(p => ({ ...p, hasThumbnail: false }))).map((p, i) => (
             <Reveal key={p.id} delay={(i % 3) * 0.08}>
               <Link
                 href={`/blog/${p.slug}`}
                 className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden hover:-translate-y-1 hover:shadow-cardHover transition-all"
               >
-                <div className={cn('relative aspect-[16/9] bg-gradient-to-br', p.cover)}>
-                  <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
-                  <div aria-hidden className="absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
-                  <div className="absolute top-3 left-3 inline-flex items-center bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10.5px] font-bold text-brand-700 shadow-sm uppercase tracking-wider">
-                    {p.category}
+                {p.hasThumbnail ? (
+                  <div className="relative aspect-[16/9] bg-slate-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.cover} alt={p.title} className="absolute inset-0 w-full h-full object-cover" />
+                    {p.category && (
+                      <div className="absolute top-3 left-3 inline-flex items-center bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10.5px] font-bold text-brand-700 shadow-sm uppercase tracking-wider">
+                        {p.category}
+                      </div>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <div className={cn('relative aspect-[16/9] bg-gradient-to-br', p.cover)}>
+                    <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
+                    <div aria-hidden className="absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+                    <div className="absolute top-3 left-3 inline-flex items-center bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10.5px] font-bold text-brand-700 shadow-sm uppercase tracking-wider">
+                      {p.category}
+                    </div>
+                  </div>
+                )}
 
                 <div className="p-5">
                   <h3 className="heading text-lg font-semibold text-slate-900 leading-snug group-hover:text-brand-700 transition-colors line-clamp-2 min-h-[52px]">

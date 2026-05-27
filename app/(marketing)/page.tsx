@@ -12,6 +12,7 @@ import { CertificatePreview } from '@/components/home/CertificatePreview';
 import { HiringPartners }     from '@/components/home/HiringPartners';
 import { StudentReviews }     from '@/components/home/StudentReviews';
 import { LatestBlog }         from '@/components/home/LatestBlog';
+import { Podcasts }           from '@/components/home/Podcasts';
 import { FAQ }                from '@/components/home/FAQ';
 import { Newsletter }         from '@/components/home/Newsletter';
 import { CTA }                from '@/components/home/CTA';
@@ -21,7 +22,14 @@ import { api }                from '@/lib/api';
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const faqs = await api.faqs();
+  const [faqs, webinars, bundles, instructors, blogPosts, podcasts] = await Promise.all([
+    api.faqs(),
+    api.upcomingWebinars(),
+    api.featuredBundles(),
+    api.featuredInstructors(),
+    api.latestBlogPosts(),
+    api.latestPodcasts(),
+  ]);
   return (
     <>
       <Hero />
@@ -29,15 +37,16 @@ export default async function HomePage() {
       <Categories />
       <StatsCounter />
       <HowItWorks />
-      <UpcomingWebinars />
+      <UpcomingWebinars data={webinars} />
       <PopularCourses />
       <Features />
-      <Bundles />
-      <Instructors />
+      <Bundles data={bundles} />
+      <Instructors data={instructors} />
       <CertificatePreview />
       <HiringPartners />
       <StudentReviews />
-      <LatestBlog />
+      <LatestBlog data={blogPosts} />
+      <Podcasts data={podcasts} />
       <FAQ items={faqs && faqs.length > 0 ? faqs.map((f) => ({ question: f.question, answer: f.answer })) : undefined} />
       <Newsletter />
       <CTA />

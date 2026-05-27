@@ -140,6 +140,106 @@ export interface Language {
   for_material?: boolean;
 }
 
+// ─── Home-page section types ────────────────────────────────────────────
+
+export interface Webinar {
+  id:                number;
+  title:             string;
+  code?:             string;
+  scheduled_at?:     string | null;
+  duration_minutes?: number | null;
+  is_free?:          boolean;
+  is_active?:        boolean;
+  webinar_status?:   string | null;
+  thumbnail_url?:    string | null;
+  meeting_link?:     string | null;
+  instructor_id?:    string | null;
+  course_id?:        number | null;
+  /** FK join */
+  courses?:          { name: string; slug: string } | null;
+  /** FK join */
+  users?:            { id: string; full_name: string; email: string } | null;
+}
+
+export interface Bundle {
+  id:                number;
+  code?:             string;
+  slug:              string;
+  name:              string;
+  description?:      string | null;
+  price?:            number | null;
+  original_price?:   number | null;
+  discount_percent?: number | null;
+  thumbnail_url?:    string | null;
+  is_active?:        boolean;
+  is_featured?:      boolean;
+  instructor_id?:    string | null;
+  /** Enriched by controller */
+  instructor_name?:  string | null;
+  translation_count?: number;
+  course_count?:     number | null;
+  student_count?:    number | null;
+  rating_average?:   number | null;
+}
+
+export interface InstructorProfile {
+  id:                number;
+  user_id:           string;
+  instructor_code?:  string | null;
+  instructor_type?:  string | null;
+  approval_status?:  string | null;
+  is_verified?:      boolean;
+  is_featured?:      boolean;
+  is_active?:        boolean;
+  course_count?:     number | null;
+  student_count?:    number | null;
+  rating_average?:   number | null;
+  /** FK join — from public featured endpoint */
+  users?:            { id: string; full_name: string; avatar_url?: string | null; email?: string } | null;
+}
+
+export interface BlogPost {
+  id:                  number;
+  title:               string;
+  slug:                string;
+  excerpt?:            string | null;
+  featured_image_url?: string | null;
+  status?:             string | null;
+  published_at?:       string | null;
+  reading_time_min?:   number | null;
+  author_id?:          string | null;
+  category_id?:        number | null;
+  is_featured?:        boolean;
+  /** FK join */
+  blog_categories?:    { id: number; name: string } | null;
+  /** FK join */
+  users?:              { id: string; first_name: string; last_name: string; email: string } | null;
+}
+
+export interface Podcast {
+  id:                number;
+  title:             string;
+  slug?:             string | null;
+  short_summary?:    string | null;
+  description?:      string | null;
+  thumbnail_url?:    string | null;
+  duration?:         number | null;
+  episode_number?:   number | null;
+  season_number?:    number | null;
+  status?:           string | null;
+  is_featured?:      boolean;
+  published_at?:     string | null;
+  posted_by?:        string | null;
+  category_id?:      number | null;
+  sub_category_id?:  number | null;
+  /** FK join */
+  users?:            { id: string; first_name: string; last_name: string; email: string; avatar_url?: string | null } | null;
+  /** FK join */
+  categories?:       { id: number; name: string; slug: string } | null;
+  /** FK join */
+  sub_categories?:   { id: number; name: string; slug: string; category_id: number } | null;
+}
+
 // ─── Endpoint helpers ────────────────────────────────────────────────────
 
 // ─── Client-side fetcher for the mega-menu language switch ───────────────
@@ -215,4 +315,26 @@ export const api = {
   /** Languages enabled for material/site UI (header switcher, banners). */
   materialLanguages: () =>
     request<Language[]>('/languages?is_active=true&for_material=true&limit=50'),
+
+  // ─── Home-page section endpoints ────────────────────────────────────────
+
+  /** Active webinars, newest first (for "Upcoming Webinars" section). */
+  upcomingWebinars: (limit = 4) =>
+    request<Webinar[]>(`/webinars?is_active=true&limit=${limit}&sort=scheduled_at&order=asc`, { revalidate: 300 }),
+
+  /** Featured bundles (for "Bundles & Savings" section). */
+  featuredBundles: (limit = 3) =>
+    request<Bundle[]>(`/bundles?is_active=true&is_featured=true&limit=${limit}&sort=display_order&order=asc`, { revalidate: 300 }),
+
+  /** Featured, verified instructors — public endpoint (for "Meet the Instructors" section). */
+  featuredInstructors: (limit = 6) =>
+    request<InstructorProfile[]>(`/instructor-profiles/public?is_featured=true&is_active=true&limit=${limit}`, { revalidate: 300 }),
+
+  /** Published blog posts, newest first (for "Latest from the Blog" section). */
+  latestBlogPosts: (limit = 3) =>
+    request<BlogPost[]>(`/blog-posts?status=published&is_active=true&limit=${limit}&sort=published_at&order=desc`, { revalidate: 300 }),
+
+  /** Published podcasts, newest first (for "Podcasts" section). */
+  latestPodcasts: (limit = 4) =>
+    request<Podcast[]>(`/podcasts?status=published&limit=${limit}&sort=published_at&order=desc`, { revalidate: 300 }),
 };
