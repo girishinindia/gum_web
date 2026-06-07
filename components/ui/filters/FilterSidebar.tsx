@@ -20,6 +20,8 @@ export interface FilterGroup {
   options: FilterOption[];
   /** Max options shown before "+N more" link (default 5) */
   maxVisible?: number;
+  /** Render mode: checkboxes (default, multi-select) or radio (single-select) */
+  type?: 'checkbox' | 'radio';
 }
 
 interface Props {
@@ -34,7 +36,7 @@ interface Props {
 
 export function FilterSidebar({ groups, selected, onChange, className = '' }: Props) {
   return (
-    <aside className={`space-y-4 ${className}`}>
+    <div className={`space-y-4 ${className}`}>
       {groups.map((g) => (
         <FilterGroupCard
           key={g.key}
@@ -43,7 +45,7 @@ export function FilterSidebar({ groups, selected, onChange, className = '' }: Pr
           onChange={(val, checked) => onChange(g.key, val, checked)}
         />
       ))}
-    </aside>
+    </div>
   );
 }
 
@@ -79,16 +81,26 @@ function FilterGroupCard({
         <div className="px-4 pb-3 space-y-1.5">
           {visibleOpts.map((o) => {
             const Icon = o.icon;
+            const isRadio = group.type === 'radio';
+            const isChecked = selected.has(o.value);
             return (
               <label key={o.value} className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 hover:text-brand-700 group/opt">
                 <input
-                  type="checkbox"
-                  checked={selected.has(o.value)}
-                  onChange={(e) => onChange(o.value, e.target.checked)}
-                  className="rounded accent-brand-500 h-3.5 w-3.5 flex-shrink-0"
+                  type={isRadio ? 'radio' : 'checkbox'}
+                  name={isRadio ? group.key : undefined}
+                  checked={isChecked}
+                  onChange={() => {
+                    if (isRadio) {
+                      // Radio toggle: clicking the already-selected option deselects it
+                      onChange(o.value, !isChecked);
+                    } else {
+                      onChange(o.value, !isChecked);
+                    }
+                  }}
+                  className={`accent-brand-500 h-3.5 w-3.5 flex-shrink-0 ${isRadio ? '' : 'rounded'}`}
                 />
                 {Icon && <Icon className={`h-3.5 w-3.5 flex-shrink-0 ${o.iconColor || 'text-slate-400'}`} />}
-                <span className={`flex-1 truncate ${selected.has(o.value) ? 'text-brand-700 font-medium' : ''}`}>
+                <span className={`flex-1 truncate ${isChecked ? 'text-brand-700 font-medium' : ''}`}>
                   {o.label}
                 </span>
                 {o.count != null && (

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SlidersHorizontal, Star, Sparkles, Award, Flame } from 'lucide-react';
 import { PageHero } from '@/components/ui/PageHero';
-import { CourseCard } from '@/components/ui/CourseCard';
+import { ContentCard, type UnifiedItem, type ContentType } from '@/components/ui/ContentCard';
 import { Reveal } from '@/components/ui/Reveal';
 import {
   SearchInput,
@@ -13,15 +13,26 @@ import {
   PaginationBar,
   FilterSidebar,
   FilterDrawer,
+  PriceRangeCard,
   type SortOption,
   type FilterGroup,
   type FilterChip,
+  type PriceRangeState,
 } from '@/components/ui/filters';
 import {
   fetchCoursesList,
+  fetchBundlesList,
+  fetchBatchesList,
+  fetchInstructorsList,
+  fetchBlogList,
+  fetchWebinarsList,
+  fetchLiveSessionsList,
+  fetchPodcastList,
   api,
+  subCategoryName,
   type CourseListItem,
   type Category,
+  type SubCategory,
   type Language,
   type CourseFilterParams,
 } from '@/lib/api';
@@ -39,18 +50,33 @@ const SORT_OPTIONS: SortOption[] = [
   { label: 'Name A–Z', sort: 'name', order: 'asc' },
 ];
 
-const LEVEL_OPTIONS = [
-  { value: 'beginner', label: 'Beginner' },
-  { value: 'intermediate', label: 'Intermediate' },
-  { value: 'advanced', label: 'Advanced' },
-  { value: 'expert', label: 'Expert' },
+const CONTENT_TYPE_OPTIONS = [
+  { value: 'courses', label: 'Courses' },
+  { value: 'bundles', label: 'Course Bundles' },
+  { value: 'batches', label: 'Batches' },
+  { value: 'instructors', label: 'Instructors' },
+  { value: 'blogs', label: 'Blogs' },
+  { value: 'webinars', label: 'Webinars' },
+  { value: 'live_sessions', label: 'Live Sessions' },
+  { value: 'podcasts', label: 'Podcasts' },
+  { value: 'live_classes', label: 'Live Classes' },
 ];
 
-const PRICE_OPTIONS = [
-  { value: 'free', label: 'Free' },
-  { value: '0-20000', label: 'Under ₹20,000' },
-  { value: '20000-40000', label: '₹20,000 – ₹40,000' },
-  { value: '40000-999999', label: '₹40,000+' },
+const DEFAULT_CONTENT_TYPES = new Set(['courses', 'bundles', 'batches']);
+
+const LEVEL_OPTIONS = [
+  { value: 'absolute_beginner', label: 'Absolute Beginner' },
+  { value: 'beginner', label: 'Beginner' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'advance', label: 'Advance' },
+  { value: 'expert', label: 'Expert' },
+  { value: 'mega', label: 'Mega' },
+];
+
+const RATING_OPTIONS = [
+  { value: '4.5', label: '4.5 & above' },
+  { value: '4.0', label: '4.0 & above' },
+  { value: '3.5', label: '3.5 & above' },
 ];
 
 const TAG_OPTIONS = [
@@ -60,41 +86,76 @@ const TAG_OPTIONS = [
   { value: 'featured', label: 'Featured', icon: Flame, iconColor: 'text-rose-500' },
 ];
 
+// ─── Filter state type ─────────────────────────────────────────────────
+
+interface FilterState {
+  search: string;
+  sort: string;
+  order: 'asc' | 'desc';
+  page: number;
+  contentTypes: Set<string>;
+  categories: Set<string>;
+  subCategories: Set<string>;
+  levels: Set<string>;
+  ratingMin: string;
+  isFree: boolean;
+  priceMin: string;
+  priceMax: string;
+  languages: Set<string>;
+  tags: Set<string>;
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 /** Parse URL search params → filter state */
-function paramsToState(sp: URLSearchParams) {
+function paramsToState(sp: URLSearchParams): FilterState {
+  const typeStr = sp.get('type') || '';
   return {
     search: sp.get('search') || '',
     sort: sp.get('sort') || 'rating_count',
     order: (sp.get('order') || 'desc') as 'asc' | 'desc',
     page: parseInt(sp.get('page') || '1') || 1,
-    levels: new Set((sp.get('level') || '').split(',').filter(Boolean)),
-    languages: new Set((sp.get('lang') || '').split(',').filter(Boolean)),
+    contentTypes: typeStr
+      ? new Set(typeStr.split(',').filter(Boolean))
+      : new Set(DEFAULT_CONTENT_TYPES),
     categories: new Set((sp.get('cat') || '').split(',').filter(Boolean)),
-    prices: new Set((sp.get('price') || '').split(',').filter(Boolean)),
+    subCategories: new Set((sp.get('sub') || '').split(',').filter(Boolean)),
+    levels: new Set((sp.get('level') || '').split(',').filter(Boolean)),
+    ratingMin: sp.get('rating') || '',
+    isFree: sp.get('free') === 'true',
+    priceMin: sp.get('pmin') || '',
+    priceMax: sp.get('pmax') || '',
+    languages: new Set((sp.get('lang') || '').split(',').filter(Boolean)),
     tags: new Set((sp.get('tag') || '').split(',').filter(Boolean)),
   };
 }
 
 /** Filter state → URL search params string */
-function stateToParams(s: ReturnType<typeof paramsToState>): string {
+function stateToParams(s: FilterState): string {
   const p = new URLSearchParams();
   if (s.search) p.set('search', s.search);
   if (s.sort !== 'rating_count') p.set('sort', s.sort);
   if (s.order !== 'desc') p.set('order', s.order);
   if (s.page > 1) p.set('page', String(s.page));
-  if (s.levels.size) p.set('level', [...s.levels].join(','));
-  if (s.languages.size) p.set('lang', [...s.languages].join(','));
+  // Only serialize content types if they differ from defaults
+  const sortedTypes = [...s.contentTypes].sort().join(',');
+  const sortedDefaults = [...DEFAULT_CONTENT_TYPES].sort().join(',');
+  if (sortedTypes !== sortedDefaults) p.set('type', [...s.contentTypes].join(','));
   if (s.categories.size) p.set('cat', [...s.categories].join(','));
-  if (s.prices.size) p.set('price', [...s.prices].join(','));
+  if (s.subCategories.size) p.set('sub', [...s.subCategories].join(','));
+  if (s.levels.size) p.set('level', [...s.levels].join(','));
+  if (s.ratingMin) p.set('rating', s.ratingMin);
+  if (s.isFree) p.set('free', 'true');
+  if (s.priceMin) p.set('pmin', s.priceMin);
+  if (s.priceMax) p.set('pmax', s.priceMax);
+  if (s.languages.size) p.set('lang', [...s.languages].join(','));
   if (s.tags.size) p.set('tag', [...s.tags].join(','));
   const qs = p.toString();
   return qs ? `?${qs}` : '';
 }
 
-/** Convert UI state to API params */
-function stateToApiParams(s: ReturnType<typeof paramsToState>): CourseFilterParams {
+/** Convert UI state to API params (courses endpoint) */
+function stateToApiParams(s: FilterState): CourseFilterParams {
   const params: CourseFilterParams = {
     search: s.search || undefined,
     sort: s.sort,
@@ -102,28 +163,26 @@ function stateToApiParams(s: ReturnType<typeof paramsToState>): CourseFilterPara
     page: s.page,
     limit: PAGE_SIZE,
   };
-  // Level — API accepts single value, use first selected
-  if (s.levels.size === 1) params.difficulty_level = [...s.levels][0];
 
-  // Language — use first selected (by ID)
+  // Level — comma-separated for multi-select
+  if (s.levels.size > 0) params.difficulty_level = [...s.levels].join(',');
+
+  // Language — use first selected
   if (s.languages.size === 1) params.course_language_id = parseInt([...s.languages][0]);
 
-  // Category — use first selected (by ID)
-  if (s.categories.size === 1) params.category_id = parseInt([...s.categories][0]);
+  // Category — comma-separated for multi-select
+  if (s.categories.size > 0) params.category_id = [...s.categories].join(',');
 
-  // Price range
-  if (s.prices.size) {
-    const priceVals = [...s.prices];
-    if (priceVals.includes('free')) params.is_free = true;
-    // Use widest range from selected options
-    const ranges = priceVals.filter((v) => v !== 'free').map((v) => v.split('-').map(Number));
-    if (ranges.length > 0) {
-      const mins = ranges.map((r) => r[0]);
-      const maxes = ranges.map((r) => r[1]);
-      params.price_min = Math.min(...mins);
-      params.price_max = Math.max(...maxes);
-    }
-  }
+  // Sub-category — comma-separated for multi-select
+  if (s.subCategories.size > 0) params.sub_category_id = [...s.subCategories].join(',');
+
+  // Rating
+  if (s.ratingMin) params.rating_min = parseFloat(s.ratingMin);
+
+  // Price
+  if (s.isFree) params.is_free = true;
+  if (s.priceMin) params.price_min = parseFloat(s.priceMin);
+  if (s.priceMax) params.price_max = parseFloat(s.priceMax);
 
   // Tags
   if (s.tags.has('bestseller')) params.is_bestseller = true;
@@ -160,7 +219,7 @@ function CoursesPageInner() {
   const searchParams = useSearchParams();
 
   // ── State ──
-  const [courses, setCourses] = useState<CourseListItem[]>([]);
+  const [items, setItems] = useState<UnifiedItem[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -168,6 +227,7 @@ function CoursesPageInner() {
 
   // Filter option lists (loaded once)
   const [categoryOptions, setCategoryOptions] = useState<Category[]>([]);
+  const [subCategoryOptions, setSubCategoryOptions] = useState<SubCategory[]>([]);
   const [languageOptions, setLanguageOptions] = useState<Language[]>([]);
 
   // Parse current filters from URL
@@ -176,42 +236,199 @@ function CoursesPageInner() {
   // ── Load filter options once ──
   useEffect(() => {
     api.categories().then((data) => { if (data) setCategoryOptions(data); });
+    api.subCategories().then((data) => { if (data) setSubCategoryOptions(data); });
     api.allLanguages().then((data) => { if (data) setLanguageOptions(data); });
   }, []);
 
-  // ── Fetch courses when filters change ──
+  // ── Multi-source fetch when filters change ──
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    const apiParams = stateToApiParams(filters);
-    fetchCoursesList(apiParams).then((result) => {
+
+    const selectedTypes = [...filters.contentTypes] as ContentType[];
+    const perTypeLimit = Math.max(2, Math.ceil(PAGE_SIZE / selectedTypes.length));
+
+    // Build parallel fetch promises for each selected content type
+    const fetches: Promise<{ type: ContentType; items: UnifiedItem[]; total: number; totalPages: number }>[] = [];
+
+    // Common params
+    const search = filters.search || undefined;
+    const page = filters.page;
+
+    if (filters.contentTypes.has('courses')) {
+      const p = stateToApiParams(filters);
+      p.limit = perTypeLimit;
+      fetches.push(
+        fetchCoursesList(p).then((r) => ({
+          type: 'courses' as ContentType,
+          items: r.data.map((d) => ({ type: 'courses' as ContentType, id: d.id, data: d })),
+          total: r.total, totalPages: r.totalPages,
+        })),
+      );
+    }
+
+    if (filters.contentTypes.has('bundles')) {
+      fetches.push(
+        fetchBundlesList({
+          search, page, limit: perTypeLimit,
+          is_free: filters.isFree || undefined,
+          rating_min: filters.ratingMin ? parseFloat(filters.ratingMin) : undefined,
+          sort: 'rating_count', order: 'desc',
+        }).then((r) => ({
+          type: 'bundles' as ContentType,
+          items: r.data.map((d) => ({ type: 'bundles' as ContentType, id: d.id, data: d })),
+          total: r.total, totalPages: r.totalPages,
+        })),
+      );
+    }
+
+    if (filters.contentTypes.has('batches')) {
+      fetches.push(
+        fetchBatchesList({
+          search, page, limit: perTypeLimit,
+          is_free: filters.isFree || undefined,
+          is_active: true,
+        }).then((r) => ({
+          type: 'batches' as ContentType,
+          items: r.data.map((d) => ({ type: 'batches' as ContentType, id: d.id, data: d })),
+          total: r.total, totalPages: r.totalPages,
+        })),
+      );
+    }
+
+    if (filters.contentTypes.has('instructors')) {
+      fetches.push(
+        fetchInstructorsList({
+          search, page, limit: perTypeLimit,
+          sort: 'rating_average', order: 'desc',
+        }).then((r) => ({
+          type: 'instructors' as ContentType,
+          items: r.data.map((d) => ({ type: 'instructors' as ContentType, id: d.id, data: d })),
+          total: r.total, totalPages: r.totalPages,
+        })),
+      );
+    }
+
+    if (filters.contentTypes.has('blogs')) {
+      fetches.push(
+        fetchBlogList({
+          search, page, limit: perTypeLimit,
+          sort: 'published_at', order: 'desc',
+        }).then((r) => ({
+          type: 'blogs' as ContentType,
+          items: r.data.map((d) => ({ type: 'blogs' as ContentType, id: d.id, data: d })),
+          total: r.total, totalPages: r.totalPages,
+        })),
+      );
+    }
+
+    if (filters.contentTypes.has('webinars')) {
+      fetches.push(
+        fetchWebinarsList({
+          search, page, limit: perTypeLimit,
+          is_free: filters.isFree || undefined,
+          sort: 'scheduled_at', order: 'desc',
+        }).then((r) => ({
+          type: 'webinars' as ContentType,
+          items: r.data.map((d) => ({ type: 'webinars' as ContentType, id: d.id, data: d })),
+          total: r.total, totalPages: r.totalPages,
+        })),
+      );
+    }
+
+    if (filters.contentTypes.has('live_sessions') || filters.contentTypes.has('live_classes')) {
+      fetches.push(
+        fetchLiveSessionsList({
+          search, page, limit: perTypeLimit,
+          sort: 'created_at', order: 'desc',
+        }).then((r) => ({
+          type: 'live_sessions' as ContentType,
+          items: r.data.map((d) => ({ type: 'live_sessions' as ContentType, id: d.id, data: d })),
+          total: r.total, totalPages: r.totalPages,
+        })),
+      );
+    }
+
+    if (filters.contentTypes.has('podcasts')) {
+      fetches.push(
+        fetchPodcastList({
+          search, page, limit: perTypeLimit,
+          sort: 'published_at', order: 'desc',
+        }).then((r) => ({
+          type: 'podcasts' as ContentType,
+          items: r.data.map((d) => ({ type: 'podcasts' as ContentType, id: d.id, data: d })),
+          total: r.total, totalPages: r.totalPages,
+        })),
+      );
+    }
+
+    Promise.all(fetches).then((results) => {
       if (cancelled) return;
-      setCourses(result.data);
-      setTotal(result.total);
-      setTotalPages(result.totalPages);
+
+      // Interleave results round-robin for a mixed grid
+      const merged: UnifiedItem[] = [];
+      const maxLen = Math.max(...results.map((r) => r.items.length), 0);
+      for (let i = 0; i < maxLen; i++) {
+        for (const r of results) {
+          if (i < r.items.length) merged.push(r.items[i]);
+        }
+      }
+
+      setItems(merged);
+      setTotal(results.reduce((sum, r) => sum + r.total, 0));
+      setTotalPages(Math.max(...results.map((r) => r.totalPages), 0));
       setLoading(false);
     });
+
     return () => { cancelled = true; };
   }, [filters]);
 
   // ── URL sync helper ──
   const updateFilters = useCallback(
-    (updater: (prev: ReturnType<typeof paramsToState>) => ReturnType<typeof paramsToState>) => {
+    (updater: (prev: FilterState) => FilterState) => {
       const next = updater(paramsToState(searchParams));
       router.push(`/courses${stateToParams(next)}`, { scroll: false });
     },
     [router, searchParams],
   );
 
+  // ── Sub-categories filtered by selected categories ──
+  const filteredSubCategories = useMemo(() => {
+    if (filters.categories.size === 0) return subCategoryOptions;
+    const selectedCatIds = new Set([...filters.categories].map(Number));
+    return subCategoryOptions.filter((sc) => sc.category_id && selectedCatIds.has(sc.category_id));
+  }, [subCategoryOptions, filters.categories]);
+
   // ── Build filter groups for sidebar ──
-  const filterGroups: FilterGroup[] = useMemo(() => {
+  // Top groups: Content Type, Category, Sub-category, Level, Rating
+  const topGroups: FilterGroup[] = useMemo(() => {
     const groups: FilterGroup[] = [];
+
+    groups.push({
+      key: 'contentTypes',
+      label: 'Content Type',
+      options: CONTENT_TYPE_OPTIONS,
+      maxVisible: 10,
+    });
 
     if (categoryOptions.length > 0) {
       groups.push({
         key: 'categories',
         label: 'Category',
         options: categoryOptions.map((c) => ({ value: String(c.id), label: c.name })),
+        maxVisible: 6,
+      });
+    }
+
+    if (filteredSubCategories.length > 0) {
+      groups.push({
+        key: 'subCategories',
+        label: 'Sub-category',
+        options: filteredSubCategories.map((sc) => ({
+          value: String(sc.id),
+          label: subCategoryName(sc),
+        })),
+        maxVisible: 6,
       });
     }
 
@@ -219,7 +436,22 @@ function CoursesPageInner() {
       key: 'levels',
       label: 'Level',
       options: LEVEL_OPTIONS,
+      maxVisible: 7,
     });
+
+    groups.push({
+      key: 'ratingMin',
+      label: 'Rating',
+      options: RATING_OPTIONS,
+      type: 'radio',
+    });
+
+    return groups;
+  }, [categoryOptions, filteredSubCategories]);
+
+  // Bottom groups: Language, Tags
+  const bottomGroups: FilterGroup[] = useMemo(() => {
+    const groups: FilterGroup[] = [];
 
     if (languageOptions.length > 0) {
       groups.push({
@@ -230,67 +462,152 @@ function CoursesPageInner() {
     }
 
     groups.push({
-      key: 'prices',
-      label: 'Price',
-      options: PRICE_OPTIONS,
-    });
-
-    groups.push({
       key: 'tags',
       label: 'Tags',
       options: TAG_OPTIONS,
     });
 
     return groups;
-  }, [categoryOptions, languageOptions]);
+  }, [languageOptions]);
 
   // Map of group key → selected set for the FilterSidebar
   const selectedMap: Record<string, Set<string>> = {
+    contentTypes: filters.contentTypes,
     categories: filters.categories,
+    subCategories: filters.subCategories,
     levels: filters.levels,
+    ratingMin: filters.ratingMin ? new Set([filters.ratingMin]) : new Set(),
     languages: filters.languages,
-    prices: filters.prices,
     tags: filters.tags,
   };
 
-  // ── Filter change handler ──
+  // Price range state
+  const priceState: PriceRangeState = {
+    isFree: filters.isFree,
+    min: filters.priceMin,
+    max: filters.priceMax,
+  };
+
+  // ── Filter change handler (checkbox / radio groups) ──
   function handleFilterChange(groupKey: string, value: string, checked: boolean) {
     updateFilters((prev) => {
-      const key = groupKey as keyof typeof prev;
+      // Radio group (rating) — single select
+      if (groupKey === 'ratingMin') {
+        return { ...prev, ratingMin: checked ? value : '', page: 1 };
+      }
+      // Checkbox groups
+      const key = groupKey as keyof FilterState;
       const set = new Set(prev[key] as Set<string>);
       if (checked) set.add(value);
       else set.delete(value);
-      return { ...prev, [key]: set, page: 1 };
+
+      const next: FilterState = { ...prev, [key]: set, page: 1 };
+
+      // When categories change, clear sub-category selections that no longer match
+      if (groupKey === 'categories') {
+        const selectedCatIds = new Set([...set].map(Number));
+        if (selectedCatIds.size > 0) {
+          const validSubIds = new Set(
+            subCategoryOptions
+              .filter((sc) => sc.category_id && selectedCatIds.has(sc.category_id))
+              .map((sc) => String(sc.id)),
+          );
+          const cleaned = new Set([...prev.subCategories].filter((id) => validSubIds.has(id)));
+          next.subCategories = cleaned;
+        }
+      }
+
+      return next;
     });
+  }
+
+  // ── Price range handler ──
+  function handlePriceChange(next: PriceRangeState) {
+    updateFilters((prev) => ({
+      ...prev,
+      isFree: next.isFree,
+      priceMin: next.min,
+      priceMax: next.max,
+      page: 1,
+    }));
   }
 
   // ── Build active filter chips ──
   const chips: FilterChip[] = useMemo(() => {
     const result: FilterChip[] = [];
-    for (const v of filters.levels) {
-      const opt = LEVEL_OPTIONS.find((o) => o.value === v);
-      if (opt) result.push({ key: `levels:${v}`, label: opt.label });
+
+    // Content type chips (only show chips for non-default selections)
+    for (const v of filters.contentTypes) {
+      if (!DEFAULT_CONTENT_TYPES.has(v)) {
+        const opt = CONTENT_TYPE_OPTIONS.find((o) => o.value === v);
+        if (opt) result.push({ key: `contentTypes:${v}`, label: opt.label });
+      }
     }
-    for (const v of filters.languages) {
-      const lang = languageOptions.find((l) => String(l.id) === v);
-      if (lang) result.push({ key: `languages:${v}`, label: lang.name });
+    // Show chips for removed defaults
+    for (const v of DEFAULT_CONTENT_TYPES) {
+      if (!filters.contentTypes.has(v)) {
+        const opt = CONTENT_TYPE_OPTIONS.find((o) => o.value === v);
+        if (opt) result.push({ key: `contentTypes-off:${v}`, label: `No ${opt.label}` });
+      }
     }
+
     for (const v of filters.categories) {
       const cat = categoryOptions.find((c) => String(c.id) === v);
       if (cat) result.push({ key: `categories:${v}`, label: cat.name });
     }
-    for (const v of filters.prices) {
-      const opt = PRICE_OPTIONS.find((o) => o.value === v);
-      if (opt) result.push({ key: `prices:${v}`, label: opt.label });
+    for (const v of filters.subCategories) {
+      const sc = subCategoryOptions.find((s) => String(s.id) === v);
+      if (sc) result.push({ key: `subCategories:${v}`, label: subCategoryName(sc) });
+    }
+    for (const v of filters.levels) {
+      const opt = LEVEL_OPTIONS.find((o) => o.value === v);
+      if (opt) result.push({ key: `levels:${v}`, label: opt.label });
+    }
+    if (filters.ratingMin) {
+      const opt = RATING_OPTIONS.find((o) => o.value === filters.ratingMin);
+      if (opt) result.push({ key: `ratingMin:${filters.ratingMin}`, label: opt.label });
+    }
+    if (filters.isFree) {
+      result.push({ key: 'price:free', label: 'Free' });
+    } else {
+      if (filters.priceMin) result.push({ key: 'price:min', label: `Min ₹${filters.priceMin}` });
+      if (filters.priceMax) result.push({ key: 'price:max', label: `Max ₹${filters.priceMax}` });
+    }
+    for (const v of filters.languages) {
+      const lang = languageOptions.find((l) => String(l.id) === v);
+      if (lang) result.push({ key: `languages:${v}`, label: lang.name });
     }
     for (const v of filters.tags) {
       const opt = TAG_OPTIONS.find((o) => o.value === v);
       if (opt) result.push({ key: `tags:${v}`, label: opt.label });
     }
     return result;
-  }, [filters, languageOptions, categoryOptions]);
+  }, [filters, categoryOptions, subCategoryOptions, languageOptions]);
 
   function handleChipRemove(chipKey: string) {
+    // Handle special chip keys
+    if (chipKey.startsWith('contentTypes-off:')) {
+      // Re-add a removed default content type
+      const value = chipKey.replace('contentTypes-off:', '');
+      handleFilterChange('contentTypes', value, true);
+      return;
+    }
+    if (chipKey === 'price:free') {
+      handlePriceChange({ isFree: false, min: '', max: '' });
+      return;
+    }
+    if (chipKey === 'price:min') {
+      handlePriceChange({ ...priceState, min: '' });
+      return;
+    }
+    if (chipKey === 'price:max') {
+      handlePriceChange({ ...priceState, max: '' });
+      return;
+    }
+    if (chipKey.startsWith('ratingMin:')) {
+      handleFilterChange('ratingMin', '', false);
+      return;
+    }
     const [groupKey, value] = chipKey.split(':');
     handleFilterChange(groupKey, value, false);
   }
@@ -303,11 +620,22 @@ function CoursesPageInner() {
 
   // ── Sidebar content (shared between desktop + mobile drawer) ──
   const sidebarContent = (
-    <FilterSidebar
-      groups={filterGroups}
-      selected={selectedMap}
-      onChange={handleFilterChange}
-    />
+    <div className="space-y-4">
+      <FilterSidebar
+        groups={topGroups}
+        selected={selectedMap}
+        onChange={handleFilterChange}
+      />
+      <PriceRangeCard
+        value={priceState}
+        onChange={handlePriceChange}
+      />
+      <FilterSidebar
+        groups={bottomGroups}
+        selected={selectedMap}
+        onChange={handleFilterChange}
+      />
+    </div>
   );
 
   return (
@@ -358,7 +686,7 @@ function CoursesPageInner() {
           {/* ── Main layout: Sidebar + Grid ── */}
           <div className="mt-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
             {/* Desktop sidebar */}
-            <div className="hidden lg:block">{sidebarContent}</div>
+            <aside className="hidden lg:block">{sidebarContent}</aside>
 
             {/* Course grid */}
             <div>
@@ -367,7 +695,7 @@ function CoursesPageInner() {
                 {loading ? (
                   <span className="inline-block h-4 w-40 bg-slate-100 rounded animate-pulse" />
                 ) : (
-                  <>Showing <span className="font-semibold text-slate-800">{courses.length}</span> of {total} courses</>
+                  <>Showing <span className="font-semibold text-slate-800">{items.length}</span> of {total} results</>
                 )}
               </div>
 
@@ -378,9 +706,9 @@ function CoursesPageInner() {
                     <CourseCardSkeleton key={i} />
                   ))}
                 </div>
-              ) : courses.length === 0 ? (
+              ) : items.length === 0 ? (
                 <div className="py-20 text-center">
-                  <p className="text-lg font-semibold text-slate-700">No courses found</p>
+                  <p className="text-lg font-semibold text-slate-700">No results found</p>
                   <p className="mt-2 text-sm text-slate-500">Try adjusting your filters or search query.</p>
                   <button
                     onClick={handleClearAll}
@@ -391,9 +719,9 @@ function CoursesPageInner() {
                 </div>
               ) : (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                  {courses.map((c, i) => (
-                    <Reveal key={c.id} delay={(i % 3) * 0.05}>
-                      <CourseCard course={c} index={i} />
+                  {items.map((item, i) => (
+                    <Reveal key={`${item.type}-${item.id}`} delay={(i % 3) * 0.05}>
+                      <ContentCard item={item} index={i} />
                     </Reveal>
                   ))}
                 </div>

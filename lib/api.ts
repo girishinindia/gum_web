@@ -403,6 +403,7 @@ async function clientFetch<T>(path: string): Promise<PaginatedResult<T>> {
 
 export interface CourseFilterParams {
   search?: string;
+  /** Single value or comma-separated list (e.g. "beginner,intermediate") */
   difficulty_level?: string;
   is_free?: boolean;
   is_featured?: boolean;
@@ -411,10 +412,13 @@ export interface CourseFilterParams {
   has_certificate?: boolean;
   course_language_id?: number;
   instructor_id?: number;
-  category_id?: number;
-  sub_category_id?: number;
+  /** Single ID or comma-separated list (e.g. "3,7,12") */
+  category_id?: number | string;
+  /** Single ID or comma-separated list (e.g. "5,9") */
+  sub_category_id?: number | string;
   price_min?: number;
   price_max?: number;
+  rating_min?: number;
   sort?: string;
   order?: 'asc' | 'desc';
   page?: number;
@@ -466,6 +470,7 @@ export function fetchCoursesList(params: CourseFilterParams = {}): Promise<Pagin
   if (params.sub_category_id) p.set('sub_category_id', String(params.sub_category_id));
   if (params.price_min != null) p.set('price_min', String(params.price_min));
   if (params.price_max != null) p.set('price_max', String(params.price_max));
+  if (params.rating_min != null) p.set('rating_min', String(params.rating_min));
   p.set('sort', params.sort || 'id');
   p.set('order', params.order || 'desc');
   p.set('page', String(params.page || 1));
@@ -480,6 +485,7 @@ export interface BundleFilterParams {
   is_featured?: boolean;
   price_min?: number;
   price_max?: number;
+  rating_min?: number;
   is_free?: boolean;
   sort?: string;
   order?: 'asc' | 'desc';
@@ -502,6 +508,7 @@ export function fetchBundlesList(params: BundleFilterParams = {}): Promise<Pagin
   if (params.is_free)      p.set('is_free', 'true');
   if (params.price_min != null) p.set('price_min', String(params.price_min));
   if (params.price_max != null) p.set('price_max', String(params.price_max));
+  if (params.rating_min != null) p.set('rating_min', String(params.rating_min));
   p.set('sort', params.sort || 'id');
   p.set('order', params.order || 'desc');
   p.set('page', String(params.page || 1));
@@ -608,6 +615,63 @@ export function fetchPodcastList(params: PodcastFilterParams = {}): Promise<Pagi
   p.set('page', String(params.page || 1));
   p.set('limit', String(params.limit || 12));
   return clientFetch<Podcast>(`/podcasts?${p.toString()}`);
+}
+
+// ─── Course-batch types + fetch ─────────────────────────────────────────
+
+export interface CourseBatch {
+  id:                  number;
+  title?:              string | null;
+  code?:               string | null;
+  batch_status?:       string | null;
+  batch_owner?:        string | null;
+  course_id?:          number | null;
+  instructor_id?:      number | null;
+  price?:              number | null;
+  is_free?:            boolean;
+  is_active?:          boolean;
+  max_students?:       number | null;
+  enrolled_count?:     number | null;
+  start_date?:         string | null;
+  end_date?:           string | null;
+  schedule?:           any;
+  rating_average?:     number | null;
+  /** FK join */
+  courses?:            { id: number; name: string; slug: string; code?: string; course_status?: string; difficulty_level?: string; price?: number; original_price?: number; is_free?: boolean; trailer_thumbnail_url?: string | null } | null;
+  /** FK join */
+  users?:              { id: string; full_name: string; email: string } | null;
+}
+
+export interface BatchFilterParams {
+  search?: string;
+  course_id?: number;
+  batch_status?: string;
+  instructor_id?: number;
+  is_active?: boolean;
+  is_free?: boolean;
+  sort?: string;
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Fetch course batches with filters + pagination (client-side).
+ * Used by the /courses multi-content-type grid.
+ */
+export function fetchBatchesList(params: BatchFilterParams = {}): Promise<PaginatedResult<CourseBatch>> {
+  const p = new URLSearchParams();
+  if (params.search)         p.set('search', params.search);
+  if (params.course_id)      p.set('course_id', String(params.course_id));
+  if (params.batch_status)   p.set('batch_status', params.batch_status);
+  if (params.instructor_id)  p.set('instructor_id', String(params.instructor_id));
+  if (params.is_active !== undefined) p.set('is_active', String(params.is_active));
+  if (params.is_free !== undefined)   p.set('is_free', String(params.is_free));
+  p.set('sort', params.sort || 'display_order');
+  p.set('order', params.order || 'asc');
+  p.set('page', String(params.page || 1));
+  p.set('limit', String(params.limit || 12));
+  return clientFetch<CourseBatch>(`/course-batches?${p.toString()}`);
 }
 
 // ─── Live‑session types + fetch ──────────────────────────────────────────
