@@ -18,8 +18,25 @@ import { useT } from '@/lib/i18n/useT';
 import type { SubCategory } from '@/lib/api';
 import { cn } from '@/lib/cn';
 
+/**
+ * Maps a secondary-nav href to the corresponding site_section_settings key.
+ * Items without a mapping are always visible (e.g. announcements).
+ */
+const HREF_TO_SECTION: Record<string, string> = {
+  '/bundles':       'bundles',
+  '/webinars':      'webinars',
+  '/live-sessions': 'live_sessions',
+  '/batches':       'live_classes',
+  '/blog':          'blogs',
+  '/discussion':    'discussions',
+  '/instructors':   'instructors',
+  '/reviews':       'student_reviews',
+};
+
 interface Props {
   categories: SubCategory[];
+  /** Section visibility map — hides mobile drawer items for disabled sections. */
+  sectionVisibility?: Record<string, boolean>;
 }
 
 /**
@@ -27,8 +44,11 @@ interface Props {
  * destinations is reachable from a narrow viewport (where the horizontal
  * strip below the header is partially hidden).
  */
-function SECONDARY_ITEMS(t: ReturnType<typeof useT>): { href: string; label: string; Icon: LucideIcon }[] {
-  return [
+function SECONDARY_ITEMS(
+  t: ReturnType<typeof useT>,
+  vis: Record<string, boolean>,
+): { href: string; label: string; Icon: LucideIcon }[] {
+  const all = [
     { href: '/bundles',       label: t.secondary.bundles,       Icon: BookOpen       },
     { href: '/webinars',      label: t.secondary.webinars,      Icon: Radio          },
     { href: '/live-sessions', label: t.secondary.liveSessions,  Icon: Video          },
@@ -39,9 +59,14 @@ function SECONDARY_ITEMS(t: ReturnType<typeof useT>): { href: string; label: str
     { href: '/reviews',       label: t.secondary.reviews,       Icon: Star           },
     { href: '/announcements', label: t.secondary.announcements, Icon: Megaphone      },
   ];
+  // Hide items whose section is explicitly disabled (false). Missing keys default to visible.
+  return all.filter((it) => {
+    const key = HREF_TO_SECTION[it.href];
+    return !key || vis[key] !== false;
+  });
 }
 
-export function HeaderShell({ categories }: Props) {
+export function HeaderShell({ categories, sectionVisibility = {} }: Props) {
   const t = useT();
   // Auth-aware right-side action — Login pill when signed-out, user
   // avatar + dropdown menu when signed-in. `loading` covers the brief
@@ -170,7 +195,7 @@ export function HeaderShell({ categories }: Props) {
           {/* Secondary nav — mirror of the desktop strip so mobile users can reach everything */}
           <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 pt-3 pb-1.5">More</div>
           <ul className="grid grid-cols-2 gap-0.5">
-            {SECONDARY_ITEMS(t).map((it) => (
+            {SECONDARY_ITEMS(t, sectionVisibility).map((it) => (
               <li key={it.href}>
                 <Link
                   href={it.href}

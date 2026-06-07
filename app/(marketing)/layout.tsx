@@ -17,18 +17,23 @@ import { api, recentAnnouncementsCount } from '@/lib/api';
  * The <LanguageProvider> wraps EVERYTHING in marketing so the header, the
  * secondary strip, the footer and inner sections can all read the active
  * language and translated chrome strings via `useT()`.
+ *
+ * `sectionVisibility` is fetched once at the layout level and threaded into
+ * Header (→ mobile drawer) and SecondaryNav so that disabled sections are
+ * hidden from navigation automatically.
  */
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
-  const [languages, newAnnouncements] = await Promise.all([
+  const [languages, newAnnouncements, sectionVisibility] = await Promise.all([
     api.materialLanguages().then((rows) => rows ?? []),
     recentAnnouncementsCount(7),
+    api.sectionVisibility().then((v) => v ?? {}),
   ]);
 
   return (
     <LanguageProvider languages={languages}>
       <AnnouncementBar />
-      <Header />
-      <SecondaryNav newAnnouncementsCount={newAnnouncements} />
+      <Header sectionVisibility={sectionVisibility} />
+      <SecondaryNav newAnnouncementsCount={newAnnouncements} sectionVisibility={sectionVisibility} />
       <main>{children}</main>
       <Footer />
     </LanguageProvider>

@@ -10,21 +10,41 @@ import {
 import { useT } from '@/lib/i18n/useT';
 import { cn } from '@/lib/cn';
 
+/**
+ * Maps a secondary-nav href to the corresponding site_section_settings key.
+ * Items without a mapping are always visible (e.g. announcements).
+ */
+const HREF_TO_SECTION: Record<string, string> = {
+  '/bundles':       'bundles',
+  '/webinars':      'webinars',
+  '/live-sessions': 'live_sessions',
+  '/batches':       'live_classes',
+  '/blog':          'blogs',
+  '/discussion':    'discussions',
+  '/instructors':   'instructors',
+  '/reviews':       'student_reviews',
+};
+
 interface Props {
   /** Count of announcements published in the last 7 days — shows as a badge. */
   newAnnouncementsCount?: number;
+  /** Section visibility map — hides nav items for disabled sections. */
+  sectionVisibility?: Record<string, boolean>;
 }
 
 /**
  * Secondary navigation strip — sits directly below the main header on every
  * marketing page. Horizontal scroll on narrow viewports so all items stay
  * reachable without wrapping. Labels swap with the active language.
+ *
+ * Items whose section is explicitly set to `false` in `sectionVisibility`
+ * are filtered out. A missing key defaults to visible.
  */
-export function SecondaryNav({ newAnnouncementsCount = 0 }: Props) {
+export function SecondaryNav({ newAnnouncementsCount = 0, sectionVisibility = {} }: Props) {
   const t = useT();
   const pathname = usePathname();
 
-  const ITEMS: { href: string; label: string; Icon: LucideIcon; badge?: number }[] = [
+  const ALL_ITEMS: { href: string; label: string; Icon: LucideIcon; badge?: number }[] = [
     { href: '/bundles',        label: t.secondary.bundles,       Icon: BookOpen       },
     { href: '/webinars',       label: t.secondary.webinars,      Icon: Radio          },
     { href: '/live-sessions',  label: t.secondary.liveSessions,  Icon: Video          },
@@ -35,6 +55,12 @@ export function SecondaryNav({ newAnnouncementsCount = 0 }: Props) {
     { href: '/reviews',        label: t.secondary.reviews,       Icon: Star           },
     { href: '/announcements',  label: t.secondary.announcements, Icon: Megaphone,     badge: newAnnouncementsCount },
   ];
+
+  // Hide items whose section is explicitly disabled (false). Missing keys default to visible.
+  const ITEMS = ALL_ITEMS.filter((it) => {
+    const key = HREF_TO_SECTION[it.href];
+    return !key || sectionVisibility[key] !== false;
+  });
 
   return (
     // Hidden below `lg` — on mobile and tablet the hamburger drawer carries

@@ -355,4 +355,382 @@ export const api = {
   /** Visibility map: { courses: true, blogs: false, … } */
   sectionVisibility: () =>
     request<Record<string, boolean>>('/site-settings/sections', { revalidate: 300 }),
+
+  // ─── Filter-page helpers (categories, languages for dropdowns) ────────
+
+  /** Active categories for filter dropdowns. */
+  categories: () =>
+    request<Category[]>('/categories?is_active=true&limit=100&sort=display_order&order=asc', { revalidate: 300 }),
+
+  /** Active languages for filter dropdowns. */
+  allLanguages: () =>
+    request<Language[]>('/languages?is_active=true&limit=50&sort=name&order=asc', { revalidate: 300 }),
 };
+
+// ─── Paginated response type ──────────────────────────────────────────────
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  totalPages: number;
+  page: number;
+}
+
+/**
+ * Client-side fetch that returns data + pagination (no ISR cache).
+ * Used by "use client" filter pages that need dynamic data.
+ */
+async function clientFetch<T>(path: string): Promise<PaginatedResult<T>> {
+  const empty: PaginatedResult<T> = { data: [], total: 0, totalPages: 0, page: 1 };
+  try {
+    const res = await fetch(`${apiBase()}${path}`);
+    if (!res.ok) return empty;
+    const json = (await res.json()) as ApiResponse<T[]>;
+    if (!json.success) return empty;
+    return {
+      data: json.data ?? [],
+      total: json.pagination?.total ?? 0,
+      totalPages: json.pagination?.totalPages ?? 0,
+      page: json.pagination?.page ?? 1,
+    };
+  } catch {
+    return empty;
+  }
+}
+
+// ─── Course filter params ──────────────────────────────────────────────────
+
+export interface CourseFilterParams {
+  search?: string;
+  difficulty_level?: string;
+  is_free?: boolean;
+  is_featured?: boolean;
+  is_bestseller?: boolean;
+  is_new?: boolean;
+  has_certificate?: boolean;
+  course_language_id?: number;
+  instructor_id?: number;
+  category_id?: number;
+  sub_category_id?: number;
+  price_min?: number;
+  price_max?: number;
+  sort?: string;
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+/** Enriched course row returned by the list endpoint. */
+export interface CourseListItem extends Course {
+  english_title?: string | null;
+  instructor_name?: string | null;
+  language_name?: string | null;
+  category_name?: string | null;
+  sub_category_name?: string | null;
+  category_id?: number | null;
+  sub_category_id?: number | null;
+  is_bestseller?: boolean;
+  is_new?: boolean;
+  has_certificate?: boolean;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  code?: string | null;
+  image?: string | null;
+  is_active?: boolean;
+  display_order?: number;
+}
+
+/**
+ * Fetch courses with filters + pagination (client-side, no ISR).
+ * Used by the /courses filter page.
+ */
+export function fetchCoursesList(params: CourseFilterParams = {}): Promise<PaginatedResult<CourseListItem>> {
+  const p = new URLSearchParams();
+  // Always show only active, non-deleted courses on the public page
+  p.set('is_active', 'true');
+  if (params.search)           p.set('search', params.search);
+  if (params.difficulty_level) p.set('difficulty_level', params.difficulty_level);
+  if (params.is_free)          p.set('is_free', 'true');
+  if (params.is_featured)      p.set('is_featured', 'true');
+  if (params.is_bestseller)    p.set('is_bestseller', 'true');
+  if (params.is_new)           p.set('is_new', 'true');
+  if (params.has_certificate)  p.set('has_certificate', 'true');
+  if (params.course_language_id) p.set('course_language_id', String(params.course_language_id));
+  if (params.instructor_id)   p.set('instructor_id', String(params.instructor_id));
+  if (params.category_id)     p.set('category_id', String(params.category_id));
+  if (params.sub_category_id) p.set('sub_category_id', String(params.sub_category_id));
+  if (params.price_min != null) p.set('price_min', String(params.price_min));
+  if (params.price_max != null) p.set('price_max', String(params.price_max));
+  p.set('sort', params.sort || 'id');
+  p.set('order', params.order || 'desc');
+  p.set('page', String(params.page || 1));
+  p.set('limit', String(params.limit || 12));
+  return clientFetch<CourseListItem>(`/courses?${p.toString()}`);
+}
+
+// ─── Bundle filter params ─────────────────────────────────────────────────
+
+export interface BundleFilterParams {
+  search?: string;
+  is_featured?: boolean;
+  price_min?: number;
+  price_max?: number;
+  is_free?: boolean;
+  sort?: string;
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+/** Enriched bundle row returned by the list endpoint. */
+export interface BundleListItem extends Bundle {}
+
+/**
+ * Fetch bundles with filters + pagination (client-side, no ISR).
+ * Used by the /bundles filter page.
+ */
+export function fetchBundlesList(params: BundleFilterParams = {}): Promise<PaginatedResult<BundleListItem>> {
+  const p = new URLSearchParams();
+  p.set('is_active', 'true');
+  if (params.search)       p.set('search', params.search);
+  if (params.is_featured)  p.set('is_featured', 'true');
+  if (params.is_free)      p.set('is_free', 'true');
+  if (params.price_min != null) p.set('price_min', String(params.price_min));
+  if (params.price_max != null) p.set('price_max', String(params.price_max));
+  p.set('sort', params.sort || 'id');
+  p.set('order', params.order || 'desc');
+  p.set('page', String(params.page || 1));
+  p.set('limit', String(params.limit || 12));
+  return clientFetch<BundleListItem>(`/bundles?${p.toString()}`);
+}
+
+// ─── Instructor filter params ─────────────────────────────────────────────
+
+export interface InstructorFilterParams {
+  search?: string;
+  instructor_type?: string;
+  is_featured?: boolean;
+  is_verified?: boolean;
+  sort?: string;
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Fetch public instructors with filters + pagination (client-side, no ISR).
+ * Used by the /instructors filter page.
+ */
+export function fetchInstructorsList(params: InstructorFilterParams = {}): Promise<PaginatedResult<InstructorProfile>> {
+  const p = new URLSearchParams();
+  if (params.search)          p.set('search', params.search);
+  if (params.instructor_type) p.set('instructor_type', params.instructor_type);
+  if (params.is_featured)     p.set('is_featured', 'true');
+  if (params.is_verified)     p.set('is_verified', 'true');
+  p.set('sort', params.sort || 'created_at');
+  p.set('order', params.order || 'desc');
+  p.set('page', String(params.page || 1));
+  p.set('limit', String(params.limit || 18));
+  return clientFetch<InstructorProfile>(`/instructor-profiles/public?${p.toString()}`);
+}
+
+// ─── Blog filter params ───────────────────────────────────────────────────
+
+export interface BlogCategory {
+  id: number;
+  name: string;
+  slug?: string;
+  is_active?: boolean;
+}
+
+export interface BlogFilterParams {
+  search?: string;
+  category_id?: number;
+  is_featured?: boolean;
+  sort?: string;
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Fetch published blog posts with filters + pagination (client-side).
+ * Used by the /blog filter page.
+ */
+export function fetchBlogList(params: BlogFilterParams = {}): Promise<PaginatedResult<BlogPost>> {
+  const p = new URLSearchParams();
+  p.set('status', 'published');
+  p.set('is_active', 'true');
+  if (params.search)       p.set('search', params.search);
+  if (params.category_id)  p.set('category_id', String(params.category_id));
+  if (params.is_featured)  p.set('is_featured', 'true');
+  p.set('sort', params.sort || 'published_at');
+  p.set('order', params.order || 'desc');
+  p.set('page', String(params.page || 1));
+  p.set('limit', String(params.limit || 12));
+  return clientFetch<BlogPost>(`/blog-posts?${p.toString()}`);
+}
+
+/** Blog categories for filter dropdowns. */
+export function fetchBlogCategories(): Promise<BlogCategory[] | null> {
+  return request<BlogCategory[]>('/blog-categories?is_active=true&limit=100&sort=name&order=asc', { revalidate: 300 });
+}
+
+// ─── Podcast filter params ────────────────────────────────────────────────
+
+export interface PodcastFilterParams {
+  search?: string;
+  category_id?: number;
+  is_featured?: boolean;
+  sort?: string;
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Fetch published podcasts with filters + pagination (client-side).
+ * Used by the /podcasts filter page.
+ */
+export function fetchPodcastList(params: PodcastFilterParams = {}): Promise<PaginatedResult<Podcast>> {
+  const p = new URLSearchParams();
+  // Public endpoint already filters to published + coming_soon
+  if (params.search)       p.set('search', params.search);
+  if (params.category_id)  p.set('category_id', String(params.category_id));
+  if (params.is_featured)  p.set('is_featured', 'true');
+  p.set('sort', params.sort || 'published_at');
+  p.set('order', params.order || 'desc');
+  p.set('page', String(params.page || 1));
+  p.set('limit', String(params.limit || 12));
+  return clientFetch<Podcast>(`/podcasts?${p.toString()}`);
+}
+
+// ─── Live‑session types + fetch ──────────────────────────────────────────
+
+export interface LiveSession {
+  id:                number;
+  title:             string;
+  description?:      string | null;
+  item_type?:        string | null;
+  item_id?:          number | null;
+  instructor_id?:    number | null;
+  session_status?:   string | null;
+  scheduled_at?:     string | null;
+  duration_minutes?: number | null;
+  meeting_link?:     string | null;
+  meeting_platform?: string | null;
+  is_recurring?:     boolean;
+  thumbnail_url?:    string | null;
+  created_at?:       string;
+  /** FK join */
+  users?:            { id: number; first_name: string; last_name: string; email: string } | null;
+}
+
+export interface LiveSessionFilterParams {
+  search?: string;
+  session_status?: string;
+  meeting_platform?: string;
+  is_recurring?: boolean;
+  sort?: string;
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Fetch live sessions with filters + pagination (client-side).
+ * Used by the /live-sessions filter page.
+ */
+export function fetchLiveSessionsList(params: LiveSessionFilterParams = {}): Promise<PaginatedResult<LiveSession>> {
+  const p = new URLSearchParams();
+  if (params.search)           p.set('search', params.search);
+  if (params.session_status)   p.set('session_status', params.session_status);
+  if (params.meeting_platform) p.set('meeting_platform', params.meeting_platform);
+  if (params.is_recurring !== undefined) p.set('is_recurring', String(params.is_recurring));
+  p.set('sort', params.sort || 'created_at');
+  p.set('order', params.order || 'desc');
+  p.set('page', String(params.page || 1));
+  p.set('limit', String(params.limit || 12));
+  return clientFetch<LiveSession>(`/live-sessions?${p.toString()}`);
+}
+
+// ─── Webinar filter params + fetch ───────────────────────────────────────
+
+export interface WebinarFilterParams {
+  search?: string;
+  webinar_status?: string;
+  is_free?: boolean;
+  is_active?: boolean;
+  sort?: string;
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Fetch webinars with filters + pagination (client-side).
+ * Used by the /webinars filter page.
+ */
+export function fetchWebinarsList(params: WebinarFilterParams = {}): Promise<PaginatedResult<Webinar>> {
+  const p = new URLSearchParams();
+  if (params.search)         p.set('search', params.search);
+  if (params.webinar_status) p.set('webinar_status', params.webinar_status);
+  if (params.is_free !== undefined) p.set('is_free', String(params.is_free));
+  if (params.is_active !== undefined) p.set('is_active', String(params.is_active));
+  p.set('sort', params.sort || 'scheduled_at');
+  p.set('order', params.order || 'desc');
+  p.set('page', String(params.page || 1));
+  p.set('limit', String(params.limit || 12));
+  return clientFetch<Webinar>(`/webinars?${p.toString()}`);
+}
+
+// ─── Discussion thread types + fetch ─────────────────────────────────────
+
+export interface DiscussionThread {
+  id:             number;
+  title:          string;
+  body?:          string | null;
+  item_type?:     string | null;
+  item_id?:       number | null;
+  author_id?:     number | null;
+  thread_status?: string | null;
+  is_pinned?:     boolean;
+  is_answered?:   boolean;
+  reply_count?:   number;
+  view_count?:    number;
+  created_at?:    string;
+  /** FK join */
+  users?:         { id: number; first_name: string; last_name: string; email: string } | null;
+}
+
+export interface DiscussionFilterParams {
+  search?: string;
+  thread_status?: string;
+  is_pinned?: boolean;
+  is_answered?: boolean;
+  sort?: string;
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Fetch discussion threads with filters + pagination (client-side).
+ * Used by the /discussions filter page.
+ */
+export function fetchDiscussionsList(params: DiscussionFilterParams = {}): Promise<PaginatedResult<DiscussionThread>> {
+  const p = new URLSearchParams();
+  if (params.search)        p.set('search', params.search);
+  if (params.thread_status) p.set('thread_status', params.thread_status);
+  if (params.is_pinned !== undefined) p.set('is_pinned', String(params.is_pinned));
+  if (params.is_answered !== undefined) p.set('is_answered', String(params.is_answered));
+  p.set('sort', params.sort || 'created_at');
+  p.set('order', params.order || 'desc');
+  p.set('page', String(params.page || 1));
+  p.set('limit', String(params.limit || 12));
+  return clientFetch<DiscussionThread>(`/discussion-threads?${p.toString()}`);
+}
