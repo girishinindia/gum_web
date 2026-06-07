@@ -1,5 +1,8 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Calendar, Clock } from 'lucide-react';
+import { ArrowRight, Calendar, Clock, Search, User } from 'lucide-react';
 import { PageHero } from '@/components/ui/PageHero';
 import { Reveal } from '@/components/ui/Reveal';
 import { BLOG_POSTS } from '@/lib/homeContent';
@@ -8,6 +11,20 @@ import { cn } from '@/lib/cn';
 const CATEGORIES = ['All','Career','AI / ML','Data Science','Full Stack','Cyber Security','DevOps','Stories'];
 
 export default function BlogPage() {
+  const [search, setSearch] = useState('');
+
+  const filtered = search.trim()
+    ? [...BLOG_POSTS, ...BLOG_POSTS, ...BLOG_POSTS].filter((p) => {
+        const q = search.toLowerCase();
+        return (
+          p.title.toLowerCase().includes(q) ||
+          p.excerpt.toLowerCase().includes(q) ||
+          p.author.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q)
+        );
+      })
+    : [...BLOG_POSTS, ...BLOG_POSTS, ...BLOG_POSTS];
+
   return (
     <>
       <PageHero
@@ -30,8 +47,22 @@ export default function BlogPage() {
             </div>
           </Reveal>
 
+          {/* Search */}
+          <Reveal>
+            <div className="mt-6 relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search articles by title, author or topic…"
+                className="w-full rounded-lg border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400 transition-all"
+              />
+            </div>
+          </Reveal>
+
           <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...BLOG_POSTS, ...BLOG_POSTS, ...BLOG_POSTS].map((p, i) => (
+            {filtered.map((p, i) => (
               <Reveal key={`${p.id}-${i}`} delay={(i % 3) * 0.06}>
                 <Link href={`/blog/${p.slug}`} className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden hover:-translate-y-1 hover:shadow-cardHover transition-all">
                   <div className={cn('relative aspect-[16/9] bg-gradient-to-br', p.cover)}>
@@ -43,6 +74,7 @@ export default function BlogPage() {
                     <p className="mt-2 text-[13px] text-slate-600 line-clamp-2 min-h-[40px]">{p.excerpt}</p>
                     <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-[11.5px] text-slate-500">
                       <div className="flex items-center gap-3">
+                        {p.author && <span className="inline-flex items-center gap-1 font-semibold text-slate-700"><User className="h-3 w-3" /> {p.author}</span>}
                         <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" /> {p.date}</span>
                         <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {p.readMin} min</span>
                       </div>

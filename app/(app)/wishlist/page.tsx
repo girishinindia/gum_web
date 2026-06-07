@@ -10,7 +10,7 @@ const ITEMS = [
 
 export default function WishlistPage() {
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-6xl mx-auto">
       <Eyebrow>Saved for later</Eyebrow>
       <h1 className="mt-3 heading text-3xl sm:text-4xl text-slate-900 leading-tight tracking-tight">Wishlist</h1>
       <p className="mt-1 text-sm text-slate-500">{ITEMS.length} courses you bookmarked.</p>

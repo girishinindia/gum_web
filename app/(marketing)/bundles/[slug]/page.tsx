@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Layers, Users, Star, CheckCircle2, ShoppingCart, Heart, ChevronRight, Award, Sparkles } from 'lucide-react';
+import { Layers, Users, Star, CheckCircle2, ShoppingCart, Heart, ChevronRight, Award, Sparkles, BadgeCheck, ShieldCheck, FileCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
@@ -87,6 +87,33 @@ export default function BundleDetailPage() {
           <h2 className="heading text-2xl sm:text-3xl text-slate-900">Courses in this bundle</h2>
           <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {INCLUDED.map((c, i) => <Reveal key={c.id} delay={(i % 4) * 0.05}><CourseCard course={c} index={i} /></Reveal>)}
+          </div>
+        </div>
+      </section>
+
+      {/* Certifications & Badges */}
+      <section className="py-12 bg-slate-50/60">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+          <Reveal>
+            <h2 className="heading text-2xl sm:text-3xl text-slate-900">Certifications &amp; Badges</h2>
+            <p className="mt-2 text-sm text-slate-600 max-w-2xl">Complete the bundle to earn industry-recognised credentials you can showcase on LinkedIn.</p>
+          </Reveal>
+          <div className="mt-8 grid sm:grid-cols-3 gap-5">
+            {([
+              { icon: BadgeCheck,  title: 'Full-Stack Engineer Certificate', desc: 'Awarded after completing all 4 courses and the capstone project review.', color: 'text-brand-600 bg-brand-100' },
+              { icon: ShieldCheck, title: 'DevOps Practitioner Badge',       desc: 'Earned by passing the Cloud & DevOps hands-on assessment.', color: 'text-emerald-600 bg-emerald-100' },
+              { icon: FileCheck,   title: 'System Design Credential',       desc: 'Granted upon clearing the System Design case-study evaluation.', color: 'text-violet-600 bg-violet-100' },
+            ] as const).map((b, i) => (
+              <Reveal key={b.title} delay={i * 0.06}>
+                <div className="rounded-md bg-white border border-slate-200 shadow-card p-5 text-center">
+                  <div className={`mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full ${b.color}`}>
+                    <b.icon className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-3 heading text-sm font-semibold text-slate-900">{b.title}</h3>
+                  <p className="mt-1.5 text-[12.5px] text-slate-500 leading-relaxed">{b.desc}</p>
+                </div>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>

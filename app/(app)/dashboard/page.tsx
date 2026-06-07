@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { BookOpen, Clock, Trophy, Flame, ChevronRight, PlayCircle, Calendar, ArrowRight, Award, Target } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
-import { Eyebrow } from '@/components/ui/Eyebrow';
+import { DashboardWelcome } from '@/components/app/DashboardWelcome';
 
 const STATS = [
   { label: 'Active courses',  value: 3,  Icon: BookOpen, accent: 'from-brand-500 to-brand-700' },
@@ -11,9 +11,9 @@ const STATS = [
 ];
 
 const CONTINUE = [
-  { id:1, name:'Data Science with Python', module:'Module 4 · Statistics', percent:62, cover:'from-brand-700 via-brand-600 to-brand-500' },
-  { id:2, name:'MERN Full-Stack',           module:'Module 7 · Auth & deployment', percent:38, cover:'from-emerald-700 via-emerald-600 to-brand-500' },
-  { id:3, name:'Generative AI Builder',     module:'Module 2 · Embeddings deep-dive', percent:81, cover:'from-violet-700 via-rose-600 to-amber-500' },
+  { id:1, name:'Data Science with Python', module:'Module 4 · Statistics', percent:62, cover:'from-brand-700 via-brand-600 to-brand-500', nextTopic:'Topic 3: Data Preprocessing', pendingTopics:14 },
+  { id:2, name:'MERN Full-Stack',           module:'Module 7 · Auth & deployment', percent:38, cover:'from-emerald-700 via-emerald-600 to-brand-500', nextTopic:'Topic 1: JWT Authentication', pendingTopics:28 },
+  { id:3, name:'Generative AI Builder',     module:'Module 2 · Embeddings deep-dive', percent:81, cover:'from-violet-700 via-rose-600 to-amber-500', nextTopic:'Topic 5: Vector Stores', pendingTopics:6 },
 ];
 
 const UPCOMING = [
@@ -29,7 +29,7 @@ export default function DashboardPage() {
     // mirrors the marketing section rhythm so the dashboard sits in
     // the same visual cadence as the rest of the site.
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <Eyebrow>Welcome back, Anjali</Eyebrow>
+      <DashboardWelcome />
       <h1 className="mt-3 heading text-3xl sm:text-4xl text-slate-900 leading-tight tracking-tight">
         Today&apos;s plan — <span className="text-gradient">3 modules left</span> to finish your weekly goal
       </h1>
@@ -60,6 +60,7 @@ export default function DashboardPage() {
               <div className="p-4">
                 <div className="text-[11px] uppercase tracking-wider text-brand-700 font-semibold">{c.module}</div>
                 <h3 className="mt-1 heading text-base text-slate-900 group-hover:text-brand-700 transition-colors">{c.name}</h3>
+                <p className="mt-1.5 text-[11.5px] text-slate-500"><span className="font-semibold text-slate-600">Next:</span> {c.nextTopic} · {c.pendingTopics} left</p>
                 <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-brand-500 to-accent rounded-full" style={{ width: c.percent + '%' }} />
                 </div>

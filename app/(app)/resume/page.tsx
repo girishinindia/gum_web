@@ -11,7 +11,7 @@ const TEMPLATES = [
 
 export default function ResumePage() {
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <Eyebrow>Resume Builder</Eyebrow>

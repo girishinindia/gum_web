@@ -337,4 +337,16 @@ export const api = {
   /** Published podcasts, newest first (for "Podcasts" section). */
   latestPodcasts: (limit = 4) =>
     request<Podcast[]>(`/podcasts?status=published&limit=${limit}&sort=published_at&order=desc`, { revalidate: 300 }),
+
+  /** All published podcasts for listing page (with optional category filter). */
+  podcastsList: (opts?: { categoryId?: number; limit?: number }) => {
+    const limit = opts?.limit ?? 20;
+    let qs = `/podcasts?status=published&limit=${limit}&sort=published_at&order=desc`;
+    if (opts?.categoryId) qs += `&category_id=${opts.categoryId}`;
+    return request<Podcast[]>(qs, { revalidate: 300 });
+  },
+
+  /** Single podcast by ID. */
+  podcastById: (id: string) =>
+    request<Podcast>(`/podcasts/${id}`, { revalidate: 300 }),
 };

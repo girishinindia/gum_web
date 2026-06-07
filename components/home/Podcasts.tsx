@@ -95,7 +95,7 @@ export function Podcasts({ data }: Props) {
                     </div>
                   )}
 
-                  <div className="p-4">
+                  <div className="p-4 min-h-[140px] flex flex-col">
                     {p.episode_number != null && (
                       <div className="text-[10.5px] font-mono text-slate-400 uppercase tracking-wider mb-1">
                         Episode {p.episode_number}
@@ -107,7 +107,7 @@ export function Podcasts({ data }: Props) {
                     {p.short_summary && (
                       <p className="mt-1.5 text-[12px] text-slate-500 line-clamp-2">{p.short_summary}</p>
                     )}
-                    <div className="mt-3 flex items-center justify-between text-[11.5px] text-slate-500 pt-3 border-t border-slate-100">
+                    <div className="mt-auto flex items-center justify-between text-[11.5px] text-slate-500 pt-3 border-t border-slate-100">
                       {poster && <span className="truncate max-w-[60%]">{poster}</span>}
                       <span className="inline-flex items-center gap-1">
                         {p.duration ? <><Clock className="h-3 w-3" /> {formatDuration(p.duration)}</> : dt ? dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : null}

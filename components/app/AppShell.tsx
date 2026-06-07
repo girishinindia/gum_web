@@ -10,6 +10,7 @@ import {
   GraduationCap, type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 interface NavItem { href: string; label: string; Icon: LucideIcon; badge?: string | number; }
 
@@ -45,6 +46,12 @@ const NAV: { heading: string; items: NavItem[] }[] = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
+
+  const fullName    = user ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() : '';
+  const displayName = user?.display_name || fullName || user?.email?.split('@')[0] || 'User';
+  const initial     = displayName.charAt(0).toUpperCase();
+  const avatarUrl   = user?.profile_image_url ?? null;
 
   const SidebarContent = (
     <nav className="flex flex-col h-full">
@@ -134,8 +141,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500" />
             </button>
             <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-slate-50 hover:bg-brand-50 cursor-pointer transition-colors">
-              <span className="h-7 w-7 rounded-full bg-gradient-to-br from-brand-500 to-accent text-white text-[11px] font-bold flex items-center justify-center">A</span>
-              <span className="text-sm font-semibold text-slate-800 hidden sm:inline">Anjali</span>
+              {avatarUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={avatarUrl} alt={displayName} className="h-7 w-7 rounded-full object-cover" />
+              ) : (
+                <span className="h-7 w-7 rounded-full bg-gradient-to-br from-brand-500 to-accent text-white text-[11px] font-bold flex items-center justify-center">{initial}</span>
+              )}
+              <span className="text-sm font-semibold text-slate-800 hidden sm:inline">{displayName.split(' ')[0]}</span>
               <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
             </div>
           </div>

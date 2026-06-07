@@ -1,18 +1,18 @@
 import Link from 'next/link';
-import { PlayCircle, Clock, Award, MoreVertical } from 'lucide-react';
+import { PlayCircle, Clock, Award, MoreVertical, BookOpen } from 'lucide-react';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { cn } from '@/lib/cn';
 
 const TABS = ['In Progress','Completed','Archived'];
 const COURSES = [
-  { id:1, name:'Data Science with Python', module:'Statistics for ML', cover:'from-brand-700 to-brand-500', percent:62, hours:'12h left', last:'2h ago' },
-  { id:2, name:'MERN Full-Stack',          module:'Auth & deployment', cover:'from-emerald-700 to-brand-500', percent:38, hours:'40h left', last:'yesterday' },
-  { id:3, name:'Generative AI Builder',    module:'RAG in production', cover:'from-violet-700 to-rose-500', percent:81, hours:'4h left',  last:'3 days ago' },
+  { id:1, name:'Data Science with Python', module:'Statistics for ML', cover:'from-brand-700 to-brand-500', percent:62, hours:'12h left', last:'2h ago', nextTopic:'Ch 5 · Topic 3: Data Preprocessing', pendingTopics:14 },
+  { id:2, name:'MERN Full-Stack',          module:'Auth & deployment', cover:'from-emerald-700 to-brand-500', percent:38, hours:'40h left', last:'yesterday', nextTopic:'Ch 7 · Topic 1: JWT Authentication', pendingTopics:28 },
+  { id:3, name:'Generative AI Builder',    module:'RAG in production', cover:'from-violet-700 to-rose-500', percent:81, hours:'4h left',  last:'3 days ago', nextTopic:'Ch 2 · Topic 5: Vector Stores', pendingTopics:6 },
 ];
 
 export default function MyCoursesPage() {
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-7xl mx-auto">
       <Eyebrow>My Learning</Eyebrow>
       <h1 className="mt-3 heading text-3xl sm:text-4xl text-slate-900 leading-tight tracking-tight">Your courses</h1>
 
@@ -41,7 +41,11 @@ export default function MyCoursesPage() {
                 </div>
                 <button className="h-8 w-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500"><MoreVertical className="h-4 w-4" /></button>
               </div>
-              <div className="mt-3 flex items-center gap-4 text-[12px] text-slate-500">
+              <div className="mt-2 flex items-start gap-1.5 text-[12px] text-slate-600">
+                <BookOpen className="h-3 w-3 mt-0.5 shrink-0 text-brand-500" />
+                <span><span className="font-semibold">Next:</span> {c.nextTopic} <span className="text-slate-400">· {c.pendingTopics} topics left</span></span>
+              </div>
+              <div className="mt-2 flex items-center gap-4 text-[12px] text-slate-500">
                 <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {c.hours}</span>
                 <span>Last accessed {c.last}</span>
               </div>

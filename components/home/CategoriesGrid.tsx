@@ -161,12 +161,12 @@ export function CategoriesGrid({ initialCategories }: Props) {
               <Reveal key={c.id ?? c.slug} delay={(i % 6) * 0.04}>
                 <Link
                   href={`/courses?category=${c.slug}`}
-                  className="group relative block rounded-md bg-white border border-slate-200 shadow-card p-5 hover:-translate-y-1 hover:shadow-cardHover hover:border-brand-200 transition-all text-center"
+                  className="group relative block rounded-md bg-white border border-slate-200 shadow-card p-5 hover:-translate-y-1 hover:shadow-cardHover hover:border-brand-200 transition-all text-center min-h-[170px]"
                 >
                   <span className={`absolute top-3 right-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-bold tracking-wider ${badge.cls}`}>
                     ⚡ {badge.label}
                   </span>
-                  <div className={`mx-auto inline-flex h-14 w-14 items-center justify-center rounded-md ${palette.chip} mt-2`}>
+                  <div className={`mx-auto inline-flex h-14 w-14 items-center justify-center rounded-md ${palette.chip} mt-5`}>
                     <Icon className="h-6 w-6" />
                   </div>
                   <h3 className="mt-4 heading text-sm text-slate-900 group-hover:text-brand-700 transition-colors leading-tight">{displayName}</h3>

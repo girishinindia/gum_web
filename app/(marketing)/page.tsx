@@ -9,7 +9,6 @@ import { Features }           from '@/components/home/Features';
 import { Bundles }            from '@/components/home/Bundles';
 import { Instructors }        from '@/components/home/Instructors';
 import { CertificatePreview } from '@/components/home/CertificatePreview';
-import { HiringPartners }     from '@/components/home/HiringPartners';
 import { StudentReviews }     from '@/components/home/StudentReviews';
 import { LatestBlog }         from '@/components/home/LatestBlog';
 import { Podcasts }           from '@/components/home/Podcasts';
@@ -38,19 +37,18 @@ export default async function HomePage() {
       <StatsCounter />
       <HowItWorks />
       <UpcomingWebinars data={webinars} />
+      <LanguagesBanner />
       <PopularCourses />
       <Features />
       <Bundles data={bundles} />
       <Instructors data={instructors} />
       <CertificatePreview />
-      <HiringPartners />
       <StudentReviews />
       <LatestBlog data={blogPosts} />
       <Podcasts data={podcasts} />
       <FAQ items={faqs && faqs.length > 0 ? faqs.map((f) => ({ question: f.question, answer: f.answer })) : undefined} />
       <Newsletter />
       <CTA />
-      <LanguagesBanner />
     </>
   );
 }

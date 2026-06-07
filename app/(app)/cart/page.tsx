@@ -10,7 +10,7 @@ const ITEMS = [
 export default function CartPage() {
   const subtotal = ITEMS.reduce((s, i) => s + i.price, 0);
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-6xl mx-auto">
       <h1 className="heading text-3xl text-slate-900">Your cart</h1>
       <p className="mt-1 text-sm text-slate-500">{ITEMS.length} items</p>
 

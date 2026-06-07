@@ -12,7 +12,7 @@ const TX = [
 
 export default function WalletPage() {
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-6xl mx-auto">
       <Eyebrow>Wallet</Eyebrow>
       <h1 className="mt-3 heading text-3xl sm:text-4xl text-slate-900 leading-tight tracking-tight">Your GUM Wallet</h1>
 
