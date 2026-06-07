@@ -352,9 +352,10 @@ export const api = {
 
   // ─── Section visibility (public, no auth) ──────────────────────────────
 
-  /** Visibility map: { courses: true, blogs: false, … } */
+  /** Visibility map: { courses: true, blogs: false, … }
+   *  Short revalidation (30s) so admin toggles reflect quickly on the frontend. */
   sectionVisibility: () =>
-    request<Record<string, boolean>>('/site-settings/sections', { revalidate: 300 }),
+    request<Record<string, boolean>>('/site-settings/sections', { revalidate: 30 }),
 
   // ─── Filter-page helpers (categories, languages for dropdowns) ────────
 
