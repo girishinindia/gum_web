@@ -21,34 +21,39 @@ import { api }                from '@/lib/api';
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [faqs, webinars, bundles, instructors, blogPosts, podcasts] = await Promise.all([
+  const [faqs, webinars, bundles, instructors, blogPosts, podcasts, vis] = await Promise.all([
     api.faqs(),
     api.upcomingWebinars(),
     api.featuredBundles(),
     api.featuredInstructors(),
     api.latestBlogPosts(),
     api.latestPodcasts(),
+    api.sectionVisibility(),
   ]);
+
+  /** Helper: section shows unless explicitly toggled off (defaults visible). */
+  const show = (key: string) => vis?.[key] !== false;
+
   return (
     <>
       <Hero />
       <TrustedStrip />
-      <Categories />
-      <StatsCounter />
-      <HowItWorks />
-      <UpcomingWebinars data={webinars} />
-      <LanguagesBanner />
-      <PopularCourses />
-      <Features />
-      <Bundles data={bundles} />
-      <Instructors data={instructors} />
-      <CertificatePreview />
-      <StudentReviews />
-      <LatestBlog data={blogPosts} />
-      <Podcasts data={podcasts} />
-      <FAQ items={faqs && faqs.length > 0 ? faqs.map((f) => ({ question: f.question, answer: f.answer })) : undefined} />
-      <Newsletter />
-      <CTA />
+      {show('categories')      && <Categories />}
+      {show('stats')           && <StatsCounter />}
+      {show('how_it_works')    && <HowItWorks />}
+      {show('webinars')        && <UpcomingWebinars data={webinars} />}
+      {show('languages')       && <LanguagesBanner />}
+      {show('courses')         && <PopularCourses />}
+      {show('features')        && <Features />}
+      {show('bundles')         && <Bundles data={bundles} />}
+      {show('instructors')     && <Instructors data={instructors} />}
+      {show('certificate')     && <CertificatePreview />}
+      {show('student_reviews') && <StudentReviews />}
+      {show('blogs')           && <LatestBlog data={blogPosts} />}
+      {show('podcasts')        && <Podcasts data={podcasts} />}
+      {show('faq')             && <FAQ items={faqs && faqs.length > 0 ? faqs.map((f) => ({ question: f.question, answer: f.answer })) : undefined} />}
+      {show('newsletter')      && <Newsletter />}
+      {show('cta')             && <CTA />}
     </>
   );
 }

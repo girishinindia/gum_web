@@ -349,4 +349,10 @@ export const api = {
   /** Single podcast by ID. */
   podcastById: (id: string) =>
     request<Podcast>(`/podcasts/${id}`, { revalidate: 300 }),
+
+  // ─── Section visibility (public, no auth) ──────────────────────────────
+
+  /** Visibility map: { courses: true, blogs: false, … } */
+  sectionVisibility: () =>
+    request<Record<string, boolean>>('/site-settings/sections', { revalidate: 300 }),
 };
