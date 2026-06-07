@@ -21,6 +21,7 @@ import {
 import {
   fetchPodcastList,
   api,
+  categoryName,
   type Podcast,
   type Category,
   type PodcastFilterParams,
@@ -234,7 +235,7 @@ function PodcastsPageInner() {
       groups.push({
         key: 'categories',
         label: 'Category',
-        options: categoryOptions.map((c) => ({ value: String(c.id), label: c.name })),
+        options: categoryOptions.map((c) => ({ value: String(c.id), label: categoryName(c) })),
       });
     }
     groups.push({ key: 'tags', label: 'Tags', options: TAG_OPTIONS });
@@ -259,7 +260,7 @@ function PodcastsPageInner() {
     const result: FilterChip[] = [];
     for (const v of filters.categories) {
       const cat = categoryOptions.find((c) => String(c.id) === v);
-      if (cat) result.push({ key: `categories:${v}`, label: cat.name });
+      if (cat) result.push({ key: `categories:${v}`, label: categoryName(cat) });
     }
     for (const v of filters.tags) {
       const opt = TAG_OPTIONS.find((o) => o.value === v);

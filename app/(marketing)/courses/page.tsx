@@ -29,6 +29,7 @@ import {
   fetchLiveSessionsList,
   fetchPodcastList,
   api,
+  categoryName,
   subCategoryName,
   type CourseListItem,
   type Category,
@@ -170,8 +171,8 @@ function stateToApiParams(s: FilterState): CourseFilterParams {
   // Language — use first selected
   if (s.languages.size === 1) params.course_language_id = parseInt([...s.languages][0]);
 
-  // Category — comma-separated for multi-select
-  if (s.categories.size > 0) params.category_id = [...s.categories].join(',');
+  // Category — single-select
+  if (s.categories.size === 1) params.category_id = [...s.categories][0];
 
   // Sub-category — comma-separated for multi-select
   if (s.subCategories.size > 0) params.sub_category_id = [...s.subCategories].join(',');
@@ -415,7 +416,8 @@ function CoursesPageInner() {
       groups.push({
         key: 'categories',
         label: 'Category',
-        options: categoryOptions.map((c) => ({ value: String(c.id), label: c.name })),
+        type: 'radio',
+        options: categoryOptions.map((c) => ({ value: String(c.id), label: categoryName(c) })),
         maxVisible: 6,
       });
     }
@@ -495,29 +497,21 @@ function CoursesPageInner() {
       if (groupKey === 'ratingMin') {
         return { ...prev, ratingMin: checked ? value : '', page: 1 };
       }
+
+      // Category — single-select radio: pick one or deselect
+      if (groupKey === 'categories') {
+        const categories = checked ? new Set([value]) : new Set<string>();
+        // Always clear sub-categories when category changes
+        return { ...prev, categories, subCategories: new Set<string>(), page: 1 };
+      }
+
       // Checkbox groups
       const key = groupKey as keyof FilterState;
       const set = new Set(prev[key] as Set<string>);
       if (checked) set.add(value);
       else set.delete(value);
 
-      const next: FilterState = { ...prev, [key]: set, page: 1 };
-
-      // When categories change, clear sub-category selections that no longer match
-      if (groupKey === 'categories') {
-        const selectedCatIds = new Set([...set].map(Number));
-        if (selectedCatIds.size > 0) {
-          const validSubIds = new Set(
-            subCategoryOptions
-              .filter((sc) => sc.category_id && selectedCatIds.has(sc.category_id))
-              .map((sc) => String(sc.id)),
-          );
-          const cleaned = new Set([...prev.subCategories].filter((id) => validSubIds.has(id)));
-          next.subCategories = cleaned;
-        }
-      }
-
-      return next;
+      return { ...prev, [key]: set, page: 1 };
     });
   }
 
@@ -553,7 +547,7 @@ function CoursesPageInner() {
 
     for (const v of filters.categories) {
       const cat = categoryOptions.find((c) => String(c.id) === v);
-      if (cat) result.push({ key: `categories:${v}`, label: cat.name });
+      if (cat) result.push({ key: `categories:${v}`, label: categoryName(cat) });
     }
     for (const v of filters.subCategories) {
       const sc = subCategoryOptions.find((s) => String(s.id) === v);

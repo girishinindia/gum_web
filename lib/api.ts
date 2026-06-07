@@ -441,12 +441,25 @@ export interface CourseListItem extends Course {
 
 export interface Category {
   id: number;
-  name: string;
+  /** Direct column on the categories table (may be null). */
+  name?: string | null;
   slug: string;
   code?: string | null;
+  /** Enriched by the API from category_translations (English row). */
+  english_name?: string | null;
   image?: string | null;
   is_active?: boolean;
   display_order?: number;
+  course_count?: number;
+}
+
+/** Human-readable display name for a Category row, with sane fallbacks. */
+export function categoryName(c: Category): string {
+  return (c.english_name && c.english_name.trim())
+      || (c.name && c.name.trim())
+      || (c.code && c.code.trim())
+      || (c.slug ? c.slug.split('-').map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ') : '')
+      || 'Untitled';
 }
 
 /**
