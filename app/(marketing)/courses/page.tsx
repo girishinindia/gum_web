@@ -13,9 +13,14 @@ import {
   PaginationBar,
   FilterSidebar,
   FilterDrawer,
+  FilterDropdown,
+  FilterMultiDropdown,
+  FilterPanel,
+  ResultStrip,
   PriceRangeCard,
   type SortOption,
   type FilterGroup,
+  type FilterOption,
   type FilterChip,
   type PriceRangeState,
 } from '@/components/ui/filters';
@@ -51,7 +56,8 @@ const SORT_OPTIONS: SortOption[] = [
   { label: 'Name A–Z', sort: 'name', order: 'asc' },
 ];
 
-const CONTENT_TYPE_OPTIONS = [
+/** All possible content type options for the checkbox filter */
+const ALL_CONTENT_TYPE_OPTIONS = [
   { value: 'courses', label: 'Courses' },
   { value: 'bundles', label: 'Course Bundles' },
   { value: 'batches', label: 'Batches' },
@@ -65,7 +71,24 @@ const CONTENT_TYPE_OPTIONS = [
 
 const DEFAULT_CONTENT_TYPES = new Set(['courses', 'bundles', 'batches']);
 
-const LEVEL_OPTIONS = [
+/**
+ * Map site_section_settings keys → content type values.
+ * Batches has no own section key — it's visible when "courses" is visible.
+ */
+const SECTION_KEY_MAP: Record<string, string> = {
+  courses: 'courses',
+  bundles: 'bundles',
+  instructors: 'instructors',
+  blogs: 'blogs',
+  webinars: 'webinars',
+  live_sessions: 'live_sessions',
+  podcasts: 'podcasts',
+  live_classes: 'live_classes',
+};
+
+// ─── Per-content-type filter configurations ─────────────────────────────
+
+const LEVEL_OPTIONS: FilterOption[] = [
   { value: 'absolute_beginner', label: 'Absolute Beginner' },
   { value: 'beginner', label: 'Beginner' },
   { value: 'intermediate', label: 'Intermediate' },
@@ -74,18 +97,120 @@ const LEVEL_OPTIONS = [
   { value: 'mega', label: 'Mega' },
 ];
 
-const RATING_OPTIONS = [
+const RATING_OPTIONS: FilterOption[] = [
   { value: '4.5', label: '4.5 & above' },
   { value: '4.0', label: '4.0 & above' },
   { value: '3.5', label: '3.5 & above' },
 ];
 
-const TAG_OPTIONS = [
+const TAG_OPTIONS: FilterOption[] = [
   { value: 'bestseller', label: 'Bestseller', icon: Star, iconColor: 'text-amber-500' },
   { value: 'new', label: 'New', icon: Sparkles, iconColor: 'text-violet-500' },
   { value: 'certificate', label: 'Certificate', icon: Award, iconColor: 'text-emerald-500' },
   { value: 'featured', label: 'Featured', icon: Flame, iconColor: 'text-rose-500' },
 ];
+
+/** Extended FilterGroup with optional colored section header */
+interface TypeFilterGroup extends FilterGroup {
+  /** If set, renders a colored header bar above this group's section */
+  sectionHeader?: { label: string; bg: string; text: string; border: string };
+}
+
+/** Filter groups specific to each content type */
+const FILTER_CONFIG: Record<string, TypeFilterGroup[]> = {
+  courses: [
+    { key: 'levels', label: 'Level', options: LEVEL_OPTIONS, maxVisible: 7 },
+    { key: 'ratingMin', label: 'Rating', options: RATING_OPTIONS, type: 'radio' },
+    { key: 'tags', label: 'Tags', options: TAG_OPTIONS },
+  ],
+  bundles: [
+    { key: 'ratingMin', label: 'Rating', options: RATING_OPTIONS, type: 'radio' },
+    { key: 'bundleFeatured', label: 'Featured', options: [{ value: 'true', label: 'Featured Only' }] },
+  ],
+  batches: [
+    {
+      key: 'batchStatus', label: 'Batch Status', type: 'radio',
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'upcoming', label: 'Upcoming' },
+        { value: 'completed', label: 'Completed' },
+      ],
+    },
+    { key: 'batchFree', label: 'Free Only', options: [{ value: 'true', label: 'Free Batches' }] },
+  ],
+  instructors: [
+    {
+      key: 'instructorType', label: 'Instructor Type', type: 'radio',
+      options: [
+        { value: 'internal', label: 'Internal' },
+        { value: 'external', label: 'External' },
+        { value: 'guest', label: 'Guest' },
+      ],
+    },
+    { key: 'instructorVerified', label: 'Verified', options: [{ value: 'true', label: 'Verified Only' }] },
+    { key: 'instructorFeatured', label: 'Featured', options: [{ value: 'true', label: 'Featured Only' }] },
+  ],
+  blogs: [
+    { key: 'blogFeatured', label: 'Featured', options: [{ value: 'true', label: 'Featured Only' }] },
+  ],
+  webinars: [
+    {
+      key: 'webinarStatus', label: 'Webinar Status', type: 'radio',
+      options: [
+        { value: 'upcoming', label: 'Upcoming' },
+        { value: 'live', label: 'Live Now' },
+        { value: 'completed', label: 'Completed' },
+      ],
+    },
+    { key: 'webinarFree', label: 'Free Only', options: [{ value: 'true', label: 'Free Webinars' }] },
+  ],
+  live_sessions: [
+    {
+      key: 'sessionStatus', label: 'Session Status', type: 'radio',
+      options: [
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'live', label: 'Live' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'cancelled', label: 'Cancelled' },
+      ],
+    },
+    {
+      key: 'meetingPlatform', label: 'Platform', type: 'radio',
+      options: [
+        { value: 'zoom', label: 'Zoom' },
+        { value: 'google_meet', label: 'Google Meet' },
+        { value: 'ms_teams', label: 'MS Teams' },
+      ],
+    },
+    { key: 'sessionRecurring', label: 'Recurring', options: [{ value: 'true', label: 'Recurring Only' }] },
+  ],
+  podcasts: [
+    { key: 'podcastFeatured', label: 'Featured', options: [{ value: 'true', label: 'Featured Only' }] },
+  ],
+  live_classes: [
+    {
+      key: 'sessionStatus', label: 'Session Status', type: 'radio',
+      options: [
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'live', label: 'Live' },
+        { value: 'completed', label: 'Completed' },
+      ],
+    },
+  ],
+};
+
+/** Colored section header config per content type */
+const SECTION_HEADERS: Record<string, { label: string; bg: string; text: string; border: string }> = {
+  courses: { label: 'Course Filters', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  bundles: { label: 'Bundle Filters', bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200' },
+  batches: { label: 'Batch Filters', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  instructors: { label: 'Instructor Filters', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  blogs: { label: 'Blog Filters', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
+  webinars: { label: 'Webinar Filters', bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-200' },
+  live_sessions: { label: 'Live Session Filters', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
+  podcasts: { label: 'Podcast Filters', bg: 'bg-fuchsia-50', text: 'text-fuchsia-700', border: 'border-fuchsia-200' },
+  live_classes: { label: 'Live Class Filters', bg: 'bg-teal-50', text: 'text-teal-700', border: 'border-teal-200' },
+};
 
 // ─── Filter state type ─────────────────────────────────────────────────
 
@@ -94,6 +219,7 @@ interface FilterState {
   sort: string;
   order: 'asc' | 'desc';
   page: number;
+  pageSize: number;
   contentTypes: Set<string>;
   categories: Set<string>;
   subCategories: Set<string>;
@@ -104,6 +230,20 @@ interface FilterState {
   priceMax: string;
   languages: Set<string>;
   tags: Set<string>;
+  // ── Per-content-type filter values ──
+  batchStatus: string;
+  webinarStatus: string;
+  webinarFree: boolean;
+  sessionStatus: string;
+  meetingPlatform: string;
+  sessionRecurring: boolean;
+  instructorType: string;
+  instructorVerified: boolean;
+  instructorFeatured: boolean;
+  blogFeatured: boolean;
+  bundleFeatured: boolean;
+  podcastFeatured: boolean;
+  batchFree: boolean;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────
@@ -116,6 +256,7 @@ function paramsToState(sp: URLSearchParams): FilterState {
     sort: sp.get('sort') || 'rating_count',
     order: (sp.get('order') || 'desc') as 'asc' | 'desc',
     page: parseInt(sp.get('page') || '1') || 1,
+    pageSize: parseInt(sp.get('limit') || String(PAGE_SIZE)) || PAGE_SIZE,
     contentTypes: typeStr
       ? new Set(typeStr.split(',').filter(Boolean))
       : new Set(DEFAULT_CONTENT_TYPES),
@@ -128,6 +269,20 @@ function paramsToState(sp: URLSearchParams): FilterState {
     priceMax: sp.get('pmax') || '',
     languages: new Set((sp.get('lang') || '').split(',').filter(Boolean)),
     tags: new Set((sp.get('tag') || '').split(',').filter(Boolean)),
+    // Per-content-type filters
+    batchStatus: sp.get('bstatus') || '',
+    webinarStatus: sp.get('wstatus') || '',
+    webinarFree: sp.get('wfree') === 'true',
+    sessionStatus: sp.get('sstatus') || '',
+    meetingPlatform: sp.get('platform') || '',
+    sessionRecurring: sp.get('recurring') === 'true',
+    instructorType: sp.get('itype') || '',
+    instructorVerified: sp.get('iverified') === 'true',
+    instructorFeatured: sp.get('ifeatured') === 'true',
+    blogFeatured: sp.get('blfeatured') === 'true',
+    bundleFeatured: sp.get('bufeatured') === 'true',
+    podcastFeatured: sp.get('pfeatured') === 'true',
+    batchFree: sp.get('bfree') === 'true',
   };
 }
 
@@ -138,6 +293,7 @@ function stateToParams(s: FilterState): string {
   if (s.sort !== 'rating_count') p.set('sort', s.sort);
   if (s.order !== 'desc') p.set('order', s.order);
   if (s.page > 1) p.set('page', String(s.page));
+  if (s.pageSize !== PAGE_SIZE) p.set('limit', String(s.pageSize));
   // Only serialize content types if they differ from defaults
   const sortedTypes = [...s.contentTypes].sort().join(',');
   const sortedDefaults = [...DEFAULT_CONTENT_TYPES].sort().join(',');
@@ -151,6 +307,20 @@ function stateToParams(s: FilterState): string {
   if (s.priceMax) p.set('pmax', s.priceMax);
   if (s.languages.size) p.set('lang', [...s.languages].join(','));
   if (s.tags.size) p.set('tag', [...s.tags].join(','));
+  // Per-content-type filters
+  if (s.batchStatus) p.set('bstatus', s.batchStatus);
+  if (s.webinarStatus) p.set('wstatus', s.webinarStatus);
+  if (s.webinarFree) p.set('wfree', 'true');
+  if (s.sessionStatus) p.set('sstatus', s.sessionStatus);
+  if (s.meetingPlatform) p.set('platform', s.meetingPlatform);
+  if (s.sessionRecurring) p.set('recurring', 'true');
+  if (s.instructorType) p.set('itype', s.instructorType);
+  if (s.instructorVerified) p.set('iverified', 'true');
+  if (s.instructorFeatured) p.set('ifeatured', 'true');
+  if (s.blogFeatured) p.set('blfeatured', 'true');
+  if (s.bundleFeatured) p.set('bufeatured', 'true');
+  if (s.podcastFeatured) p.set('pfeatured', 'true');
+  if (s.batchFree) p.set('bfree', 'true');
   const qs = p.toString();
   return qs ? `?${qs}` : '';
 }
@@ -162,7 +332,7 @@ function stateToApiParams(s: FilterState): CourseFilterParams {
     sort: s.sort,
     order: s.order,
     page: s.page,
-    limit: PAGE_SIZE,
+    limit: s.pageSize,
   };
 
   // Level — comma-separated for multi-select
@@ -230,16 +400,35 @@ function CoursesPageInner() {
   const [categoryOptions, setCategoryOptions] = useState<Category[]>([]);
   const [subCategoryOptions, setSubCategoryOptions] = useState<SubCategory[]>([]);
   const [languageOptions, setLanguageOptions] = useState<Language[]>([]);
+  const [sectionVisibility, setSectionVisibility] = useState<Record<string, boolean>>({});
+  const [visibilityLoaded, setVisibilityLoaded] = useState(false);
 
   // Parse current filters from URL
   const filters = useMemo(() => paramsToState(searchParams), [searchParams]);
 
-  // ── Load filter options once ──
+  // ── Load filter options + section visibility once ──
   useEffect(() => {
     api.categories().then((data) => { if (data) setCategoryOptions(data); });
     api.subCategories().then((data) => { if (data) setSubCategoryOptions(data); });
     api.allLanguages().then((data) => { if (data) setLanguageOptions(data); });
+    api.sectionVisibility().then((data) => {
+      if (data) setSectionVisibility(data);
+      setVisibilityLoaded(true);
+    });
   }, []);
+
+  // ── Content type options filtered by section visibility ──
+  const visibleContentTypeOptions = useMemo(() => {
+    if (!visibilityLoaded) return ALL_CONTENT_TYPE_OPTIONS; // show all until loaded
+    return ALL_CONTENT_TYPE_OPTIONS.filter((opt) => {
+      // "batches" has no own section key — visible when courses is visible
+      if (opt.value === 'batches') return sectionVisibility['courses'] !== false;
+      // Look up the section key for this content type
+      const sectionKey = Object.entries(SECTION_KEY_MAP).find(([, ct]) => ct === opt.value)?.[0];
+      if (!sectionKey) return true; // no mapping = always visible
+      return sectionVisibility[sectionKey] !== false;
+    });
+  }, [sectionVisibility, visibilityLoaded]);
 
   // ── Multi-source fetch when filters change ──
   useEffect(() => {
@@ -247,7 +436,7 @@ function CoursesPageInner() {
     setLoading(true);
 
     const selectedTypes = [...filters.contentTypes] as ContentType[];
-    const perTypeLimit = Math.max(2, Math.ceil(PAGE_SIZE / selectedTypes.length));
+    const perTypeLimit = Math.max(2, Math.ceil(filters.pageSize / selectedTypes.length));
 
     // Build parallel fetch promises for each selected content type
     const fetches: Promise<{ type: ContentType; items: UnifiedItem[]; total: number; totalPages: number }>[] = [];
@@ -274,6 +463,7 @@ function CoursesPageInner() {
           search, page, limit: perTypeLimit,
           is_free: filters.isFree || undefined,
           rating_min: filters.ratingMin ? parseFloat(filters.ratingMin) : undefined,
+          is_featured: filters.bundleFeatured || undefined,
           sort: 'rating_count', order: 'desc',
         }).then((r) => ({
           type: 'bundles' as ContentType,
@@ -287,8 +477,9 @@ function CoursesPageInner() {
       fetches.push(
         fetchBatchesList({
           search, page, limit: perTypeLimit,
-          is_free: filters.isFree || undefined,
-          is_active: true,
+          is_free: filters.batchFree || filters.isFree || undefined,
+          batch_status: filters.batchStatus || undefined,
+          is_active: !filters.batchStatus ? true : undefined,
         }).then((r) => ({
           type: 'batches' as ContentType,
           items: r.data.map((d) => ({ type: 'batches' as ContentType, id: d.id, data: d })),
@@ -301,6 +492,9 @@ function CoursesPageInner() {
       fetches.push(
         fetchInstructorsList({
           search, page, limit: perTypeLimit,
+          instructor_type: filters.instructorType || undefined,
+          is_verified: filters.instructorVerified || undefined,
+          is_featured: filters.instructorFeatured || undefined,
           sort: 'rating_average', order: 'desc',
         }).then((r) => ({
           type: 'instructors' as ContentType,
@@ -314,6 +508,7 @@ function CoursesPageInner() {
       fetches.push(
         fetchBlogList({
           search, page, limit: perTypeLimit,
+          is_featured: filters.blogFeatured || undefined,
           sort: 'published_at', order: 'desc',
         }).then((r) => ({
           type: 'blogs' as ContentType,
@@ -327,7 +522,8 @@ function CoursesPageInner() {
       fetches.push(
         fetchWebinarsList({
           search, page, limit: perTypeLimit,
-          is_free: filters.isFree || undefined,
+          is_free: filters.webinarFree || filters.isFree || undefined,
+          webinar_status: filters.webinarStatus || undefined,
           sort: 'scheduled_at', order: 'desc',
         }).then((r) => ({
           type: 'webinars' as ContentType,
@@ -341,6 +537,9 @@ function CoursesPageInner() {
       fetches.push(
         fetchLiveSessionsList({
           search, page, limit: perTypeLimit,
+          session_status: filters.sessionStatus || undefined,
+          meeting_platform: filters.meetingPlatform || undefined,
+          is_recurring: filters.sessionRecurring || undefined,
           sort: 'created_at', order: 'desc',
         }).then((r) => ({
           type: 'live_sessions' as ContentType,
@@ -354,6 +553,7 @@ function CoursesPageInner() {
       fetches.push(
         fetchPodcastList({
           search, page, limit: perTypeLimit,
+          is_featured: filters.podcastFeatured || undefined,
           sort: 'published_at', order: 'desc',
         }).then((r) => ({
           type: 'podcasts' as ContentType,
@@ -400,62 +600,47 @@ function CoursesPageInner() {
     return subCategoryOptions.filter((sc) => sc.category_id && selectedCatIds.has(sc.category_id));
   }, [subCategoryOptions, filters.categories]);
 
-  // ── Build filter groups for sidebar ──
-  // Top groups: Content Type, Category, Sub-category, Level, Rating
-  const topGroups: FilterGroup[] = useMemo(() => {
-    const groups: FilterGroup[] = [];
+  // ── Category dropdown options (single-select) ──
+  const categoryDropdownOptions = useMemo(
+    () => categoryOptions.map((c) => ({ value: String(c.id), label: categoryName(c), count: c.course_count })),
+    [categoryOptions],
+  );
 
-    groups.push({
-      key: 'contentTypes',
-      label: 'Content Type',
-      options: CONTENT_TYPE_OPTIONS,
-      maxVisible: 10,
-    });
+  // ── Sub-category dropdown options (multi-select, filtered by selected category) ──
+  const subCategoryDropdownOptions = useMemo(
+    () => filteredSubCategories.map((sc) => ({ value: String(sc.id), label: subCategoryName(sc) })),
+    [filteredSubCategories],
+  );
 
-    if (categoryOptions.length > 0) {
+  // ── Content Type checkbox group (visibility-gated) ──
+  const contentTypeGroup: FilterGroup = useMemo(() => ({
+    key: 'contentTypes',
+    label: 'Content Type',
+    options: visibleContentTypeOptions,
+    maxVisible: 10,
+  }), [visibleContentTypeOptions]);
+
+  // ── Dynamic per-content-type filter groups ──
+  const dynamicFilterGroups = useMemo(() => {
+    const selected = [...filters.contentTypes];
+    const groups: { header: typeof SECTION_HEADERS[string] | null; filters: FilterGroup[] }[] = [];
+
+    for (const type of selected) {
+      const config = FILTER_CONFIG[type];
+      if (!config || config.length === 0) continue;
       groups.push({
-        key: 'categories',
-        label: 'Category',
-        type: 'radio',
-        options: categoryOptions.map((c) => ({ value: String(c.id), label: categoryName(c) })),
-        maxVisible: 6,
+        header: SECTION_HEADERS[type] || null,
+        filters: config,
       });
     }
-
-    if (filteredSubCategories.length > 0) {
-      groups.push({
-        key: 'subCategories',
-        label: 'Sub-category',
-        options: filteredSubCategories.map((sc) => ({
-          value: String(sc.id),
-          label: subCategoryName(sc),
-        })),
-        maxVisible: 6,
-      });
-    }
-
-    groups.push({
-      key: 'levels',
-      label: 'Level',
-      options: LEVEL_OPTIONS,
-      maxVisible: 7,
-    });
-
-    groups.push({
-      key: 'ratingMin',
-      label: 'Rating',
-      options: RATING_OPTIONS,
-      type: 'radio',
-    });
-
     return groups;
-  }, [categoryOptions, filteredSubCategories]);
+  }, [filters.contentTypes]);
 
-  // Bottom groups: Language, Tags
+  // Bottom groups: Language (only when courses is selected)
   const bottomGroups: FilterGroup[] = useMemo(() => {
     const groups: FilterGroup[] = [];
 
-    if (languageOptions.length > 0) {
+    if (filters.contentTypes.has('courses') && languageOptions.length > 0) {
       groups.push({
         key: 'languages',
         label: 'Language',
@@ -463,14 +648,8 @@ function CoursesPageInner() {
       });
     }
 
-    groups.push({
-      key: 'tags',
-      label: 'Tags',
-      options: TAG_OPTIONS,
-    });
-
     return groups;
-  }, [languageOptions]);
+  }, [languageOptions, filters.contentTypes]);
 
   // Map of group key → selected set for the FilterSidebar
   const selectedMap: Record<string, Set<string>> = {
@@ -481,6 +660,20 @@ function CoursesPageInner() {
     ratingMin: filters.ratingMin ? new Set([filters.ratingMin]) : new Set(),
     languages: filters.languages,
     tags: filters.tags,
+    // Per-content-type filter selections
+    batchStatus: filters.batchStatus ? new Set([filters.batchStatus]) : new Set(),
+    webinarStatus: filters.webinarStatus ? new Set([filters.webinarStatus]) : new Set(),
+    webinarFree: filters.webinarFree ? new Set(['true']) : new Set(),
+    sessionStatus: filters.sessionStatus ? new Set([filters.sessionStatus]) : new Set(),
+    meetingPlatform: filters.meetingPlatform ? new Set([filters.meetingPlatform]) : new Set(),
+    sessionRecurring: filters.sessionRecurring ? new Set(['true']) : new Set(),
+    instructorType: filters.instructorType ? new Set([filters.instructorType]) : new Set(),
+    instructorVerified: filters.instructorVerified ? new Set(['true']) : new Set(),
+    instructorFeatured: filters.instructorFeatured ? new Set(['true']) : new Set(),
+    blogFeatured: filters.blogFeatured ? new Set(['true']) : new Set(),
+    bundleFeatured: filters.bundleFeatured ? new Set(['true']) : new Set(),
+    podcastFeatured: filters.podcastFeatured ? new Set(['true']) : new Set(),
+    batchFree: filters.batchFree ? new Set(['true']) : new Set(),
   };
 
   // Price range state
@@ -490,28 +683,49 @@ function CoursesPageInner() {
     max: filters.priceMax,
   };
 
+  // ── Per-type radio filter keys (string value, single-select) ──
+  const RADIO_STRING_KEYS = new Set([
+    'ratingMin', 'batchStatus', 'webinarStatus', 'sessionStatus',
+    'meetingPlatform', 'instructorType',
+  ]);
+
+  // ── Per-type boolean filter keys (checkbox → true/false) ──
+  const BOOLEAN_KEYS = new Set([
+    'webinarFree', 'sessionRecurring', 'instructorVerified',
+    'instructorFeatured', 'blogFeatured', 'bundleFeatured',
+    'podcastFeatured', 'batchFree',
+  ]);
+
   // ── Filter change handler (checkbox / radio groups) ──
   function handleFilterChange(groupKey: string, value: string, checked: boolean) {
     updateFilters((prev) => {
-      // Radio group (rating) — single select
-      if (groupKey === 'ratingMin') {
-        return { ...prev, ratingMin: checked ? value : '', page: 1 };
+      // Radio groups that store a string value
+      if (RADIO_STRING_KEYS.has(groupKey)) {
+        return { ...prev, [groupKey]: checked ? value : '', page: 1 };
+      }
+
+      // Boolean groups (checkbox → true/false)
+      if (BOOLEAN_KEYS.has(groupKey)) {
+        return { ...prev, [groupKey]: checked, page: 1 };
       }
 
       // Category — single-select radio: pick one or deselect
       if (groupKey === 'categories') {
         const categories = checked ? new Set([value]) : new Set<string>();
-        // Always clear sub-categories when category changes
         return { ...prev, categories, subCategories: new Set<string>(), page: 1 };
       }
 
-      // Checkbox groups
+      // Checkbox groups (Set-based: contentTypes, levels, languages, tags, etc.)
       const key = groupKey as keyof FilterState;
-      const set = new Set(prev[key] as Set<string>);
-      if (checked) set.add(value);
-      else set.delete(value);
+      const current = prev[key];
+      if (current instanceof Set) {
+        const set = new Set(current);
+        if (checked) set.add(value);
+        else set.delete(value);
+        return { ...prev, [key]: set, page: 1 };
+      }
 
-      return { ...prev, [key]: set, page: 1 };
+      return { ...prev, page: 1 };
     });
   }
 
@@ -533,14 +747,14 @@ function CoursesPageInner() {
     // Content type chips (only show chips for non-default selections)
     for (const v of filters.contentTypes) {
       if (!DEFAULT_CONTENT_TYPES.has(v)) {
-        const opt = CONTENT_TYPE_OPTIONS.find((o) => o.value === v);
+        const opt = ALL_CONTENT_TYPE_OPTIONS.find((o) => o.value === v);
         if (opt) result.push({ key: `contentTypes:${v}`, label: opt.label });
       }
     }
     // Show chips for removed defaults
     for (const v of DEFAULT_CONTENT_TYPES) {
       if (!filters.contentTypes.has(v)) {
-        const opt = CONTENT_TYPE_OPTIONS.find((o) => o.value === v);
+        const opt = ALL_CONTENT_TYPE_OPTIONS.find((o) => o.value === v);
         if (opt) result.push({ key: `contentTypes-off:${v}`, label: `No ${opt.label}` });
       }
     }
@@ -575,13 +789,41 @@ function CoursesPageInner() {
       const opt = TAG_OPTIONS.find((o) => o.value === v);
       if (opt) result.push({ key: `tags:${v}`, label: opt.label });
     }
+    // Per-content-type filter chips
+    if (filters.batchStatus) {
+      const opt = FILTER_CONFIG.batches?.[0]?.options.find((o) => o.value === filters.batchStatus);
+      result.push({ key: 'batchStatus', label: `Batch: ${opt?.label || filters.batchStatus}` });
+    }
+    if (filters.webinarStatus) {
+      const opt = FILTER_CONFIG.webinars?.[0]?.options.find((o) => o.value === filters.webinarStatus);
+      result.push({ key: 'webinarStatus', label: `Webinar: ${opt?.label || filters.webinarStatus}` });
+    }
+    if (filters.webinarFree) result.push({ key: 'webinarFree', label: 'Free Webinars' });
+    if (filters.sessionStatus) {
+      const opt = FILTER_CONFIG.live_sessions?.[0]?.options.find((o) => o.value === filters.sessionStatus);
+      result.push({ key: 'sessionStatus', label: `Session: ${opt?.label || filters.sessionStatus}` });
+    }
+    if (filters.meetingPlatform) {
+      const opt = FILTER_CONFIG.live_sessions?.[1]?.options.find((o) => o.value === filters.meetingPlatform);
+      result.push({ key: 'meetingPlatform', label: `Platform: ${opt?.label || filters.meetingPlatform}` });
+    }
+    if (filters.sessionRecurring) result.push({ key: 'sessionRecurring', label: 'Recurring Only' });
+    if (filters.instructorType) {
+      const opt = FILTER_CONFIG.instructors?.[0]?.options.find((o) => o.value === filters.instructorType);
+      result.push({ key: 'instructorType', label: `Instructor: ${opt?.label || filters.instructorType}` });
+    }
+    if (filters.instructorVerified) result.push({ key: 'instructorVerified', label: 'Verified Instructors' });
+    if (filters.instructorFeatured) result.push({ key: 'instructorFeatured', label: 'Featured Instructors' });
+    if (filters.blogFeatured) result.push({ key: 'blogFeatured', label: 'Featured Blogs' });
+    if (filters.bundleFeatured) result.push({ key: 'bundleFeatured', label: 'Featured Bundles' });
+    if (filters.podcastFeatured) result.push({ key: 'podcastFeatured', label: 'Featured Podcasts' });
+    if (filters.batchFree) result.push({ key: 'batchFree', label: 'Free Batches' });
     return result;
   }, [filters, categoryOptions, subCategoryOptions, languageOptions]);
 
   function handleChipRemove(chipKey: string) {
     // Handle special chip keys
     if (chipKey.startsWith('contentTypes-off:')) {
-      // Re-add a removed default content type
       const value = chipKey.replace('contentTypes-off:', '');
       handleFilterChange('contentTypes', value, true);
       return;
@@ -598,6 +840,16 @@ function CoursesPageInner() {
       handlePriceChange({ ...priceState, max: '' });
       return;
     }
+    // Radio string keys — clear the value
+    if (RADIO_STRING_KEYS.has(chipKey)) {
+      handleFilterChange(chipKey, '', false);
+      return;
+    }
+    // Boolean keys — uncheck
+    if (BOOLEAN_KEYS.has(chipKey)) {
+      handleFilterChange(chipKey, 'true', false);
+      return;
+    }
     if (chipKey.startsWith('ratingMin:')) {
       handleFilterChange('ratingMin', '', false);
       return;
@@ -612,24 +864,87 @@ function CoursesPageInner() {
 
   const activeFilterCount = chips.length + (filters.search ? 1 : 0);
 
+  // ── Selected category value for dropdown (single-select) ──
+  const selectedCategoryValue = filters.categories.size === 1 ? [...filters.categories][0] : '';
+
   // ── Sidebar content (shared between desktop + mobile drawer) ──
   const sidebarContent = (
-    <div className="space-y-4">
+    <FilterPanel onClearAll={handleClearAll} hasActiveFilters={chips.length > 0}>
+      {/* Search inside sidebar */}
+      <SearchInput
+        value={filters.search}
+        onChange={(search) => updateFilters((prev) => ({ ...prev, search, page: 1 }))}
+        placeholder="Search courses…"
+      />
+
+      {/* Category dropdown (single-select) */}
+      <FilterDropdown
+        label="Category"
+        placeholder="All Categories"
+        options={categoryDropdownOptions}
+        value={selectedCategoryValue}
+        onChange={(val) => {
+          updateFilters((prev) => ({
+            ...prev,
+            categories: val ? new Set([val]) : new Set<string>(),
+            subCategories: new Set<string>(),
+            page: 1,
+          }));
+        }}
+      />
+
+      {/* Sub-category dropdown (multi-select, cascades from category) */}
+      <FilterMultiDropdown
+        label="Sub-category"
+        placeholder="All Sub-categories"
+        options={subCategoryDropdownOptions}
+        selected={filters.subCategories}
+        onChange={(val, checked) => handleFilterChange('subCategories', val, checked)}
+        disabled={filters.categories.size === 0}
+        emptyMessage="Select a category first"
+      />
+
+      {/* Content type checkboxes (visibility-gated) */}
       <FilterSidebar
-        groups={topGroups}
+        groups={[contentTypeGroup]}
         selected={selectedMap}
         onChange={handleFilterChange}
       />
-      <PriceRangeCard
-        value={priceState}
-        onChange={handlePriceChange}
-      />
-      <FilterSidebar
-        groups={bottomGroups}
-        selected={selectedMap}
-        onChange={handleFilterChange}
-      />
-    </div>
+
+      {/* Dynamic per-content-type filter sections */}
+      {dynamicFilterGroups.map((section, idx) => (
+        <div key={idx}>
+          {/* Colored section header */}
+          {section.header && (
+            <div className={`px-3 py-1.5 rounded-md text-[11px] font-bold ${section.header.bg} ${section.header.text} border ${section.header.border}`}>
+              {section.header.label}
+            </div>
+          )}
+          <FilterSidebar
+            groups={section.filters}
+            selected={selectedMap}
+            onChange={handleFilterChange}
+          />
+        </div>
+      ))}
+
+      {/* Price range (shown when courses or bundles selected) */}
+      {(filters.contentTypes.has('courses') || filters.contentTypes.has('bundles')) && (
+        <PriceRangeCard
+          value={priceState}
+          onChange={handlePriceChange}
+        />
+      )}
+
+      {/* Language (shown when courses selected) */}
+      {bottomGroups.length > 0 && (
+        <FilterSidebar
+          groups={bottomGroups}
+          selected={selectedMap}
+          onChange={handleFilterChange}
+        />
+      )}
+    </FilterPanel>
   );
 
   return (
@@ -642,14 +957,9 @@ function CoursesPageInner() {
 
       <section className="pb-20">
         <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-          {/* ── Top bar: Search + Mobile filter btn + Sort + Count ── */}
+          {/* ── Upper result strip ── */}
           <Reveal>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <SearchInput
-                value={filters.search}
-                onChange={(search) => updateFilters((prev) => ({ ...prev, search, page: 1 }))}
-                placeholder="Search Python, AI, Full Stack…"
-              />
+            <div className="flex items-center gap-3 mb-2">
               {/* Mobile filter toggle */}
               <button
                 onClick={() => setDrawerOpen(true)}
@@ -663,13 +973,28 @@ function CoursesPageInner() {
                   </span>
                 )}
               </button>
-              <SortDropdown
-                options={SORT_OPTIONS}
-                value={filters.sort}
-                order={filters.order}
-                onChange={(sort, order) => updateFilters((prev) => ({ ...prev, sort, order, page: 1 }))}
-              />
+              {/* Mobile search (hidden on desktop since it's in the sidebar) */}
+              <div className="lg:hidden flex-1">
+                <SearchInput
+                  value={filters.search}
+                  onChange={(search) => updateFilters((prev) => ({ ...prev, search, page: 1 }))}
+                  placeholder="Search courses…"
+                />
+              </div>
             </div>
+            <ResultStrip
+              total={total}
+              showing={items.length}
+              page={filters.page}
+              pageSize={filters.pageSize}
+              loading={loading}
+              sortOptions={SORT_OPTIONS}
+              sortValue={filters.sort}
+              sortOrder={filters.order}
+              onSortChange={(sort, order) => updateFilters((prev) => ({ ...prev, sort, order, page: 1 }))}
+              pageSizeOptions={[12, 24, 48]}
+              onPageSizeChange={(size) => updateFilters((prev) => ({ ...prev, pageSize: size, page: 1 }))}
+            />
           </Reveal>
 
           {/* ── Filter chips ── */}
@@ -684,19 +1009,11 @@ function CoursesPageInner() {
 
             {/* Course grid */}
             <div>
-              {/* Result count */}
-              <div className="text-sm text-slate-500 mb-4">
-                {loading ? (
-                  <span className="inline-block h-4 w-40 bg-slate-100 rounded animate-pulse" />
-                ) : (
-                  <>Showing <span className="font-semibold text-slate-800">{items.length}</span> of {total} results</>
-                )}
-              </div>
 
               {/* Grid */}
               {loading ? (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                  {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                  {Array.from({ length: filters.pageSize }).map((_, i) => (
                     <CourseCardSkeleton key={i} />
                   ))}
                 </div>
