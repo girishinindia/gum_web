@@ -80,6 +80,7 @@ export interface Course {
   rating_average?:  number | null;
   rating_count?:    number | null;
   total_lessons?:   number | null;
+  total_assignments?: number | null;
   difficulty_level?: string | null;
   course_status?:   string | null;
   is_featured?:     boolean;
@@ -481,8 +482,9 @@ export function categoryName(c: Category): string {
  */
 export function fetchCoursesList(params: CourseFilterParams = {}): Promise<PaginatedResult<CourseListItem>> {
   const p = new URLSearchParams();
-  // Always show only active, non-deleted courses on the public page
+  // Always show only active, published, non-deleted courses on the public page
   p.set('is_active', 'true');
+  p.set('course_status', 'published');
   if (params.search)           p.set('search', params.search);
   if (params.difficulty_level) p.set('difficulty_level', params.difficulty_level);
   if (params.is_free)          p.set('is_free', 'true');

@@ -455,12 +455,34 @@ function CoursesPageInner() {
         if (hasValue) { typesWithActiveFilters.add(type); break; }
       }
     }
+
+    // ── Fix B: Sidebar-only filters that aren't in FILTER_CONFIG but still
+    //    narrow results to a specific content type. When language is selected,
+    //    only courses support course_language_id — bundles/batches don't, so
+    //    including them would pollute the grid with unfiltered items. ──
+    if (filters.languages.size > 0) typesWithActiveFilters.add('courses');
+
+    // ── Similarly, category/sub-category/level/price filters are course-specific.
+    //    When they're active, narrow to courses so other types don't dilute results. ──
+    if (filters.categories.size > 0 || filters.subCategories.size > 0) typesWithActiveFilters.add('courses');
+    if (filters.levels.size > 0) typesWithActiveFilters.add('courses');
+    if (filters.ratingMin) { typesWithActiveFilters.add('courses'); typesWithActiveFilters.add('bundles'); }
+    if (filters.isFree || filters.priceMin || filters.priceMax) {
+      typesWithActiveFilters.add('courses');
+      typesWithActiveFilters.add('bundles');
+    }
+
     const typesToFetch = new Set(
       typesWithActiveFilters.size > 0
         ? selectedTypes.filter(t => typesWithActiveFilters.has(t))
         : selectedTypes,
     );
-    const perTypeLimit = Math.max(2, Math.ceil(filters.pageSize / (typesToFetch.size || 1)));
+
+    // ── Fix E: Request full pageSize from each type so the merged grid
+    //    always has enough items to fill the page. Previously this divided
+    //    pageSize by the number of types, causing underfilled pages
+    //    (e.g. 48/3=16 per type → only 19 items if bundles has 2 + batches 1). ──
+    const perTypeLimit = filters.pageSize;
 
     // Build parallel fetch promises for each selected content type
     const fetches: Promise<{ type: ContentType; items: UnifiedItem[]; total: number; totalPages: number }>[] = [];
@@ -585,6 +607,7 @@ function CoursesPageInner() {
           search, page, limit: perTypeLimit,
           is_free: filters.webinarFree || filters.isFree || undefined,
           webinar_status: filters.webinarStatus || undefined,
+          is_active: !filters.webinarStatus ? true : undefined,
           language_id: activeLang?.id || undefined,
           ...sortFor('webinars'),
         }).then((r) => ({
@@ -674,9 +697,16 @@ function CoursesPageInner() {
         return asc ? cmp : -cmp;
       });
 
-      setItems(merged);
+      // ── Fix E: Cap the displayed items to pageSize. Since each type now
+      //    fetches up to the full pageSize, the merged array may exceed it.
+      //    Slice so the grid shows exactly the requested number of items. ──
+      const display = merged.slice(0, filters.pageSize);
+
+      setItems(display);
       setTotal(results.reduce((sum, r) => sum + r.total, 0));
-      setTotalPages(Math.max(...results.map((r) => r.totalPages), 0));
+      // Recompute totalPages from the combined total so pagination reflects reality
+      const combinedTotal = results.reduce((sum, r) => sum + r.total, 0);
+      setTotalPages(Math.ceil(combinedTotal / filters.pageSize) || 1);
       setLoading(false);
     });
 
