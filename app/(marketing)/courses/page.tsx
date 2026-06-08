@@ -436,7 +436,28 @@ function CoursesPageInner() {
     setLoading(true);
 
     const selectedTypes = [...filters.contentTypes] as ContentType[];
-    const perTypeLimit = Math.max(2, Math.ceil(filters.pageSize / selectedTypes.length));
+
+    // ── S8 FIX: Type narrowing — when per-type filters are active, only fetch
+    //    content types that own those filters. This prevents unfiltered items from
+    //    other types polluting the grid. ──
+    const typesWithActiveFilters = new Set<string>();
+    for (const [type, groups] of Object.entries(FILTER_CONFIG)) {
+      for (const g of groups) {
+        const key = g.key as keyof FilterState;
+        const val = filters[key];
+        const hasValue = val instanceof Set ? val.size > 0
+          : typeof val === 'boolean' ? val
+          : typeof val === 'string' ? val !== ''
+          : false;
+        if (hasValue) { typesWithActiveFilters.add(type); break; }
+      }
+    }
+    const typesToFetch = new Set(
+      typesWithActiveFilters.size > 0
+        ? selectedTypes.filter(t => typesWithActiveFilters.has(t))
+        : selectedTypes,
+    );
+    const perTypeLimit = Math.max(2, Math.ceil(filters.pageSize / (typesToFetch.size || 1)));
 
     // Build parallel fetch promises for each selected content type
     const fetches: Promise<{ type: ContentType; items: UnifiedItem[]; total: number; totalPages: number }>[] = [];
@@ -445,7 +466,7 @@ function CoursesPageInner() {
     const search = filters.search || undefined;
     const page = filters.page;
 
-    if (filters.contentTypes.has('courses')) {
+    if (typesToFetch.has('courses')) {
       const p = stateToApiParams(filters);
       p.limit = perTypeLimit;
       fetches.push(
@@ -457,7 +478,7 @@ function CoursesPageInner() {
       );
     }
 
-    if (filters.contentTypes.has('bundles')) {
+    if (typesToFetch.has('bundles')) {
       fetches.push(
         fetchBundlesList({
           search, page, limit: perTypeLimit,
@@ -473,7 +494,7 @@ function CoursesPageInner() {
       );
     }
 
-    if (filters.contentTypes.has('batches')) {
+    if (typesToFetch.has('batches')) {
       fetches.push(
         fetchBatchesList({
           search, page, limit: perTypeLimit,
@@ -488,7 +509,7 @@ function CoursesPageInner() {
       );
     }
 
-    if (filters.contentTypes.has('instructors')) {
+    if (typesToFetch.has('instructors')) {
       fetches.push(
         fetchInstructorsList({
           search, page, limit: perTypeLimit,
@@ -504,7 +525,7 @@ function CoursesPageInner() {
       );
     }
 
-    if (filters.contentTypes.has('blogs')) {
+    if (typesToFetch.has('blogs')) {
       fetches.push(
         fetchBlogList({
           search, page, limit: perTypeLimit,
@@ -518,7 +539,7 @@ function CoursesPageInner() {
       );
     }
 
-    if (filters.contentTypes.has('webinars')) {
+    if (typesToFetch.has('webinars')) {
       fetches.push(
         fetchWebinarsList({
           search, page, limit: perTypeLimit,
@@ -533,7 +554,7 @@ function CoursesPageInner() {
       );
     }
 
-    if (filters.contentTypes.has('live_sessions') || filters.contentTypes.has('live_classes')) {
+    if (typesToFetch.has('live_sessions') || typesToFetch.has('live_classes')) {
       fetches.push(
         fetchLiveSessionsList({
           search, page, limit: perTypeLimit,
@@ -549,7 +570,7 @@ function CoursesPageInner() {
       );
     }
 
-    if (filters.contentTypes.has('podcasts')) {
+    if (typesToFetch.has('podcasts')) {
       fetches.push(
         fetchPodcastList({
           search, page, limit: perTypeLimit,
