@@ -155,6 +155,8 @@ export interface Webinar {
   meeting_link?:     string | null;
   instructor_id?:    string | null;
   course_id?:        number | null;
+  translated_title?: string | null;
+  translated_description?: string | null;
   /** FK join */
   courses?:          { name: string; slug: string } | null;
   /** FK join */
@@ -424,6 +426,8 @@ export interface CourseFilterParams {
   price_min?: number;
   price_max?: number;
   rating_min?: number;
+  /** Language ID for translated title + description enrichment */
+  language_id?: number;
   sort?: string;
   order?: 'asc' | 'desc';
   page?: number;
@@ -433,6 +437,8 @@ export interface CourseFilterParams {
 /** Enriched course row returned by the list endpoint. */
 export interface CourseListItem extends Course {
   english_title?: string | null;
+  translated_title?: string | null;
+  translated_description?: string | null;
   instructor_name?: string | null;
   language_name?: string | null;
   category_name?: string | null;
@@ -489,6 +495,7 @@ export function fetchCoursesList(params: CourseFilterParams = {}): Promise<Pagin
   if (params.price_min != null) p.set('price_min', String(params.price_min));
   if (params.price_max != null) p.set('price_max', String(params.price_max));
   if (params.rating_min != null) p.set('rating_min', String(params.rating_min));
+  if (params.language_id)       p.set('language_id', String(params.language_id));
   p.set('sort', params.sort || 'id');
   p.set('order', params.order || 'desc');
   p.set('page', String(params.page || 1));
@@ -505,6 +512,8 @@ export interface BundleFilterParams {
   price_max?: number;
   rating_min?: number;
   is_free?: boolean;
+  /** Language ID for translated title + description enrichment */
+  language_id?: number;
   sort?: string;
   order?: 'asc' | 'desc';
   page?: number;
@@ -512,7 +521,10 @@ export interface BundleFilterParams {
 }
 
 /** Enriched bundle row returned by the list endpoint. */
-export interface BundleListItem extends Bundle {}
+export interface BundleListItem extends Bundle {
+  translated_title?: string | null;
+  translated_description?: string | null;
+}
 
 /**
  * Fetch bundles with filters + pagination (client-side, no ISR).
@@ -527,6 +539,7 @@ export function fetchBundlesList(params: BundleFilterParams = {}): Promise<Pagin
   if (params.price_min != null) p.set('price_min', String(params.price_min));
   if (params.price_max != null) p.set('price_max', String(params.price_max));
   if (params.rating_min != null) p.set('rating_min', String(params.rating_min));
+  if (params.language_id)       p.set('language_id', String(params.language_id));
   p.set('sort', params.sort || 'id');
   p.set('order', params.order || 'desc');
   p.set('page', String(params.page || 1));
@@ -654,6 +667,8 @@ export interface CourseBatch {
   end_date?:           string | null;
   schedule?:           any;
   rating_average?:     number | null;
+  translated_title?: string | null;
+  translated_description?: string | null;
   /** FK join */
   courses?:            { id: number; name: string; slug: string; code?: string; course_status?: string; difficulty_level?: string; price?: number; original_price?: number; is_free?: boolean; trailer_thumbnail_url?: string | null } | null;
   /** FK join */
@@ -667,6 +682,8 @@ export interface BatchFilterParams {
   instructor_id?: number;
   is_active?: boolean;
   is_free?: boolean;
+  /** Language ID for translated title + description enrichment */
+  language_id?: number;
   sort?: string;
   order?: 'asc' | 'desc';
   page?: number;
@@ -685,6 +702,7 @@ export function fetchBatchesList(params: BatchFilterParams = {}): Promise<Pagina
   if (params.instructor_id)  p.set('instructor_id', String(params.instructor_id));
   if (params.is_active !== undefined) p.set('is_active', String(params.is_active));
   if (params.is_free !== undefined)   p.set('is_free', String(params.is_free));
+  if (params.language_id)            p.set('language_id', String(params.language_id));
   p.set('sort', params.sort || 'display_order');
   p.set('order', params.order || 'asc');
   p.set('page', String(params.page || 1));
@@ -748,6 +766,8 @@ export interface WebinarFilterParams {
   webinar_status?: string;
   is_free?: boolean;
   is_active?: boolean;
+  /** Language ID for translated title + description enrichment */
+  language_id?: number;
   sort?: string;
   order?: 'asc' | 'desc';
   page?: number;
@@ -764,6 +784,7 @@ export function fetchWebinarsList(params: WebinarFilterParams = {}): Promise<Pag
   if (params.webinar_status) p.set('webinar_status', params.webinar_status);
   if (params.is_free !== undefined) p.set('is_free', String(params.is_free));
   if (params.is_active !== undefined) p.set('is_active', String(params.is_active));
+  if (params.language_id)            p.set('language_id', String(params.language_id));
   p.set('sort', params.sort || 'scheduled_at');
   p.set('order', params.order || 'desc');
   p.set('page', String(params.page || 1));

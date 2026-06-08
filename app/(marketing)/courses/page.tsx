@@ -42,6 +42,7 @@ import {
   type Language,
   type CourseFilterParams,
 } from '@/lib/api';
+import { useLanguage } from '@/components/layout/LanguageProvider';
 
 // ─── Constants ──────────────────────────────────────────────────────────
 
@@ -388,6 +389,7 @@ function CourseCardSkeleton() {
 function CoursesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { active: activeLang } = useLanguage();
 
   // ── State ──
   const [items, setItems] = useState<UnifiedItem[]>([]);
@@ -501,6 +503,7 @@ function CoursesPageInner() {
     if (typesToFetch.has('courses')) {
       const p = stateToApiParams(filters);
       p.limit = perTypeLimit;
+      if (activeLang?.id) p.language_id = activeLang.id;
       fetches.push(
         fetchCoursesList(p).then((r) => ({
           type: 'courses' as ContentType,
@@ -519,6 +522,7 @@ function CoursesPageInner() {
           is_featured: filters.bundleFeatured || undefined,
           price_min: filters.priceMin ? parseFloat(filters.priceMin) : undefined,
           price_max: filters.priceMax ? parseFloat(filters.priceMax) : undefined,
+          language_id: activeLang?.id || undefined,
           ...sortFor('bundles'),
         }).then((r) => ({
           type: 'bundles' as ContentType,
@@ -535,6 +539,7 @@ function CoursesPageInner() {
           is_free: filters.batchFree || filters.isFree || undefined,
           batch_status: filters.batchStatus || undefined,
           is_active: !filters.batchStatus ? true : undefined,
+          language_id: activeLang?.id || undefined,
           ...sortFor('batches'),
         }).then((r) => ({
           type: 'batches' as ContentType,
@@ -580,6 +585,7 @@ function CoursesPageInner() {
           search, page, limit: perTypeLimit,
           is_free: filters.webinarFree || filters.isFree || undefined,
           webinar_status: filters.webinarStatus || undefined,
+          language_id: activeLang?.id || undefined,
           ...sortFor('webinars'),
         }).then((r) => ({
           type: 'webinars' as ContentType,
@@ -638,7 +644,7 @@ function CoursesPageInner() {
     });
 
     return () => { cancelled = true; };
-  }, [filters]);
+  }, [filters, activeLang?.id]);
 
   // ── URL sync helper ──
   const updateFilters = useCallback(

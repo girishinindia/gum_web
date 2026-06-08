@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
   Star, BookOpen, ArrowRight, Layers, Users, Calendar, Clock,
-  Mic, Video, Radio, Newspaper, GraduationCap, User,
+  Mic, Video, Radio, Newspaper, GraduationCap, User, FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type {
@@ -15,28 +15,37 @@ export type ContentType =
   | 'courses' | 'bundles' | 'batches' | 'instructors'
   | 'blogs' | 'webinars' | 'live_sessions' | 'podcasts' | 'live_classes';
 
-const TYPE_META: Record<ContentType, { label: string; color: string; bgColor: string }> = {
-  courses:       { label: 'Course',        color: 'text-brand-700',   bgColor: 'bg-brand-50 border-brand-200' },
-  bundles:       { label: 'Bundle',        color: 'text-violet-700',  bgColor: 'bg-violet-50 border-violet-200' },
-  batches:       { label: 'Batch',         color: 'text-amber-700',   bgColor: 'bg-amber-50 border-amber-200' },
-  instructors:   { label: 'Instructor',    color: 'text-emerald-700', bgColor: 'bg-emerald-50 border-emerald-200' },
-  blogs:         { label: 'Blog',          color: 'text-rose-700',    bgColor: 'bg-rose-50 border-rose-200' },
-  webinars:      { label: 'Webinar',       color: 'text-sky-700',     bgColor: 'bg-sky-50 border-sky-200' },
-  live_sessions: { label: 'Live Session',  color: 'text-orange-700',  bgColor: 'bg-orange-50 border-orange-200' },
-  podcasts:      { label: 'Podcast',       color: 'text-fuchsia-700', bgColor: 'bg-fuchsia-50 border-fuchsia-200' },
-  live_classes:  { label: 'Live Class',    color: 'text-teal-700',    bgColor: 'bg-teal-50 border-teal-200' },
+const TYPE_META: Record<ContentType, {
+  label: string;
+  badgeBg: string;
+  badgeText: string;
+  categoryColor: string;
+  ctaLabel: string;
+  icon: React.ElementType;
+}> = {
+  courses:       { label: 'Course',       badgeBg: 'bg-violet-600', badgeText: 'text-white', categoryColor: 'text-brand-600', ctaLabel: 'View Course',  icon: FileText },
+  bundles:       { label: 'Bundle',       badgeBg: 'bg-violet-600', badgeText: 'text-white', categoryColor: 'text-violet-600', ctaLabel: 'View Bundle',  icon: Layers },
+  batches:       { label: 'Batch',        badgeBg: 'bg-amber-500',  badgeText: 'text-white', categoryColor: 'text-amber-600',  ctaLabel: 'View Batch',   icon: Users },
+  instructors:   { label: 'Instructor',   badgeBg: 'bg-emerald-600', badgeText: 'text-white', categoryColor: 'text-emerald-600', ctaLabel: 'View Profile', icon: GraduationCap },
+  blogs:         { label: 'Blog',         badgeBg: 'bg-rose-500',   badgeText: 'text-white', categoryColor: 'text-rose-600',   ctaLabel: 'Read More',    icon: Newspaper },
+  webinars:      { label: 'Webinar',      badgeBg: 'bg-sky-500',    badgeText: 'text-white', categoryColor: 'text-sky-600',    ctaLabel: 'View Webinar', icon: Video },
+  live_sessions: { label: 'Live Session', badgeBg: 'bg-orange-500', badgeText: 'text-white', categoryColor: 'text-orange-600', ctaLabel: 'View Session', icon: Radio },
+  podcasts:      { label: 'Podcast',      badgeBg: 'bg-fuchsia-600', badgeText: 'text-white', categoryColor: 'text-fuchsia-600', ctaLabel: 'Listen Now',  icon: Mic },
+  live_classes:  { label: 'Live Class',   badgeBg: 'bg-teal-500',   badgeText: 'text-white', categoryColor: 'text-teal-600',   ctaLabel: 'View Class',   icon: Radio },
 };
 
-const THUMB_GRADIENTS = [
-  'from-brand-700 via-brand-600 to-brand-500',
-  'from-emerald-700 via-emerald-600 to-emerald-500',
-  'from-violet-700 via-violet-600 to-rose-500',
-  'from-rose-600 via-rose-500 to-amber-500',
-  'from-brand-800 via-accent-dark to-accent',
-  'from-amber-600 via-orange-500 to-rose-500',
-  'from-slate-800 via-brand-700 to-brand-500',
-  'from-emerald-600 via-brand-500 to-brand-700',
-  'from-fuchsia-700 via-violet-600 to-brand-600',
+// ─── Gradient pool ────────────────────────────────────────────────────
+
+const GRADIENTS = [
+  'from-[#1a2a4a] via-[#1e3a5f] to-[#2a4a6a]',
+  'from-[#1a2a3a] via-[#253d52] to-[#2e5268]',
+  'from-[#162635] via-[#1c3448] to-[#26455c]',
+  'from-[#1b2d42] via-[#233e56] to-[#2d506c]',
+  'from-[#1e2d3d] via-[#273c50] to-[#304c64]',
+  'from-[#192838] via-[#21374d] to-[#2b4862]',
+  'from-[#1c2e44] via-[#253f58] to-[#2f516e]',
+  'from-[#172636] via-[#1f354a] to-[#294660]',
+  'from-[#1a2b40] via-[#233c54] to-[#2d4e6a]',
 ];
 
 // ─── Unified item type ─────────────────────────────────────────────────
@@ -47,7 +56,7 @@ export interface UnifiedItem {
   data: CourseListItem | BundleListItem | CourseBatch | InstructorProfile | BlogPost | Webinar | LiveSession | Podcast;
 }
 
-// ─── Helper ────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────
 
 function formatPrice(n?: number | null): string | null {
   if (n == null || isNaN(Number(n))) return null;
@@ -67,341 +76,304 @@ function relativeDate(dateStr?: string | null): string {
   return months === 1 ? '1 month ago' : `${months} months ago`;
 }
 
-// ─── Type badge ────────────────────────────────────────────────────────
+// ─── Unified card shape — every variant populates these ────────────────
 
-function TypeBadge({ type }: { type: ContentType }) {
-  const meta = TYPE_META[type];
-  return (
-    <div className={cn('absolute top-3 right-3 z-10 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border', meta.bgColor, meta.color)}>
-      {meta.label}
+interface CardData {
+  type: ContentType;
+  href?: string;
+  badge: string;
+  thumbnailUrl?: string | null;
+  category: string;
+  title: string;
+  description?: string | null;
+  stats: { icon: React.ElementType; label: string }[];
+  price?: string | null;
+  originalPrice?: string | null;
+  isFree?: boolean;
+  rating?: number | null;
+  extraInfo?: string | null;
+}
+
+// ─── Unified card renderer ─────────────────────────────────────────────
+
+function UnifiedCard({ d, index }: { d: CardData; index: number }) {
+  const meta = TYPE_META[d.type];
+  const grad = GRADIENTS[index % GRADIENTS.length];
+  const Icon = meta.icon;
+
+  const card = (
+    <div className="group flex flex-col rounded-xl bg-white border border-slate-200/80 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover h-full">
+      {/* ── Gradient thumbnail area ── */}
+      {d.thumbnailUrl ? (
+        <div className="relative aspect-[16/10] bg-slate-100">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={d.thumbnailUrl} alt={d.title} className="absolute inset-0 w-full h-full object-cover" />
+          {/* Badge top-left */}
+          <div className={cn('absolute top-3 left-3 z-10 rounded-md px-3 py-1 text-[10px] font-bold uppercase tracking-wider', meta.badgeBg, meta.badgeText)}>
+            {d.badge}
+          </div>
+        </div>
+      ) : (
+        <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
+          {/* Subtle overlay */}
+          <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.08),_transparent_55%)]" />
+          {/* Badge top-left */}
+          <div className={cn('absolute top-3 left-3 z-10 rounded-md px-3 py-1 text-[10px] font-bold uppercase tracking-wider', meta.badgeBg, meta.badgeText)}>
+            {d.badge}
+          </div>
+          {/* Centered icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 flex items-center justify-center">
+              <Icon className="w-7 h-7 text-white/70" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Card body ── */}
+      <div className="flex flex-col flex-1 px-5 pt-4 pb-5">
+        {/* Category label */}
+        <p className={cn('text-[10px] font-bold uppercase tracking-[0.1em]', meta.categoryColor)}>
+          {d.category}
+        </p>
+
+        {/* Title */}
+        <h3 className="mt-1.5 text-[15px] font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-brand-700 transition-colors">
+          {d.title}
+        </h3>
+
+        {/* Description */}
+        {d.description && (
+          <p className="mt-1.5 text-[12.5px] text-slate-500 line-clamp-2 leading-relaxed">{d.description}</p>
+        )}
+
+        {/* Stats row */}
+        {d.stats.length > 0 && (
+          <div className="mt-3 flex items-center gap-4 text-[12px] text-slate-500">
+            {d.stats.map((s, i) => (
+              <span key={i} className="inline-flex items-center gap-1.5">
+                <s.icon className="w-3.5 h-3.5 text-brand-500" />
+                {s.label}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Spacer to push bottom section down */}
+        <div className="flex-1" />
+
+        {/* Divider */}
+        <div className="mt-3 border-t border-slate-100" />
+
+        {/* Price / Rating / Extra info row */}
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex items-baseline gap-2">
+            {d.isFree ? (
+              <span className="text-lg font-extrabold text-slate-900">Free</span>
+            ) : d.price ? (
+              <>
+                <span className="text-lg font-extrabold text-slate-900">{d.price}</span>
+                {d.originalPrice && (
+                  <span className="text-[12px] text-slate-400 line-through">{d.originalPrice}</span>
+                )}
+              </>
+            ) : d.extraInfo ? (
+              <span className="text-[12px] text-slate-500">{d.extraInfo}</span>
+            ) : null}
+          </div>
+          {d.rating != null && (
+            <span className="inline-flex items-center gap-1 text-sm font-bold text-slate-700">
+              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+              {Number(d.rating).toFixed(1)}
+            </span>
+          )}
+        </div>
+
+        {/* CTA Button */}
+        <button className="mt-3 w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm transition-all duration-200 group-hover:from-brand-700 group-hover:to-brand-600 group-hover:shadow-md">
+          {meta.ctaLabel}
+          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+        </button>
+      </div>
     </div>
   );
+
+  // Wrap in Link if href is provided
+  if (d.href) {
+    return <Link href={d.href} className="block h-full">{card}</Link>;
+  }
+  return card;
 }
 
-// ─── Course card variant ───────────────────────────────────────────────
+// ─── Data extractors per type ──────────────────────────────────────────
 
-function CourseVariant({ item, index }: { item: CourseListItem; index: number }) {
-  const grad = THUMB_GRADIENTS[index % THUMB_GRADIENTS.length];
+function courseData(item: CourseListItem): CardData {
   const price = formatPrice(item.price);
-  const original = formatPrice(item.original_price);
-  const isFree = !!item.is_free;
-  const rating = item.rating_average ?? null;
-  const lessons = item.total_lessons ?? null;
-
-  return (
-    <Link href={`/courses/${item.slug}`} className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
-      <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
-        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
-        <TypeBadge type="courses" />
-        <div className="absolute top-3 left-3 inline-flex items-center gap-1 bg-white/15 backdrop-blur border border-white/25 rounded-full px-2.5 py-1 text-[10px] font-semibold text-white uppercase tracking-wider">
-          {item.difficulty_level ? item.difficulty_level.replace('_', ' ') : 'Beginner'}
-        </div>
-        <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
-          <div className="text-white">
-            <div className="text-[10px] font-mono tracking-widest opacity-80">{item.code || 'COURSE'}</div>
-            {(price || isFree) && (
-              <div className="mt-1 heading text-lg leading-none">
-                {isFree ? 'Free' : price}
-                {original && !isFree && <span className="ml-2 text-xs font-medium opacity-70 line-through">{original}</span>}
-              </div>
-            )}
-          </div>
-          <div className="h-9 w-9 rounded-full bg-white text-brand-700 flex items-center justify-center shadow-md group-hover:bg-brand-500 group-hover:text-white transition-colors">
-            <ArrowRight className="h-4 w-4" />
-          </div>
-        </div>
-      </div>
-      <div className="p-5">
-        <h3 className="heading text-base font-semibold text-slate-900 line-clamp-2 group-hover:text-brand-700 transition-colors">{item.name}</h3>
-        {item.short_description && <p className="mt-1.5 text-[13px] text-slate-600 line-clamp-2">{item.short_description}</p>}
-        <div className="mt-3 flex items-center justify-between text-[12px] text-slate-500 pt-3 border-t border-slate-100">
-          <div className="flex items-center gap-3">
-            {lessons != null && <span className="inline-flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" /> {lessons} lessons</span>}
-          </div>
-          {rating != null && (
-            <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
-              <Star className="w-3.5 h-3.5 fill-warn text-warn" /> {Number(rating).toFixed(1)}
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
+  const originalPrice = formatPrice(item.original_price);
+  return {
+    type: 'courses',
+    href: `/courses/${item.slug}`,
+    badge: item.difficulty_level ? item.difficulty_level.replace('_', ' ') : 'Beginner',
+    thumbnailUrl: null,
+    category: item.category_name || 'Course',
+    title: item.translated_title || item.name,
+    description: item.translated_description || item.short_description,
+    stats: [
+      ...(item.total_lessons != null ? [{ icon: BookOpen, label: `${item.total_lessons} Lessons` }] : []),
+      ...(item.total_assignments != null ? [{ icon: FileText, label: `${item.total_assignments} Topics` }] : []),
+    ],
+    price: item.is_free ? undefined : price,
+    originalPrice: (item.is_free || !originalPrice || Number(item.original_price) <= Number(item.price)) ? undefined : originalPrice,
+    isFree: !!item.is_free,
+    rating: item.rating_average,
+  };
 }
 
-// ─── Bundle card variant ───────────────────────────────────────────────
-
-function BundleVariant({ item, index }: { item: BundleListItem; index: number }) {
-  const grad = THUMB_GRADIENTS[(index + 2) % THUMB_GRADIENTS.length];
+function bundleData(item: BundleListItem): CardData {
   const price = formatPrice(item.price);
-  const original = formatPrice(item.original_price);
-  const courseCount = item.course_count ?? 0;
-
-  return (
-    <Link href={`/bundles/${item.slug}`} className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
-      <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
-        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
-        <TypeBadge type="bundles" />
-        <div className="absolute bottom-3 left-3">
-          <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur border border-white/25 rounded-full px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-wider text-white">
-            <Layers className="h-3 w-3" /> {courseCount} courses
-          </div>
-        </div>
-      </div>
-      <div className="p-5 min-h-[140px] flex flex-col">
-        <h3 className="heading text-base font-semibold text-slate-900 line-clamp-2 group-hover:text-brand-700 transition-colors">{item.name}</h3>
-        {item.description && <p className="mt-1.5 text-[13px] text-slate-600 line-clamp-2">{item.description}</p>}
-        <div className="mt-3 flex items-center gap-4 text-[12px] text-slate-500">
-          <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {(item.student_count ?? 0).toLocaleString('en-IN')}+ students</span>
-          {item.rating_average != null && (
-            <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
-              <Star className="h-3.5 w-3.5 fill-warn text-warn" /> {item.rating_average}
-            </span>
-          )}
-        </div>
-        <div className="mt-auto pt-4 border-t border-slate-100 flex items-end justify-between">
-          <div>
-            {price && <div className="heading text-xl text-slate-900 leading-none">{price}</div>}
-            {original && price && Number(item.original_price) > Number(item.price) && (
-              <div className="text-[12px] text-slate-400 line-through mt-1">{original}</div>
-            )}
-          </div>
-          <span className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 group-hover:text-brand-800">
-            View <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
+  const originalPrice = formatPrice(item.original_price);
+  return {
+    type: 'bundles',
+    href: `/bundles/${item.slug}`,
+    badge: 'Bundle',
+    thumbnailUrl: null,
+    category: 'Bundle',
+    title: item.translated_title || item.name,
+    description: item.translated_description || item.description,
+    stats: [
+      ...(item.course_count != null ? [{ icon: Layers, label: `${item.course_count} Courses` }] : []),
+      ...(item.student_count != null ? [{ icon: Users, label: `${(item.student_count).toLocaleString('en-IN')}+ Students` }] : []),
+    ],
+    price,
+    originalPrice: (originalPrice && Number(item.original_price) > Number(item.price)) ? originalPrice : undefined,
+    isFree: false,
+    rating: item.rating_average,
+  };
 }
 
-// ─── Batch card variant ────────────────────────────────────────────────
-
-function BatchVariant({ item, index }: { item: CourseBatch; index: number }) {
-  const grad = THUMB_GRADIENTS[(index + 4) % THUMB_GRADIENTS.length];
+function batchData(item: CourseBatch): CardData {
   const courseName = item.courses?.name || item.title || 'Batch';
   const courseSlug = item.courses?.slug;
   const instructorName = item.users?.full_name;
   const price = formatPrice(item.price);
-
-  return (
-    <div className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
-      <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
-        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
-        <TypeBadge type="batches" />
-        <div className="absolute bottom-3 left-3 text-white">
-          <div className="text-[10px] font-mono tracking-widest opacity-80">{item.code || 'BATCH'}</div>
-          {item.batch_status && (
-            <div className="mt-1 inline-flex items-center gap-1 bg-white/15 backdrop-blur border border-white/25 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider">
-              {item.batch_status.replace('_', ' ')}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="p-5">
-        <h3 className="heading text-base font-semibold text-slate-900 line-clamp-2">
-          {courseSlug ? (
-            <Link href={`/courses/${courseSlug}`} className="hover:text-brand-700 transition-colors">{courseName}</Link>
-          ) : courseName}
-        </h3>
-        {item.title && item.title !== courseName && (
-          <p className="mt-1 text-[13px] text-slate-600 line-clamp-2">{item.title}</p>
-        )}
-        <div className="mt-3 flex items-center gap-3 text-[12px] text-slate-500">
-          {instructorName && <span className="inline-flex items-center gap-1"><User className="h-3.5 w-3.5" /> {instructorName}</span>}
-          {item.max_students != null && <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {item.enrolled_count ?? 0}/{item.max_students}</span>}
-        </div>
-        {price && (
-          <div className="mt-3 pt-3 border-t border-slate-100">
-            <div className="heading text-lg text-slate-900">{item.is_free ? 'Free' : price}</div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return {
+    type: 'batches',
+    href: courseSlug ? `/courses/${courseSlug}` : undefined,
+    badge: item.batch_status ? item.batch_status.replace('_', ' ') : 'Batch',
+    thumbnailUrl: null,
+    category: 'Batch',
+    title: item.translated_title || courseName,
+    description: item.translated_description || (item.title && item.title !== courseName ? item.title : null),
+    stats: [
+      ...(instructorName ? [{ icon: User, label: instructorName }] : []),
+      ...(item.max_students != null ? [{ icon: Users, label: `${item.enrolled_count ?? 0}/${item.max_students}` }] : []),
+    ],
+    price: item.is_free ? undefined : price,
+    isFree: !!item.is_free,
+    rating: null,
+  };
 }
 
-// ─── Instructor card variant ───────────────────────────────────────────
-
-function InstructorVariant({ item }: { item: InstructorProfile }) {
+function instructorData(item: InstructorProfile): CardData {
   const name = item.users?.full_name || 'Instructor';
-  const avatar = item.users?.avatar_url;
-
-  return (
-    <div className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
-      <div className="relative bg-gradient-to-br from-emerald-600 to-brand-600 p-6 flex flex-col items-center">
-        <TypeBadge type="instructors" />
-        <div className="w-20 h-20 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center overflow-hidden">
-          {avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatar} alt={name} className="w-full h-full object-cover" />
-          ) : (
-            <GraduationCap className="w-8 h-8 text-white" />
-          )}
-        </div>
-      </div>
-      <div className="p-5 text-center">
-        <h3 className="heading text-base font-semibold text-slate-900">{name}</h3>
-        {item.instructor_type && <p className="mt-1 text-[13px] text-slate-500 capitalize">{item.instructor_type.replace('_', ' ')}</p>}
-        <div className="mt-3 flex items-center justify-center gap-4 text-[12px] text-slate-500">
-          {item.course_count != null && <span className="inline-flex items-center gap-1"><BookOpen className="h-3.5 w-3.5" /> {item.course_count} courses</span>}
-          {item.student_count != null && <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {(item.student_count).toLocaleString('en-IN')}+</span>}
-        </div>
-        {item.rating_average != null && (
-          <div className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-slate-700">
-            <Star className="w-4 h-4 fill-warn text-warn" /> {Number(item.rating_average).toFixed(1)}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return {
+    type: 'instructors',
+    href: undefined,
+    badge: item.instructor_type ? item.instructor_type.replace('_', ' ') : 'Instructor',
+    thumbnailUrl: item.users?.avatar_url,
+    category: 'Instructor',
+    title: name,
+    description: item.instructor_type ? `${item.instructor_type.replace('_', ' ')} instructor` : null,
+    stats: [
+      ...(item.course_count != null ? [{ icon: BookOpen, label: `${item.course_count} Courses` }] : []),
+      ...(item.student_count != null ? [{ icon: Users, label: `${(item.student_count).toLocaleString('en-IN')}+ Students` }] : []),
+    ],
+    price: null,
+    rating: item.rating_average,
+  };
 }
 
-// ─── Blog card variant ─────────────────────────────────────────────────
-
-function BlogVariant({ item, index }: { item: BlogPost; index: number }) {
-  const grad = THUMB_GRADIENTS[(index + 5) % THUMB_GRADIENTS.length];
-  const author = item.users ? `${item.users.first_name} ${item.users.last_name}` : null;
-
-  return (
-    <Link href={`/blog/${item.slug}`} className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
-      {item.featured_image_url ? (
-        <div className="relative aspect-[16/10] bg-slate-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={item.featured_image_url} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
-          <TypeBadge type="blogs" />
-        </div>
-      ) : (
-        <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
-          <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
-          <TypeBadge type="blogs" />
-          <div className="absolute bottom-3 left-3">
-            <Newspaper className="h-8 w-8 text-white/60" />
-          </div>
-        </div>
-      )}
-      <div className="p-5">
-        <h3 className="heading text-base font-semibold text-slate-900 line-clamp-2 group-hover:text-brand-700 transition-colors">{item.title}</h3>
-        {item.excerpt && <p className="mt-1.5 text-[13px] text-slate-600 line-clamp-2">{item.excerpt}</p>}
-        <div className="mt-3 flex items-center justify-between text-[12px] text-slate-500 pt-3 border-t border-slate-100">
-          <span>{author || 'Staff'}</span>
-          <div className="flex items-center gap-3">
-            {item.reading_time_min && <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {item.reading_time_min} min</span>}
-            {item.published_at && <span>{relativeDate(item.published_at)}</span>}
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
+function blogData(item: BlogPost): CardData {
+  const author = item.users ? `${item.users.first_name} ${item.users.last_name}` : 'Staff';
+  return {
+    type: 'blogs',
+    href: `/blog/${item.slug}`,
+    badge: 'Blog',
+    thumbnailUrl: item.featured_image_url,
+    category: 'Blog',
+    title: item.title,
+    description: item.excerpt,
+    stats: [
+      { icon: User, label: author },
+      ...(item.reading_time_min ? [{ icon: Clock, label: `${item.reading_time_min} min read` }] : []),
+    ],
+    price: null,
+    extraInfo: item.published_at ? relativeDate(item.published_at) : null,
+    rating: null,
+  };
 }
 
-// ─── Webinar card variant ──────────────────────────────────────────────
-
-function WebinarVariant({ item, index }: { item: Webinar; index: number }) {
-  const grad = THUMB_GRADIENTS[(index + 3) % THUMB_GRADIENTS.length];
+function webinarData(item: Webinar): CardData {
   const instructor = item.users?.full_name;
   const date = item.scheduled_at ? new Date(item.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
-
-  return (
-    <div className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
-      {item.thumbnail_url ? (
-        <div className="relative aspect-[16/10] bg-slate-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={item.thumbnail_url} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
-          <TypeBadge type="webinars" />
-        </div>
-      ) : (
-        <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
-          <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
-          <TypeBadge type="webinars" />
-          <div className="absolute bottom-3 left-3"><Video className="h-8 w-8 text-white/60" /></div>
-        </div>
-      )}
-      <div className="p-5">
-        <h3 className="heading text-base font-semibold text-slate-900 line-clamp-2">{item.title}</h3>
-        <div className="mt-3 flex items-center gap-3 text-[12px] text-slate-500">
-          {instructor && <span className="inline-flex items-center gap-1"><User className="h-3.5 w-3.5" /> {instructor}</span>}
-          {date && <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {date}</span>}
-          {item.duration_minutes && <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {item.duration_minutes}m</span>}
-        </div>
-        {item.is_free && (
-          <div className="mt-3 pt-3 border-t border-slate-100">
-            <span className="text-sm font-semibold text-emerald-600">Free</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return {
+    type: 'webinars',
+    href: undefined,
+    badge: 'Webinar',
+    thumbnailUrl: item.thumbnail_url,
+    category: 'Webinar',
+    title: item.translated_title || item.title,
+    description: item.translated_description || null,
+    stats: [
+      ...(instructor ? [{ icon: User, label: instructor }] : []),
+      ...(date ? [{ icon: Calendar, label: date }] : []),
+      ...(item.duration_minutes ? [{ icon: Clock, label: `${item.duration_minutes}m` }] : []),
+    ],
+    price: null,
+    isFree: !!item.is_free,
+    extraInfo: !item.is_free ? null : undefined,
+    rating: null,
+  };
 }
 
-// ─── Live Session card variant ─────────────────────────────────────────
-
-function LiveSessionVariant({ item, index }: { item: LiveSession; index: number }) {
-  const grad = THUMB_GRADIENTS[(index + 6) % THUMB_GRADIENTS.length];
+function liveSessionData(item: LiveSession): CardData {
   const instructor = item.users ? `${item.users.first_name} ${item.users.last_name}` : null;
   const date = item.scheduled_at ? new Date(item.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : null;
-
-  return (
-    <div className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
-      <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
-        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
-        <TypeBadge type="live_sessions" />
-        <div className="absolute bottom-3 left-3"><Radio className="h-6 w-6 text-white/70" /></div>
-      </div>
-      <div className="p-5">
-        <h3 className="heading text-base font-semibold text-slate-900 line-clamp-2">{item.title}</h3>
-        {item.description && <p className="mt-1.5 text-[13px] text-slate-600 line-clamp-2">{item.description}</p>}
-        <div className="mt-3 flex items-center gap-3 text-[12px] text-slate-500">
-          {instructor && <span className="inline-flex items-center gap-1"><User className="h-3.5 w-3.5" /> {instructor}</span>}
-          {date && <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {date}</span>}
-          {item.duration_minutes && <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {item.duration_minutes}m</span>}
-        </div>
-        {item.session_status && (
-          <div className="mt-3 pt-3 border-t border-slate-100">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-orange-600">
-              {item.session_status.replace('_', ' ')}
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return {
+    type: 'live_sessions',
+    href: undefined,
+    badge: item.session_status ? item.session_status.replace('_', ' ') : 'Live',
+    thumbnailUrl: null,
+    category: 'Live Session',
+    title: item.title,
+    description: item.description,
+    stats: [
+      ...(instructor ? [{ icon: User, label: instructor }] : []),
+      ...(date ? [{ icon: Calendar, label: date }] : []),
+      ...(item.duration_minutes ? [{ icon: Clock, label: `${item.duration_minutes}m` }] : []),
+    ],
+    price: null,
+    rating: null,
+  };
 }
 
-// ─── Podcast card variant ──────────────────────────────────────────────
-
-function PodcastVariant({ item, index }: { item: Podcast; index: number }) {
-  const grad = THUMB_GRADIENTS[(index + 7) % THUMB_GRADIENTS.length];
-  const host = item.users ? `${item.users.first_name} ${item.users.last_name}` : null;
-
-  return (
-    <Link href={`/podcasts/${item.slug || item.id}`} className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
-      {item.thumbnail_url ? (
-        <div className="relative aspect-[16/10] bg-slate-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={item.thumbnail_url} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
-          <TypeBadge type="podcasts" />
-        </div>
-      ) : (
-        <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
-          <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
-          <TypeBadge type="podcasts" />
-          <div className="absolute bottom-3 left-3"><Mic className="h-8 w-8 text-white/60" /></div>
-        </div>
-      )}
-      <div className="p-5">
-        <h3 className="heading text-base font-semibold text-slate-900 line-clamp-2 group-hover:text-brand-700 transition-colors">{item.title}</h3>
-        {item.short_summary && <p className="mt-1.5 text-[13px] text-slate-600 line-clamp-2">{item.short_summary}</p>}
-        <div className="mt-3 flex items-center justify-between text-[12px] text-slate-500 pt-3 border-t border-slate-100">
-          <span>{host || 'Staff'}</span>
-          <div className="flex items-center gap-2">
-            {item.episode_number != null && <span>Ep. {item.episode_number}</span>}
-            {item.duration != null && <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {Math.round(item.duration / 60)}m</span>}
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
+function podcastData(item: Podcast): CardData {
+  const host = item.users ? `${item.users.first_name} ${item.users.last_name}` : 'Staff';
+  return {
+    type: 'podcasts',
+    href: `/podcasts/${item.slug || item.id}`,
+    badge: item.episode_number != null ? `Ep. ${item.episode_number}` : 'Podcast',
+    thumbnailUrl: item.thumbnail_url,
+    category: 'Podcast',
+    title: item.title,
+    description: item.short_summary,
+    stats: [
+      { icon: Mic, label: host },
+      ...(item.duration != null ? [{ icon: Clock, label: `${Math.round(item.duration / 60)}m` }] : []),
+    ],
+    price: null,
+    rating: null,
+  };
 }
 
 // ─── Main ContentCard component ────────────────────────────────────────
@@ -412,25 +384,27 @@ interface Props {
 }
 
 export function ContentCard({ item, index = 0 }: Props) {
+  let d: CardData;
   switch (item.type) {
     case 'courses':
-      return <CourseVariant item={item.data as CourseListItem} index={index} />;
+      d = courseData(item.data as CourseListItem); break;
     case 'bundles':
-      return <BundleVariant item={item.data as BundleListItem} index={index} />;
+      d = bundleData(item.data as BundleListItem); break;
     case 'batches':
-      return <BatchVariant item={item.data as CourseBatch} index={index} />;
+      d = batchData(item.data as CourseBatch); break;
     case 'instructors':
-      return <InstructorVariant item={item.data as InstructorProfile} />;
+      d = instructorData(item.data as InstructorProfile); break;
     case 'blogs':
-      return <BlogVariant item={item.data as BlogPost} index={index} />;
+      d = blogData(item.data as BlogPost); break;
     case 'webinars':
-      return <WebinarVariant item={item.data as Webinar} index={index} />;
+      d = webinarData(item.data as Webinar); break;
     case 'live_sessions':
     case 'live_classes':
-      return <LiveSessionVariant item={item.data as LiveSession} index={index} />;
+      d = liveSessionData(item.data as LiveSession); break;
     case 'podcasts':
-      return <PodcastVariant item={item.data as Podcast} index={index} />;
+      d = podcastData(item.data as Podcast); break;
     default:
       return null;
   }
+  return <UnifiedCard d={d} index={index} />;
 }
