@@ -157,6 +157,7 @@ export interface Webinar {
   course_id?:        number | null;
   translated_title?: string | null;
   translated_description?: string | null;
+  translated_thumbnail?: string | null;
   /** FK join */
   courses?:          { name: string; slug: string } | null;
   /** FK join */
@@ -439,6 +440,7 @@ export interface CourseListItem extends Course {
   english_title?: string | null;
   translated_title?: string | null;
   translated_description?: string | null;
+  translated_thumbnail?: string | null;
   instructor_name?: string | null;
   language_name?: string | null;
   category_name?: string | null;
@@ -524,6 +526,7 @@ export interface BundleFilterParams {
 export interface BundleListItem extends Bundle {
   translated_title?: string | null;
   translated_description?: string | null;
+  translated_thumbnail?: string | null;
 }
 
 /**
@@ -669,6 +672,7 @@ export interface CourseBatch {
   rating_average?:     number | null;
   translated_title?: string | null;
   translated_description?: string | null;
+  translated_thumbnail?: string | null;
   /** FK join */
   courses?:            { id: number; name: string; slug: string; code?: string; course_status?: string; difficulty_level?: string; price?: number; original_price?: number; is_free?: boolean; trailer_thumbnail_url?: string | null } | null;
   /** FK join */

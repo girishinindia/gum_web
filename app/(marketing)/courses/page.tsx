@@ -637,6 +637,43 @@ function CoursesPageInner() {
         }
       }
 
+      // ── Cross-type sort: re-sort the merged array by the user's
+      //    chosen sort field so items from different content types
+      //    appear in the correct global order (e.g. price low→high). ──
+      const sf = filters.sort;
+      const asc = filters.order === 'asc';
+      const getSortVal = (item: UnifiedItem): number | string | null => {
+        const d = item.data as any;
+        switch (sf) {
+          case 'price':
+            if (d.is_free) return 0;
+            return d.price != null ? Number(d.price) : null;
+          case 'name':
+            return (d.name || d.title || '').toLowerCase();
+          case 'rating_average':
+            return d.rating_average != null ? Number(d.rating_average) : null;
+          case 'rating_count':
+            return d.rating_count != null ? Number(d.rating_count) : null;
+          case 'created_at':
+          case 'published_at':
+          case 'scheduled_at':
+            return d[sf] || d.created_at || null;
+          default:
+            return null;
+        }
+      };
+      merged.sort((a, b) => {
+        const va = getSortVal(a);
+        const vb = getSortVal(b);
+        if (va == null && vb == null) return 0;
+        if (va == null) return 1;
+        if (vb == null) return -1;
+        const cmp = typeof va === 'string'
+          ? va.localeCompare(vb as string)
+          : (va as number) - (vb as number);
+        return asc ? cmp : -cmp;
+      });
+
       setItems(merged);
       setTotal(results.reduce((sum, r) => sum + r.total, 0));
       setTotalPages(Math.max(...results.map((r) => r.totalPages), 0));
