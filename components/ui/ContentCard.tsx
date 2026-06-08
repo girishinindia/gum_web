@@ -139,7 +139,7 @@ function BundleVariant({ item, index }: { item: BundleListItem; index: number })
 
   return (
     <Link href={`/bundles/${item.slug}`} className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
-      <div className={cn('relative h-32 bg-gradient-to-br', grad)}>
+      <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
         <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
         <TypeBadge type="bundles" />
         <div className="absolute bottom-3 left-3">
@@ -148,7 +148,7 @@ function BundleVariant({ item, index }: { item: BundleListItem; index: number })
           </div>
         </div>
       </div>
-      <div className="p-5">
+      <div className="p-5 min-h-[140px] flex flex-col">
         <h3 className="heading text-base font-semibold text-slate-900 line-clamp-2 group-hover:text-brand-700 transition-colors">{item.name}</h3>
         {item.description && <p className="mt-1.5 text-[13px] text-slate-600 line-clamp-2">{item.description}</p>}
         <div className="mt-3 flex items-center gap-4 text-[12px] text-slate-500">
@@ -159,7 +159,7 @@ function BundleVariant({ item, index }: { item: BundleListItem; index: number })
             </span>
           )}
         </div>
-        <div className="mt-4 pt-4 border-t border-slate-100 flex items-end justify-between">
+        <div className="mt-auto pt-4 border-t border-slate-100 flex items-end justify-between">
           <div>
             {price && <div className="heading text-xl text-slate-900 leading-none">{price}</div>}
             {original && price && Number(item.original_price) > Number(item.price) && (
@@ -186,7 +186,7 @@ function BatchVariant({ item, index }: { item: CourseBatch; index: number }) {
 
   return (
     <div className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
-      <div className={cn('relative h-28 bg-gradient-to-br', grad)}>
+      <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
         <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
         <TypeBadge type="batches" />
         <div className="absolute bottom-3 left-3 text-white">
@@ -205,7 +205,7 @@ function BatchVariant({ item, index }: { item: CourseBatch; index: number }) {
           ) : courseName}
         </h3>
         {item.title && item.title !== courseName && (
-          <p className="mt-1 text-[13px] text-slate-600 line-clamp-1">{item.title}</p>
+          <p className="mt-1 text-[13px] text-slate-600 line-clamp-2">{item.title}</p>
         )}
         <div className="mt-3 flex items-center gap-3 text-[12px] text-slate-500">
           {instructorName && <span className="inline-flex items-center gap-1"><User className="h-3.5 w-3.5" /> {instructorName}</span>}
@@ -266,13 +266,13 @@ function BlogVariant({ item, index }: { item: BlogPost; index: number }) {
   return (
     <Link href={`/blog/${item.slug}`} className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
       {item.featured_image_url ? (
-        <div className="relative aspect-[16/9] bg-slate-100">
+        <div className="relative aspect-[16/10] bg-slate-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={item.featured_image_url} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
           <TypeBadge type="blogs" />
         </div>
       ) : (
-        <div className={cn('relative aspect-[16/9] bg-gradient-to-br', grad)}>
+        <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
           <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
           <TypeBadge type="blogs" />
           <div className="absolute bottom-3 left-3">
@@ -305,13 +305,13 @@ function WebinarVariant({ item, index }: { item: Webinar; index: number }) {
   return (
     <div className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
       {item.thumbnail_url ? (
-        <div className="relative aspect-[16/9] bg-slate-100">
+        <div className="relative aspect-[16/10] bg-slate-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={item.thumbnail_url} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
           <TypeBadge type="webinars" />
         </div>
       ) : (
-        <div className={cn('relative aspect-[16/9] bg-gradient-to-br', grad)}>
+        <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
           <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
           <TypeBadge type="webinars" />
           <div className="absolute bottom-3 left-3"><Video className="h-8 w-8 text-white/60" /></div>
@@ -343,7 +343,7 @@ function LiveSessionVariant({ item, index }: { item: LiveSession; index: number 
 
   return (
     <div className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
-      <div className={cn('relative h-28 bg-gradient-to-br', grad)}>
+      <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
         <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
         <TypeBadge type="live_sessions" />
         <div className="absolute bottom-3 left-3"><Radio className="h-6 w-6 text-white/70" /></div>
@@ -377,13 +377,13 @@ function PodcastVariant({ item, index }: { item: Podcast; index: number }) {
   return (
     <Link href={`/podcasts/${item.slug || item.id}`} className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover">
       {item.thumbnail_url ? (
-        <div className="relative aspect-[16/9] bg-slate-100">
+        <div className="relative aspect-[16/10] bg-slate-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={item.thumbnail_url} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
           <TypeBadge type="podcasts" />
         </div>
       ) : (
-        <div className={cn('relative aspect-[16/9] bg-gradient-to-br', grad)}>
+        <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
           <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
           <TypeBadge type="podcasts" />
           <div className="absolute bottom-3 left-3"><Mic className="h-8 w-8 text-white/60" /></div>

@@ -338,8 +338,8 @@ function stateToApiParams(s: FilterState): CourseFilterParams {
   // Level — comma-separated for multi-select
   if (s.levels.size > 0) params.difficulty_level = [...s.levels].join(',');
 
-  // Language — use first selected
-  if (s.languages.size === 1) params.course_language_id = parseInt([...s.languages][0]);
+  // Language — S9: pass comma-separated for multi-select
+  if (s.languages.size > 0) params.course_language_id = [...s.languages].join(',');
 
   // Category — single-select
   if (s.categories.size === 1) params.category_id = [...s.categories][0];
@@ -410,7 +410,8 @@ function CoursesPageInner() {
   useEffect(() => {
     api.categories().then((data) => { if (data) setCategoryOptions(data); });
     api.subCategories().then((data) => { if (data) setSubCategoryOptions(data); });
-    api.allLanguages().then((data) => { if (data) setLanguageOptions(data); });
+    // S9: Use course-specific languages (only languages with published courses)
+    api.courseLanguages().then((data) => { if (data) setLanguageOptions(data); });
     api.sectionVisibility().then((data) => {
       if (data) setSectionVisibility(data);
       setVisibilityLoaded(true);
@@ -462,6 +463,37 @@ function CoursesPageInner() {
     // Build parallel fetch promises for each selected content type
     const fetches: Promise<{ type: ContentType; items: UnifiedItem[]; total: number; totalPages: number }>[] = [];
 
+    // ── Sort mapping: translate user's sort choice to valid columns per type ──
+    // Types that support 'price': courses, bundles, batches
+    // Types that support 'name': courses, bundles, batches, instructors
+    // Types that support 'rating_average'/'rating_count': courses, bundles, instructors
+    // Other types fall back to their natural sort column
+    const SORT_DEFAULTS: Record<string, { sort: string; order: 'asc' | 'desc' }> = {
+      bundles: { sort: 'rating_count', order: 'desc' },
+      batches: { sort: 'created_at', order: 'desc' },
+      instructors: { sort: 'rating_average', order: 'desc' },
+      blogs: { sort: 'published_at', order: 'desc' },
+      webinars: { sort: 'scheduled_at', order: 'desc' },
+      live_sessions: { sort: 'created_at', order: 'desc' },
+      podcasts: { sort: 'published_at', order: 'desc' },
+    };
+    const SORT_SUPPORT: Record<string, Set<string>> = {
+      bundles: new Set(['price', 'name', 'rating_count', 'rating_average', 'created_at']),
+      batches: new Set(['price', 'name', 'created_at']),
+      instructors: new Set(['name', 'rating_average', 'rating_count', 'created_at']),
+      blogs: new Set(['name', 'published_at', 'created_at']),
+      webinars: new Set(['name', 'scheduled_at', 'created_at']),
+      live_sessions: new Set(['name', 'created_at']),
+      podcasts: new Set(['name', 'published_at', 'created_at']),
+    };
+    function sortFor(type: string): { sort: string; order: 'asc' | 'desc' } {
+      const supported = SORT_SUPPORT[type];
+      if (supported && supported.has(filters.sort)) {
+        return { sort: filters.sort, order: filters.order as 'asc' | 'desc' };
+      }
+      return SORT_DEFAULTS[type] || { sort: 'created_at', order: 'desc' as const };
+    }
+
     // Common params
     const search = filters.search || undefined;
     const page = filters.page;
@@ -485,7 +517,9 @@ function CoursesPageInner() {
           is_free: filters.isFree || undefined,
           rating_min: filters.ratingMin ? parseFloat(filters.ratingMin) : undefined,
           is_featured: filters.bundleFeatured || undefined,
-          sort: 'rating_count', order: 'desc',
+          price_min: filters.priceMin ? parseFloat(filters.priceMin) : undefined,
+          price_max: filters.priceMax ? parseFloat(filters.priceMax) : undefined,
+          ...sortFor('bundles'),
         }).then((r) => ({
           type: 'bundles' as ContentType,
           items: r.data.map((d) => ({ type: 'bundles' as ContentType, id: d.id, data: d })),
@@ -501,6 +535,7 @@ function CoursesPageInner() {
           is_free: filters.batchFree || filters.isFree || undefined,
           batch_status: filters.batchStatus || undefined,
           is_active: !filters.batchStatus ? true : undefined,
+          ...sortFor('batches'),
         }).then((r) => ({
           type: 'batches' as ContentType,
           items: r.data.map((d) => ({ type: 'batches' as ContentType, id: d.id, data: d })),
@@ -516,7 +551,7 @@ function CoursesPageInner() {
           instructor_type: filters.instructorType || undefined,
           is_verified: filters.instructorVerified || undefined,
           is_featured: filters.instructorFeatured || undefined,
-          sort: 'rating_average', order: 'desc',
+          ...sortFor('instructors'),
         }).then((r) => ({
           type: 'instructors' as ContentType,
           items: r.data.map((d) => ({ type: 'instructors' as ContentType, id: d.id, data: d })),
@@ -530,7 +565,7 @@ function CoursesPageInner() {
         fetchBlogList({
           search, page, limit: perTypeLimit,
           is_featured: filters.blogFeatured || undefined,
-          sort: 'published_at', order: 'desc',
+          ...sortFor('blogs'),
         }).then((r) => ({
           type: 'blogs' as ContentType,
           items: r.data.map((d) => ({ type: 'blogs' as ContentType, id: d.id, data: d })),
@@ -545,7 +580,7 @@ function CoursesPageInner() {
           search, page, limit: perTypeLimit,
           is_free: filters.webinarFree || filters.isFree || undefined,
           webinar_status: filters.webinarStatus || undefined,
-          sort: 'scheduled_at', order: 'desc',
+          ...sortFor('webinars'),
         }).then((r) => ({
           type: 'webinars' as ContentType,
           items: r.data.map((d) => ({ type: 'webinars' as ContentType, id: d.id, data: d })),
@@ -561,7 +596,7 @@ function CoursesPageInner() {
           session_status: filters.sessionStatus || undefined,
           meeting_platform: filters.meetingPlatform || undefined,
           is_recurring: filters.sessionRecurring || undefined,
-          sort: 'created_at', order: 'desc',
+          ...sortFor('live_sessions'),
         }).then((r) => ({
           type: 'live_sessions' as ContentType,
           items: r.data.map((d) => ({ type: 'live_sessions' as ContentType, id: d.id, data: d })),
@@ -575,7 +610,7 @@ function CoursesPageInner() {
         fetchPodcastList({
           search, page, limit: perTypeLimit,
           is_featured: filters.podcastFeatured || undefined,
-          sort: 'published_at', order: 'desc',
+          ...sortFor('podcasts'),
         }).then((r) => ({
           type: 'podcasts' as ContentType,
           items: r.data.map((d) => ({ type: 'podcasts' as ContentType, id: d.id, data: d })),
@@ -1026,7 +1061,7 @@ function CoursesPageInner() {
           {/* ── Main layout: Sidebar + Grid ── */}
           <div className="mt-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
             {/* Desktop sidebar */}
-            <aside className="hidden lg:block">{sidebarContent}</aside>
+            <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">{sidebarContent}</aside>
 
             {/* Course grid */}
             <div>

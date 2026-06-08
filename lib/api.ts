@@ -366,6 +366,10 @@ export const api = {
   /** Active languages for filter dropdowns. */
   allLanguages: () =>
     request<Language[]>('/languages?is_active=true&limit=50&sort=name&order=asc', { revalidate: 300 }),
+
+  /** S9: Languages that have at least one published course (for course filter dropdown). */
+  courseLanguages: () =>
+    request<Language[]>('/courses/languages', { revalidate: 300 }),
 };
 
 // ─── Paginated response type ──────────────────────────────────────────────
@@ -410,7 +414,8 @@ export interface CourseFilterParams {
   is_bestseller?: boolean;
   is_new?: boolean;
   has_certificate?: boolean;
-  course_language_id?: number;
+  /** Single ID or comma-separated list (e.g. "1,3,5") — S9 multi-value support */
+  course_language_id?: number | string;
   instructor_id?: number;
   /** Single ID or comma-separated list (e.g. "3,7,12") */
   category_id?: number | string;
