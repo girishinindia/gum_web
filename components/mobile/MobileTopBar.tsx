@@ -8,6 +8,7 @@ import { Menu, Search, Bell, Globe, GraduationCap } from 'lucide-react';
 import { useT } from '@/lib/i18n/useT';
 import { useLanguage } from '@/components/layout/LanguageProvider';
 import { cn } from '@/lib/cn';
+import { CartBadge } from '@/components/commerce/CartBadge';
 
 interface Props {
   unreadCount?:    number;
@@ -96,6 +97,7 @@ export function MobileTopBar({ unreadCount = 0, onOpenDrawer, onOpenLanguage, cl
           >
             <Search className="h-5 w-5" />
           </Link>
+          <CartBadge href="/m/cart" className="h-9 w-9 rounded-full hover:bg-brand-50 text-slate-700" />
           <Link
             href="/m/notifications"
             aria-label="Notifications"

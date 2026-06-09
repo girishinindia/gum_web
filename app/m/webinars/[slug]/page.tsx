@@ -1,90 +1,73 @@
-import { Calendar, Clock, Radio, Users, Bell, CheckCircle2, Share2 } from 'lucide-react';
+import { notFound } from 'next/navigation';
+import { Calendar, Clock, Radio, User, Share2, Bell } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
+import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
+import { api } from '@/lib/api';
 
-export default function MobileWebinarDetail() {
+export const revalidate = 120;
+
+function personName(u?: { full_name?: string | null; first_name?: string | null; last_name?: string | null } | null) {
+  if (!u) return null;
+  return u.full_name || [u.first_name, u.last_name].filter(Boolean).join(' ') || null;
+}
+
+export default async function MobileWebinarDetail({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params; // holds the webinar id on mobile
+  const webinar = await api.webinarById(slug);
+  if (!webinar) notFound();
+
+  const title = webinar.translated_title || webinar.title || 'Webinar';
+  const desc = webinar.translated_description || '';
+  const host = personName(webinar.users);
+  const when = webinar.scheduled_at ? new Date(webinar.scheduled_at) : null;
+  const status = webinar.webinar_status;
+
   return (
     <div>
-      <MobilePageHeader
-        title="Generative AI for Beginners"
-        action={
-          <button
-            type="button"
-            aria-label="Share"
-            className="h-9 w-9 inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 active:scale-95 transition-all"
-          >
-            <Share2 className="h-4 w-4" />
-          </button>
-        }
-      />
+      <MobilePageHeader title={title} subtitle="Webinar" action={<span className="h-9 w-9 inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700"><Share2 className="h-4 w-4" /></span>} />
 
-      {/* Cover */}
       <div className="px-3">
-        <div className="relative aspect-video rounded-md bg-gradient-to-br from-brand-700 via-brand-600 to-accent p-4 overflow-hidden">
-          <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_55%)]" />
-          <div className="relative">
-            <div className="inline-flex items-center gap-1 bg-white/15 backdrop-blur border border-white/25 rounded-full px-2 py-0.5 text-[10px] font-bold text-white">
-              <Bell className="h-3 w-3" /> Starts in 2d 14h
-            </div>
-            <div className="mt-12 text-white">
-              <div className="text-[10px] uppercase tracking-wider opacity-85">Hosted by</div>
-              <div className="heading text-xl">Aniket Rao</div>
-              <div className="text-[11.5px] opacity-90">Sr. ML Engineer · ex-Google</div>
-            </div>
-          </div>
+        <div className="relative aspect-video rounded-md overflow-hidden bg-gradient-to-br from-sky-600 via-brand-600 to-indigo-500 flex items-center justify-center">
+          {webinar.translated_thumbnail || webinar.thumbnail_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={webinar.translated_thumbnail || webinar.thumbnail_url!} alt={title} className="absolute inset-0 h-full w-full object-cover" />
+          ) : <Radio className="h-12 w-12 text-white/80" />}
+          {status === 'live' && <span className="absolute top-2 left-2 inline-flex items-center gap-1 bg-white/95 rounded-full px-2 py-0.5 text-[9.5px] font-bold text-rose-600"><Radio className="h-2.5 w-2.5" /> LIVE</span>}
         </div>
       </div>
 
       <section className="px-4 pt-4">
-        <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-brand-700">
-          <Radio className="h-3 w-3 text-rose-500 animate-pulse" /> Live Webinar · Free
-        </div>
-        <h1 className="mt-1 heading text-xl text-slate-900 leading-tight">Generative AI for Beginners</h1>
-        <p className="mt-2 text-[12.5px] text-slate-600 leading-relaxed">A 60-minute crash course on building production-grade GenAI apps. No prior ML experience needed — bring a laptop, leave with a working RAG pipeline.</p>
+        <div className="text-[10px] font-bold uppercase tracking-wider text-sky-600">Webinar{status ? ` · ${status}` : ''}</div>
+        <h1 className="mt-1 heading text-2xl text-slate-900 leading-tight">{title}</h1>
+        {desc && <p className="mt-2 text-[12.5px] text-slate-600 leading-relaxed">{desc}</p>}
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <Tile Icon={Calendar} label="Sat, 17 May" />
-          <Tile Icon={Clock} label="7:00 PM IST" />
-          <Tile Icon={Users} label="1,842 reg." />
+        <div className="mt-4 space-y-2">
+          {when && (
+            <div className="flex items-center gap-2.5 rounded-md bg-white border border-slate-200 p-3 text-[12.5px] text-slate-700">
+              <Calendar className="h-4 w-4 text-brand-600" />
+              <span className="flex-1">{when.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              <span className="text-slate-500">{when.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+            </div>
+          )}
+          {webinar.duration_minutes != null && (
+            <div className="flex items-center gap-2.5 rounded-md bg-white border border-slate-200 p-3 text-[12.5px] text-slate-700"><Clock className="h-4 w-4 text-brand-600" /> {webinar.duration_minutes} minutes</div>
+          )}
+          {host && (
+            <div className="flex items-center gap-2.5 rounded-md bg-white border border-slate-200 p-3 text-[12.5px] text-slate-700"><User className="h-4 w-4 text-brand-600" /> Hosted by {host}</div>
+          )}
         </div>
-
-        <h2 className="heading text-[15px] font-bold text-slate-900 mt-5">What you&apos;ll take away</h2>
-        <ul className="mt-2 space-y-1.5">
-          {[
-            'How LLMs work — embeddings, tokens, attention',
-            'Build a working RAG pipeline using LangChain + Pinecone',
-            'Choose the right model: GPT-4o vs Claude vs OSS',
-            'Production patterns — caching, evals, guardrails',
-          ].map((p) => (
-            <li key={p} className="flex items-start gap-2 text-[12px] text-slate-700">
-              <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" /> {p}
-            </li>
-          ))}
-        </ul>
       </section>
 
-      {/* Sticky register */}
-      <div className="fixed bottom-14 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/70 shadow-[0_-4px_16px_rgba(15,23,42,0.06)]">
-        <div className="flex items-center gap-2 px-3 py-2">
-          <div className="flex-1">
-            <div className="text-[11px] font-bold text-success uppercase">Free</div>
-            <div className="text-[10.5px] text-slate-500">Recording sent if you can&apos;t attend.</div>
+      <MobileDetailBar
+        cta={status === 'live' ? 'Join now' : 'Register'}
+        CtaIcon={status === 'live' ? Radio : Bell}
+        left={
+          <div>
+            <div className="heading text-lg text-emerald-600">{webinar.is_free ? 'Free' : 'Register'}</div>
+            {when && <div className="text-[10.5px] text-slate-500">{when.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {when.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>}
           </div>
-          <button className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-white px-5 py-2.5 text-sm font-bold shadow-btn active:scale-95 transition-all">
-            Reserve seat
-          </button>
-        </div>
-      </div>
-
-      <div className="h-24" />
-    </div>
-  );
-}
-
-function Tile({ Icon, label }: { Icon: any; label: string }) {
-  return (
-    <div className="rounded-md bg-white border border-slate-200 p-2 text-center">
-      <Icon className="h-4 w-4 text-brand-600 mx-auto" />
-      <div className="mt-1 text-[10.5px] font-semibold text-slate-800">{label}</div>
+        }
+      />
     </div>
   );
 }

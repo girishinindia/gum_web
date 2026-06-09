@@ -1,62 +1,62 @@
-import { Bookmark, Share2, Calendar, Clock } from 'lucide-react';
+import { notFound } from 'next/navigation';
+import { Calendar, Clock, User, Share2, Newspaper } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
+import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
+import { api } from '@/lib/api';
 
-export default function MobileBlogPost() {
+export const revalidate = 300;
+
+function personName(u?: { full_name?: string | null; first_name?: string | null; last_name?: string | null } | null) {
+  if (!u) return 'Staff';
+  return u.full_name || [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Staff';
+}
+
+export default async function MobileBlogDetail({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params; // holds the blog post id on mobile
+  const post = await api.blogById(slug);
+  if (!post) notFound();
+
+  const author = personName(post.users);
+  const date = post.published_at ? new Date(post.published_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+
   return (
     <div>
-      <MobilePageHeader
-        title="Career"
-        action={
-          <button
-            type="button"
-            aria-label="Share"
-            className="h-9 w-9 inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 active:scale-95 transition-all"
-          >
-            <Share2 className="h-4 w-4" />
-          </button>
+      <MobilePageHeader title={post.title} subtitle="Article" action={<span className="h-9 w-9 inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700"><Share2 className="h-4 w-4" /></span>} />
+
+      <div className="px-3">
+        <div className="relative aspect-video rounded-md overflow-hidden bg-gradient-to-br from-rose-600 to-amber-500 flex items-center justify-center">
+          {post.featured_image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={post.featured_image_url} alt={post.title} className="absolute inset-0 h-full w-full object-cover" />
+          ) : <Newspaper className="h-12 w-12 text-white/80" />}
+        </div>
+      </div>
+
+      <article className="px-4 pt-4">
+        <h1 className="heading text-2xl text-slate-900 leading-tight">{post.title}</h1>
+        <div className="mt-2 flex items-center gap-3 text-[11px] text-slate-500 flex-wrap">
+          <span className="inline-flex items-center gap-1"><User className="h-3 w-3" /> {author}</span>
+          {date && <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" /> {date}</span>}
+          {post.reading_time_min ? <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {post.reading_time_min} min read</span> : null}
+        </div>
+        {post.excerpt && <p className="mt-3 text-[13px] text-slate-600 leading-relaxed font-medium">{post.excerpt}</p>}
+        {post.content ? (
+          <div className="mt-3 text-[13px] text-slate-700 leading-relaxed space-y-3 [&_h2]:heading [&_h2]:text-[16px] [&_h2]:text-slate-900 [&_h2]:mt-4 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_a]:text-brand-700" dangerouslySetInnerHTML={{ __html: post.content }} />
+        ) : (
+          <p className="mt-3 text-[12.5px] text-slate-500">Full article coming soon.</p>
+        )}
+      </article>
+
+      <MobileDetailBar
+        cta="Share"
+        CtaIcon={Share2}
+        left={
+          <div>
+            <div className="heading text-[15px] text-slate-900">{post.reading_time_min ? `${post.reading_time_min} min read` : 'Article'}</div>
+            <div className="text-[10.5px] text-slate-500">by {author}</div>
+          </div>
         }
       />
-
-      <article className="px-4 pt-2 pb-6">
-        <div className="text-[10.5px] font-bold uppercase tracking-wider text-brand-700">Career · 8 min read</div>
-        <h1 className="mt-1 heading text-2xl text-slate-900 leading-tight">
-          How to land your first <span className="text-gradient">Data Science job</span> in India
-        </h1>
-
-        <div className="mt-3 flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500 to-accent text-white text-xs font-bold flex items-center justify-center">A</div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[12.5px] font-semibold text-slate-900">Anjali Sharma</div>
-            <div className="text-[10.5px] text-slate-500 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" /> 12 May 2026</span>
-              <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> 8 min</span>
-            </div>
-          </div>
-          <button className="h-9 w-9 rounded-full bg-white border border-slate-200 text-slate-700 inline-flex items-center justify-center active:scale-95 transition-all">
-            <Bookmark className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="mt-4 aspect-[16/9] rounded-md bg-gradient-to-br from-brand-600 to-accent" />
-
-        <div className="mt-5 space-y-3 text-[14px] leading-[1.7] text-slate-700">
-          <p className="text-[14px] text-slate-900 font-medium">Six months. That&apos;s how long it takes to go from zero programming experience to a paid Data Science role in India — if you follow the right roadmap.</p>
-          <p>Most learners I meet are stuck on the same three problems: they pick courses that are too theoretical, they don&apos;t build a portfolio recruiters can browse, and they apply to roles they aren&apos;t calibrated for. This guide fixes all three.</p>
-
-          <h2 className="heading text-lg text-slate-900 mt-5">Month 1–2 — Foundations</h2>
-          <p>Start with Python (free, in your language). Spend 90 minutes a day, six days a week. By the end of month two you should be able to solve LeetCode easy problems and pandas data-wrangling exercises without looking up syntax.</p>
-
-          <h2 className="heading text-lg text-slate-900 mt-5">Month 3–4 — Real projects</h2>
-          <p>Build three projects, each shipped to GitHub with a README. Pick projects that hiring managers can grok in 60 seconds.</p>
-
-          <blockquote className="border-l-4 border-brand-500 bg-brand-50/40 rounded-r-md px-4 py-3 italic text-slate-700 text-[13.5px]">
-            You don&apos;t need to be the best Data Scientist in your batch. You need to be the most legible one.
-          </blockquote>
-
-          <h2 className="heading text-lg text-slate-900 mt-5">Final word</h2>
-          <p>Stick to the roadmap. Ship the projects. Apply at volume. Six months from now, you&apos;ll wonder why you doubted yourself.</p>
-        </div>
-      </article>
     </div>
   );
 }

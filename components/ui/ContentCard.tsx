@@ -4,6 +4,9 @@ import {
   Mic, Video, Radio, Newspaper, GraduationCap, User, FileText, BadgeCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { WishlistButton } from '@/components/commerce/WishlistButton';
+import { EnrollButton } from '@/components/commerce/EnrollButton';
+import type { CommerceType } from '@/lib/commerce';
 import type {
   CourseListItem, BundleListItem, CourseBatch, InstructorProfile,
   BlogPost, Webinar, LiveSession, Podcast,
@@ -91,6 +94,7 @@ function personName(
 
 export interface CardData {
   type: ContentType;
+  id?: number;
   href?: string;
   badge: string;
   thumbnailUrl?: string | null;
@@ -103,116 +107,116 @@ export interface CardData {
   isFree?: boolean;
   rating?: number | null;
   extraInfo?: string | null;
+  /** Raw numeric price + slug — used by the on-card cart/wishlist actions. */
+  priceValue?: number | null;
+  originalPriceValue?: number | null;
+  slug?: string | null;
 }
+
+/** Catalog content types that map to a purchasable / wishlist-able cart item_type. */
+const COMMERCE_TYPE: Partial<Record<ContentType, CommerceType>> = {
+  courses: 'course', bundles: 'bundle', batches: 'batch', webinars: 'webinar',
+};
 
 // ─── Unified card renderer ─────────────────────────────────────────────
 
-export function UnifiedCard({ d, index }: { d: CardData; index: number }) {
+export function UnifiedCard({ d, index, basePath = '' }: { d: CardData; index: number; basePath?: '' | '/m' }) {
   const meta = TYPE_META[d.type];
   const grad = GRADIENTS[index % GRADIENTS.length];
   const Icon = meta.icon;
+  const commerceType = COMMERCE_TYPE[d.type];
+  const canCommerce = !!commerceType && d.id != null;
+  const href = d.href ?? '#';
 
-  const card = (
-    <div className="group flex flex-col rounded-md bg-white border border-slate-200/80 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover h-full">
-      {/* ── Gradient thumbnail area ── */}
-      {d.thumbnailUrl ? (
-        <div className="relative aspect-video bg-slate-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={d.thumbnailUrl} alt={d.title} className="absolute inset-0 w-full h-full object-cover" />
-        </div>
-      ) : (
-        <div className={cn('relative aspect-video bg-gradient-to-br', grad)}>
-          {/* Subtle overlay */}
-          <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.08),_transparent_55%)]" />
-          {/* Centered icon */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-14 h-14 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 flex items-center justify-center">
-              <Icon className="w-7 h-7 text-white/70" />
-            </div>
-          </div>
+  return (
+    <div className="group relative flex flex-col rounded-md bg-white border border-slate-200/80 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover h-full">
+      {/* Wishlist heart overlay — priced/cart-valid types only (login required) */}
+      {canCommerce && (
+        <div className="absolute top-3 right-3 z-10">
+          <WishlistButton itemType={commerceType!} itemId={d.id!} basePath={basePath} className="h-9 w-9 backdrop-blur shadow-card" />
         </div>
       )}
 
-      {/* ── Card body ── */}
-      <div className="flex flex-col flex-1 px-5 pt-4 pb-5">
-        {/* Category label + badge (badge moved off the thumbnail to the right, above the title) */}
-        <div className="flex items-center justify-between gap-2">
-          <p className={cn('text-[10px] font-bold uppercase tracking-[0.1em]', meta.categoryColor)}>
-            {d.category}
-          </p>
-          {d.badge && (
-            <span className={cn('shrink-0 rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider', meta.badgeBg, meta.badgeText)}>
-              {d.badge}
-            </span>
-          )}
-        </div>
-
-        {/* Title */}
-        <h3 className="mt-1.5 text-[15px] font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-brand-700 transition-colors">
-          {d.title}
-        </h3>
-
-        {/* Description */}
-        {d.description && (
-          <p className="mt-1.5 text-[12.5px] text-slate-500 line-clamp-2 leading-relaxed">{d.description}</p>
-        )}
-
-        {/* Stats row */}
-        {d.stats.length > 0 && (
-          <div className="mt-3 flex items-center gap-4 text-[12px] text-slate-500">
-            {d.stats.map((s, i) => (
-              <span key={i} className="inline-flex items-center gap-1.5">
-                <s.icon className="w-3.5 h-3.5 text-brand-500" />
-                {s.label}
-              </span>
-            ))}
+      {/* Clickable region → detail page (the "View") */}
+      <Link href={href} className="block">
+        {d.thumbnailUrl ? (
+          <div className="relative aspect-video bg-slate-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={d.thumbnailUrl} alt={d.title} className="absolute inset-0 w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className={cn('relative aspect-video bg-gradient-to-br', grad)}>
+            <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.08),_transparent_55%)]" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 flex items-center justify-center">
+                <Icon className="w-7 h-7 text-white/70" />
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Spacer to push bottom section down */}
-        <div className="flex-1" />
+        <div className="px-5 pt-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className={cn('text-[10px] font-bold uppercase tracking-[0.1em]', meta.categoryColor)}>{d.category}</p>
+            {d.badge && (
+              <span className={cn('shrink-0 rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider', meta.badgeBg, meta.badgeText)}>{d.badge}</span>
+            )}
+          </div>
+          <h3 className="mt-1.5 text-[15px] font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-brand-700 transition-colors">{d.title}</h3>
+          {d.description && <p className="mt-1.5 text-[12.5px] text-slate-500 line-clamp-2 leading-relaxed">{d.description}</p>}
+          {d.stats.length > 0 && (
+            <div className="mt-3 flex items-center gap-4 text-[12px] text-slate-500">
+              {d.stats.map((s, i) => (
+                <span key={i} className="inline-flex items-center gap-1.5"><s.icon className="w-3.5 h-3.5 text-brand-500" />{s.label}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </Link>
 
-        {/* Divider */}
-        <div className="mt-3 border-t border-slate-100" />
-
-        {/* Price / Rating / Extra info row */}
-        <div className="mt-3 flex items-center justify-between">
+      {/* Footer (outside the link so the action buttons stay interactive) */}
+      <div className="px-5 pb-5 pt-3 mt-auto">
+        <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             {d.isFree ? (
               <span className="text-lg font-extrabold text-slate-900">Free</span>
             ) : d.price ? (
               <>
                 <span className="text-lg font-extrabold text-slate-900">{d.price}</span>
-                {d.originalPrice && (
-                  <span className="text-[12px] text-slate-400 line-through">{d.originalPrice}</span>
-                )}
+                {d.originalPrice && <span className="text-[12px] text-slate-400 line-through">{d.originalPrice}</span>}
               </>
             ) : d.extraInfo ? (
               <span className="text-[12px] text-slate-500">{d.extraInfo}</span>
             ) : null}
           </div>
           {d.rating != null && (
-            <span className="inline-flex items-center gap-1 text-sm font-bold text-slate-700">
-              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              {Number(d.rating).toFixed(1)}
-            </span>
+            <span className="inline-flex items-center gap-1 text-sm font-bold text-slate-700"><Star className="w-4 h-4 fill-amber-400 text-amber-400" />{Number(d.rating).toFixed(1)}</span>
           )}
         </div>
 
-        {/* CTA Button */}
-        <button className="mt-3 w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm transition-all duration-200 group-hover:from-brand-700 group-hover:to-brand-600 group-hover:shadow-md">
-          {meta.ctaLabel}
-          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-        </button>
+        <div className="mt-3">
+          {canCommerce ? (
+            <div className="flex items-center gap-2">
+              <Link href={href} className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2.5 text-[13px] font-semibold text-slate-700 hover:border-brand-300 hover:text-brand-700 transition-colors">View</Link>
+              <EnrollButton
+                itemType={commerceType!}
+                itemId={d.id!}
+                isFree={d.isFree}
+                basePath={basePath}
+                item={{ title: d.title, price: d.priceValue, original_price: d.originalPriceValue, is_free: d.isFree, thumbnail_url: d.thumbnailUrl, slug: d.slug }}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 px-3 py-2.5 text-[13px] font-semibold text-white shadow-sm hover:from-brand-700 hover:to-brand-600 active:scale-[0.99] transition-all disabled:opacity-70"
+              />
+            </div>
+          ) : (
+            <Link href={href} className="w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm hover:from-brand-700 hover:to-brand-600 group-hover:shadow-md transition-all">
+              {meta.ctaLabel}
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );
-
-  // Wrap in Link if href is provided
-  if (d.href) {
-    return <Link href={d.href} className="block h-full">{card}</Link>;
-  }
-  return card;
 }
 
 // ─── Data extractors per type ──────────────────────────────────────────
@@ -399,18 +403,27 @@ interface Props {
 /** Map a unified item to its display data — shared by the desktop ContentCard
  *  and the mobile MobileContentCard so both render identical per-type data. */
 export function extractCardData(item: UnifiedItem): CardData | null {
+  let d: CardData | null;
   switch (item.type) {
-    case 'courses':       return courseData(item.data as CourseListItem);
-    case 'bundles':       return bundleData(item.data as BundleListItem);
-    case 'batches':       return batchData(item.data as CourseBatch);
-    case 'instructors':   return instructorData(item.data as InstructorProfile);
-    case 'blogs':         return blogData(item.data as BlogPost);
-    case 'webinars':      return webinarData(item.data as Webinar);
+    case 'courses':       d = courseData(item.data as CourseListItem); break;
+    case 'bundles':       d = bundleData(item.data as BundleListItem); break;
+    case 'batches':       d = batchData(item.data as CourseBatch); break;
+    case 'instructors':   d = instructorData(item.data as InstructorProfile); break;
+    case 'blogs':         d = blogData(item.data as BlogPost); break;
+    case 'webinars':      d = webinarData(item.data as Webinar); break;
     case 'live_sessions':
-    case 'live_classes':  return liveSessionData(item.data as LiveSession);
-    case 'podcasts':      return podcastData(item.data as Podcast);
+    case 'live_classes':  d = liveSessionData(item.data as LiveSession); break;
+    case 'podcasts':      d = podcastData(item.data as Podcast); break;
     default:              return null;
   }
+  // Attach raw fields the on-card cart/wishlist actions need.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = item.data as any;
+  d.id = item.id;
+  d.priceValue = raw?.price ?? null;
+  d.originalPriceValue = raw?.original_price ?? null;
+  d.slug = raw?.slug ?? raw?.courses?.slug ?? null;
+  return d;
 }
 
 export function ContentCard({ item, index = 0 }: Props) {

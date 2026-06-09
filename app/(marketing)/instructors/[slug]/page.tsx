@@ -20,9 +20,10 @@ export default function InstructorDetailPage() {
           <span>Aniket Rao</span>
         </div>
 
-        <div className="mt-6 grid lg:grid-cols-[280px_1fr] gap-10">
+        <div className="mt-6 grid lg:grid-cols-[280px_1fr] gap-8 lg:gap-10 items-start">
+          <div className="lg:sticky lg:top-24 self-start">
           <Reveal>
-            <div className="rounded-md bg-white border border-slate-200 shadow-cardHover p-6 text-center lg:sticky lg:top-24 self-start">
+            <div className="rounded-md bg-white border border-slate-200 shadow-cardHover p-6 text-center">
               <div className="mx-auto h-28 w-28 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white heading text-4xl flex items-center justify-center shadow-cardHover">AR</div>
               <h1 className="mt-4 heading text-xl text-slate-900">Aniket Rao</h1>
               <p className="mt-1 text-sm text-slate-500">Sr. ML Engineer · ex-Google</p>
@@ -41,6 +42,7 @@ export default function InstructorDetailPage() {
               </div>
             </div>
           </Reveal>
+          </div>
 
           <div>
             <Eyebrow>About the Instructor</Eyebrow>

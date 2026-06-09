@@ -29,7 +29,7 @@ const TABS = ['Overview','Resources','Discussion','Notes'];
 
 export default function LearnPage() {
   return (
-    <div className="max-w-[1400px] grid lg:grid-cols-[1fr_320px] gap-6">
+    <div className="mx-auto w-full max-w-[1400px] grid lg:grid-cols-[1fr_320px] gap-6">
       {/* Player + tabs */}
       <div>
         <Link href="/my-courses" className="inline-flex items-center gap-1 text-[12.5px] text-slate-500 hover:text-brand-700"><ChevronLeft className="h-3.5 w-3.5" /> My courses</Link>

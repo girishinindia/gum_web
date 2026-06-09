@@ -40,7 +40,7 @@ export function SortDropdown({ options, value, order, onChange }: Props) {
         <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-20 py-1">
+        <div className="absolute right-0 top-full mt-1 w-48 max-w-[80vw] bg-white border border-slate-200 rounded-lg shadow-lg z-20 py-1 overflow-hidden">
           {options.map((o) => (
             <button
               key={`${o.sort}-${o.order}`}

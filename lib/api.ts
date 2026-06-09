@@ -208,6 +208,7 @@ export interface BlogPost {
   title:               string;
   slug:                string;
   excerpt?:            string | null;
+  content?:            string | null;
   featured_image_url?: string | null;
   status?:             string | null;
   published_at?:       string | null;
@@ -725,6 +726,18 @@ export const api = {
   /** Single podcast by ID. */
   podcastById: (id: string) =>
     request<Podcast>(`/podcasts/${id}`, { revalidate: 300 }),
+
+  /** Single webinar by ID (mobile detail). */
+  webinarById: (id: string) =>
+    request<Webinar>(`/webinars/${id}`, { revalidate: 120 }),
+
+  /** Single live session by ID (mobile detail). */
+  liveSessionById: (id: string) =>
+    request<LiveSession>(`/live-sessions/${id}`, { revalidate: 120 }),
+
+  /** Single blog post by ID (mobile detail — returns full content). */
+  blogById: (id: string) =>
+    request<BlogPost>(`/blog-posts/${id}`, { revalidate: 300 }),
 
   // ─── Section visibility (public, no auth) ──────────────────────────────
 

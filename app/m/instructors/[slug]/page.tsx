@@ -1,84 +1,62 @@
-import Link from 'next/link';
-import { Star, Users, BookOpen, BadgeCheck, Linkedin, Twitter, Globe } from 'lucide-react';
+import { notFound } from 'next/navigation';
+import { Star, Users, BookOpen, BadgeCheck, Briefcase, GraduationCap } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
+import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
+import { fetchInstructorsList } from '@/lib/api';
 
-const COURSES = [
-  { id:1, slug:'ai-machine-learning',  name:'AI & Machine Learning Pro',  rating:4.9, students:'8.4k', cover:'from-brand-700 to-brand-500' },
-  { id:2, slug:'generative-ai-builder',name:'Generative AI Builder',      rating:4.9, students:'4.2k', cover:'from-violet-700 to-rose-500' },
-  { id:3, slug:'ml-system-design',     name:'ML System Design',           rating:4.8, students:'2.1k', cover:'from-emerald-700 to-brand-500' },
-];
+export const revalidate = 300;
 
-export default function MobileInstructorDetail() {
+export default async function MobileInstructorDetail({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params; // holds the instructor's user_id (or profile id) on mobile
+  const list = await fetchInstructorsList({ limit: 100 });
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const p: any = list.data.find((x: any) => String(x.user_id) === slug || String(x.id) === slug);
+  if (!p) notFound();
+
+  const name = p.users?.full_name || 'Instructor';
+  const initials = name.split(' ').map((w: string) => w[0]).filter(Boolean).slice(0, 2).join('');
+  const type = p.instructor_type ? String(p.instructor_type).replace('_', ' ') : null;
+  const bio = p.bio || p.about || p.expertise || '';
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+
   return (
     <div>
-      <MobilePageHeader title="Aniket Rao" />
+      <MobilePageHeader title={name} subtitle="Instructor" />
 
-      <div className="px-4 pt-2 text-center">
-        <div className="mx-auto h-24 w-24 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white heading text-3xl flex items-center justify-center shadow-cardHover">AR</div>
-        <h1 className="mt-3 heading text-xl text-slate-900">Aniket Rao</h1>
-        <p className="text-[12px] text-slate-500">Sr. ML Engineer · ex-Google</p>
-        <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand-50 text-brand-700 px-2.5 py-1 text-[11px] font-bold">
-          <BadgeCheck className="h-3 w-3" /> Top Rated
+      <section className="px-4 pt-3 text-center">
+        <div className="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-emerald-600 to-brand-500 text-white heading text-2xl flex items-center justify-center shadow-cardHover overflow-hidden">
+          {p.users?.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={p.users.avatar_url} alt={name} className="h-full w-full object-cover" />
+          ) : initials}
         </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-2 max-w-xs mx-auto">
-          {[
-            { Icon: BookOpen, value: '8',    label: 'Courses' },
-            { Icon: Users,    value: '24k+', label: 'Students' },
-            { Icon: Star,     value: '4.9',  label: 'Rating' },
-          ].map((s) => (
-            <div key={s.label} className="rounded-md bg-white border border-slate-200 p-2">
-              <s.Icon className="h-3.5 w-3.5 text-brand-600 mx-auto" />
-              <div className="heading text-sm text-slate-900 mt-0.5">{s.value}</div>
-              <div className="text-[9.5px] text-slate-500 uppercase tracking-wide">{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-3 flex items-center justify-center gap-2">
-          {[Linkedin, Twitter, Globe].map((I, i) => (
-            <Link key={i} href="#" className="h-9 w-9 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center active:scale-95 transition-all">
-              <I className="h-4 w-4" />
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      <section className="px-4 mt-5">
-        <h2 className="heading text-[14px] font-bold text-slate-900">About</h2>
-        <p className="mt-1 text-[12.5px] text-slate-700 leading-relaxed">
-          Aniket led recommendation systems at YouTube for 5 years, then went on to build the ML platform at 3 successful startups (2 acquired).
-        </p>
-
-        <h3 className="heading text-[13px] font-bold text-slate-900 mt-4">Expertise</h3>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {['Deep Learning','RAG / LLMs','MLOps','PyTorch','Vector DBs','LangChain'].map((t) => (
-            <span key={t} className="rounded-full bg-white border border-slate-200 px-2.5 py-1 text-[11px] text-slate-700">{t}</span>
-          ))}
+        <h1 className="mt-3 heading text-xl text-slate-900">{name}</h1>
+        <div className="mt-1.5 flex items-center justify-center gap-2 flex-wrap">
+          {p.is_verified && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 px-2.5 py-0.5 text-[10.5px] font-bold"><BadgeCheck className="h-3 w-3" /> Verified</span>}
+          {type && <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 text-brand-700 px-2.5 py-0.5 text-[10.5px] font-semibold capitalize">{type}</span>}
+          {p.created_at && <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-[10.5px] font-semibold">Since {new Date(p.created_at).getFullYear()}</span>}
         </div>
       </section>
 
-      <section className="px-4 mt-5 pb-4">
-        <h2 className="heading text-[14px] font-bold text-slate-900">Courses by Aniket</h2>
-        <ul className="mt-2 space-y-2">
-          {COURSES.map((c) => (
-            <li key={c.id}>
-              <Link href={`/m/courses/${c.slug}`} className="flex gap-3 p-3 rounded-md bg-white border border-slate-200 shadow-card active:scale-[0.98] transition-all">
-                <div className={`h-16 w-16 rounded-md bg-gradient-to-br ${c.cover} shrink-0 flex items-center justify-center text-white`}>
-                  <BookOpen className="h-5 w-5 opacity-90" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="heading text-[13px] font-bold text-slate-900 line-clamp-2">{c.name}</h3>
-                  <div className="mt-1 flex items-center gap-3 text-[10.5px] text-slate-500">
-                    <span className="inline-flex items-center gap-1 font-semibold text-slate-700"><Star className="h-2.5 w-2.5 fill-warn text-warn" /> {c.rating}</span>
-                    <span>{c.students} students</span>
-                  </div>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+      <section className="px-4 mt-4 grid grid-cols-3 gap-2 text-center">
+        {p.course_count != null && <div className="rounded-md bg-white border border-slate-200 p-3"><BookOpen className="h-4 w-4 text-brand-600 mx-auto" /><div className="heading text-[15px] text-slate-900 mt-1">{p.course_count}</div><div className="text-[10px] text-slate-500">Courses</div></div>}
+        {p.student_count != null && <div className="rounded-md bg-white border border-slate-200 p-3"><Users className="h-4 w-4 text-brand-600 mx-auto" /><div className="heading text-[15px] text-slate-900 mt-1">{p.student_count.toLocaleString('en-IN')}</div><div className="text-[10px] text-slate-500">Students</div></div>}
+        {p.rating_average != null && <div className="rounded-md bg-white border border-slate-200 p-3"><Star className="h-4 w-4 fill-warn text-warn mx-auto" /><div className="heading text-[15px] text-slate-900 mt-1">{Number(p.rating_average).toFixed(1)}</div><div className="text-[10px] text-slate-500">Rating</div></div>}
+        {p.years_experience != null && <div className="rounded-md bg-white border border-slate-200 p-3"><Briefcase className="h-4 w-4 text-brand-600 mx-auto" /><div className="heading text-[15px] text-slate-900 mt-1">{p.years_experience}y</div><div className="text-[10px] text-slate-500">Experience</div></div>}
       </section>
+
+      {bio && (
+        <section className="px-4 mt-5">
+          <h2 className="heading text-[15px] font-bold text-slate-900">About</h2>
+          <p className="mt-2 text-[12.5px] text-slate-600 leading-relaxed">{bio}</p>
+        </section>
+      )}
+
+      <MobileDetailBar
+        cta="View courses"
+        CtaIcon={GraduationCap}
+        left={<div className="heading text-[15px] text-slate-900">{name.split(' ')[0]}&apos;s courses</div>}
+      />
     </div>
   );
 }

@@ -8,6 +8,8 @@ import {
   FileText, BarChart3,
 } from 'lucide-react';
 import { ButtonLink, Button } from '@/components/ui/Button';
+import { EnrollButton } from '@/components/commerce/EnrollButton';
+import { WishlistButton } from '@/components/commerce/WishlistButton';
 import { CourseDetailTabs } from '@/components/course/CourseDetailTabs';
 import { CurriculumAccordion } from '@/components/course/CurriculumAccordion';
 import { ReviewSection } from '@/components/course/ReviewSection';
@@ -566,12 +568,14 @@ export default async function CourseDetailPage({
 
                 {/* Actions */}
                 <div className="mt-4 space-y-2.5">
-                  <Button variant="primary" className="w-full rounded-full text-base py-3">
-                    <ShoppingCart className="h-4 w-4" /> Enroll Now
-                  </Button>
-                  <button className="w-full text-sm text-slate-600 hover:text-brand-700 inline-flex items-center justify-center gap-1.5 py-2 transition-colors">
-                    <Heart className="h-4 w-4" /> Add to Wishlist
-                  </button>
+                  <EnrollButton
+                    itemType="course"
+                    itemId={course.id}
+                    isFree={!!course.is_free}
+                    item={{ title: course.name || undefined, price: course.price, original_price: course.original_price, is_free: !!course.is_free, thumbnail_url: course.trailer_thumbnail_url, slug: course.slug }}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-600 to-brand-500 text-white text-base font-semibold py-3 shadow-btn hover:from-brand-700 hover:to-brand-600 active:scale-[0.99] transition-all disabled:opacity-70"
+                  />
+                  <WishlistButton itemType="course" itemId={course.id} variant="full" />
                 </div>
 
                 {/* Course includes */}

@@ -3,6 +3,8 @@ import { Suspense } from 'react';
 import { Sora, Outfit, JetBrains_Mono } from 'next/font/google';
 import { ViewportRouter } from '@/components/layout/ViewportRouter';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { BottomBarProvider } from '@/components/commerce/BottomBarContext';
+import { CartStrip } from '@/components/commerce/CartStrip';
 import './globals.css';
 
 const sora      = Sora({       subsets: ['latin'], weight: ['300','400','500','600','700','800'], variable: '--font-sora',      display: 'swap' });
@@ -36,7 +38,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Suspense>
         {/* Auth context — wraps both the (marketing|auth|app) desktop tree
             and the /m mobile tree so they share a single user session. */}
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <BottomBarProvider>
+            {children}
+            <CartStrip />
+          </BottomBarProvider>
+        </AuthProvider>
       </body>
     </html>
   );

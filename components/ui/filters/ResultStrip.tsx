@@ -113,34 +113,38 @@ function MiniSelect({
   }, []);
 
   return (
-    <div ref={ref} className="relative flex items-center gap-1.5">
+    <div ref={ref} className="flex items-center gap-1.5">
       <span className="text-xs text-slate-500 font-medium whitespace-nowrap">{label}</span>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:border-brand-300 transition-colors"
-      >
-        <span className="truncate max-w-[120px]">{current?.label ?? '—'}</span>
-        <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 min-w-[140px] bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1">
-          {options.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() => { onChange(o.value); setOpen(false); }}
-              className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
-                o.value === value
-                  ? 'bg-brand-50 text-brand-700 font-semibold'
-                  : 'text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:border-brand-300 transition-colors"
+        >
+          <span className="truncate max-w-[120px]">{current?.label ?? '—'}</span>
+          <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+        {open && (
+          /* Anchored to the button (not the label), width fits content but never
+             narrower than the trigger, clipped so it stays aligned with the box. */
+          <div className="absolute right-0 top-full mt-1 w-max min-w-full max-w-[220px] bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 overflow-hidden">
+            {options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => { onChange(o.value); setOpen(false); }}
+                className={`block w-full text-left px-3 py-1.5 text-sm whitespace-nowrap transition-colors ${
+                  o.value === value
+                    ? 'bg-brand-50 text-brand-700 font-semibold'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { CoursesMegaMenu } from './CoursesMegaMenu';
 import { UserMenu } from './UserMenu';
+import { CartBadge } from '@/components/commerce/CartBadge';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useT } from '@/lib/i18n/useT';
 import type { SubCategory } from '@/lib/api';
@@ -145,6 +146,7 @@ export function HeaderShell({ categories, sectionVisibility = {} }: Props) {
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
+          <CartBadge href="/cart" className="h-10 w-10 rounded-sm hover:bg-brand-50" />
           <LanguageSwitcher className="hidden md:block" />
           {signedIn && !loading ? (
             <UserMenu className="hidden sm:block" />

@@ -77,7 +77,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function WebinarDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const webinar = await api.webinarBySlug(slug);
+  // Catalog cards link by id; the route param is named `slug` but may hold
+  // either a slug or an id. Resolve by slug first, then fall back to id so the
+  // detail page never 404s on an id-based link.
+  let webinar = await api.webinarBySlug(slug);
+  if (!webinar && /^\d+$/.test(slug)) webinar = (await api.webinarById(slug)) as unknown as WebinarDetail;
   if (!webinar) return notFound();
 
   const t = webinar.translation;
@@ -87,7 +91,7 @@ export default async function WebinarDetailPage({ params }: { params: Promise<{ 
   const tags = toStrings(t?.tags);
 
   const instructor = webinar.instructor;
-  const instrName = instructor?.full_name ?? '';
+  const instrName = instructor?.full_name ?? (webinar as unknown as { users?: { full_name?: string } }).users?.full_name ?? '';
   const instrInitials = initials(instrName);
 
   const isFree = webinar.is_free ?? true;

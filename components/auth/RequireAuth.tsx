@@ -10,6 +10,8 @@ interface Props {
   loginPath?:  string;
   /** What to render while the auth context is hydrating. */
   fallback?:   React.ReactNode;
+  /** Paths (or prefixes) that stay accessible to signed-out visitors (e.g. /cart). */
+  publicPaths?: string[];
 }
 
 /**
@@ -24,18 +26,21 @@ interface Props {
  * still not signed in, we push to `loginPath?next=<current>` so the
  * login page can deep-link the user back after a successful sign-in.
  */
-export function RequireAuth({ children, loginPath = '/login', fallback }: Props) {
+export function RequireAuth({ children, loginPath = '/login', fallback, publicPaths = ['/cart'] }: Props) {
   const { loading, signedIn } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  // Guest-accessible routes (cart) skip the guard so a signed-out user can
+  // build a cart; payment itself still requires login.
+  const isPublic = !!pathname && publicPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   useEffect(() => {
-    if (loading) return;
-    if (signedIn) return;
+    if (loading || signedIn || isPublic) return;
     const next = pathname && pathname !== loginPath ? `?next=${encodeURIComponent(pathname)}` : '';
     router.replace(`${loginPath}${next}`);
-  }, [loading, signedIn, pathname, router, loginPath]);
+  }, [loading, signedIn, isPublic, pathname, router, loginPath]);
 
+  if (isPublic) return <>{children}</>;
   if (loading || !signedIn) return <>{fallback ?? null}</>;
   return <>{children}</>;
 }
