@@ -99,12 +99,15 @@ const SECTION_KEY_MAP: Record<string, string> = {
 
 // ─── Per-content-type filter configurations ─────────────────────────────
 
+// Values MUST match the DB CHECK constraint `chk_courses_difficulty` exactly,
+// otherwise the filter sends a string the column never stores → 0 results.
 const LEVEL_OPTIONS: FilterOption[] = [
-  { value: 'absolute_beginner', label: 'Absolute Beginner' },
+  { value: 'absolute beginner', label: 'Absolute Beginner' },
   { value: 'beginner', label: 'Beginner' },
   { value: 'intermediate', label: 'Intermediate' },
-  { value: 'advance', label: 'Advance' },
+  { value: 'advanced', label: 'Advanced' },
   { value: 'expert', label: 'Expert' },
+  { value: 'bootcamp', label: 'Bootcamp' },
   { value: 'mega', label: 'Mega' },
 ];
 
