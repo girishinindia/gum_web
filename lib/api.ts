@@ -198,6 +198,7 @@ export interface InstructorProfile {
   course_count?:     number | null;
   student_count?:    number | null;
   rating_average?:   number | null;
+  created_at?:       string | null;
   /** FK join — from public featured endpoint */
   users?:            { id: string; full_name: string; avatar_url?: string | null; email?: string } | null;
 }

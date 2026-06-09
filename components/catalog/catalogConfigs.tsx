@@ -36,7 +36,7 @@ export const bundlesConfig: CatalogConfig = {
 
 export const webinarsConfig: CatalogConfig = {
   basePath: '/webinars',
-  searchPlaceholder: 'Search webinars by title or code…',
+  searchPlaceholder: 'Search webinars…',
   fixedType: 'webinars',
   hero: {
     eyebrow: 'Live & Recorded Webinars',
@@ -62,8 +62,9 @@ export const instructorsConfig: CatalogConfig = {
 
 export const blogConfig: CatalogConfig = {
   basePath: '/blog',
-  searchPlaceholder: 'Search articles by title, author or topic…',
+  searchPlaceholder: 'Search articles…',
   fixedType: 'blogs',
+  categoryKind: 'blog',
   hero: {
     eyebrow: 'The Grow Up More Blog',
     title: (
@@ -77,6 +78,7 @@ export const podcastsConfig: CatalogConfig = {
   basePath: '/podcasts',
   searchPlaceholder: 'Search podcasts…',
   fixedType: 'podcasts',
+  categoryKind: 'podcast',
   hero: {
     eyebrow: 'Podcasts',
     title: (
@@ -88,7 +90,7 @@ export const podcastsConfig: CatalogConfig = {
 
 export const liveSessionsConfig: CatalogConfig = {
   basePath: '/live-sessions',
-  searchPlaceholder: 'Search sessions by title or topic…',
+  searchPlaceholder: 'Search sessions…',
   fixedType: 'live_sessions',
   hero: {
     eyebrow: 'Live Sessions',

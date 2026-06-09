@@ -30,6 +30,7 @@ import {
   fetchBatchesList,
   fetchInstructorsList,
   fetchBlogList,
+  fetchBlogCategories,
   fetchWebinarsList,
   fetchLiveSessionsList,
   fetchPodcastList,
@@ -393,8 +394,12 @@ export interface CatalogConfig {
   /** Single-type page: locks the grid to one content type and hides the
    *  content-type picker + its chips. Omit for the multi-type /courses catalog. */
   fixedType?: ContentType;
-  /** Show the Category + Sub-category dropdowns (courses, blog, podcasts). */
+  /** Show the Category + Sub-category dropdowns (courses). */
   showCategory?: boolean;
+  /** Single-type pages with their own category taxonomy. 'podcast' reuses the
+   *  shared `categories`; 'blog' uses `blog_categories`. Renders a Category
+   *  dropdown wired to that type's fetch. */
+  categoryKind?: 'blog' | 'podcast';
 }
 
 function CourseCardSkeleton() {
@@ -431,6 +436,7 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
   // Filter option lists (loaded once)
   const [categoryOptions, setCategoryOptions] = useState<Category[]>([]);
   const [subCategoryOptions, setSubCategoryOptions] = useState<SubCategory[]>([]);
+  const [blogCategoryOptions, setBlogCategoryOptions] = useState<{ id: number; name: string }[]>([]);
   const [languageOptions, setLanguageOptions] = useState<Language[]>([]);
   const [sectionVisibility, setSectionVisibility] = useState<Record<string, boolean>>({});
   const [visibilityLoaded, setVisibilityLoaded] = useState(false);
@@ -447,6 +453,11 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
   useEffect(() => {
     api.categories().then((data) => { if (data) setCategoryOptions(data); });
     api.subCategories().then((data) => { if (data) setSubCategoryOptions(data); });
+    if (config.categoryKind === 'blog') {
+      fetchBlogCategories().then((data) => {
+        if (data) setBlogCategoryOptions(data.map((c) => ({ id: c.id, name: c.name })));
+      });
+    }
     // S9: Use course-specific languages (only languages with published courses)
     api.courseLanguages().then((data) => { if (data) setLanguageOptions(data); });
     api.sectionVisibility().then((data) => {
@@ -644,6 +655,7 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
         fetchBlogList({
           search, page, limit: perTypeLimit,
           is_featured: filters.blogFeatured || undefined,
+          category_id: filters.categories.size ? Number([...filters.categories][0]) : undefined,
           ...sortFor('blogs'),
         }).then((r) => ({
           type: 'blogs' as ContentType,
@@ -691,6 +703,7 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
         fetchPodcastList({
           search, page, limit: perTypeLimit,
           is_featured: filters.podcastFeatured || filters.tags.has('featured') || undefined,
+          category_id: filters.categories.size ? Number([...filters.categories][0]) : undefined,
           ...sortFor('podcasts'),
         }).then((r) => ({
           type: 'podcasts' as ContentType,
@@ -786,6 +799,13 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
     [categoryOptions],
   );
 
+  // Category options for single-type pages with their own taxonomy (blog/podcast).
+  const typeCategoryDropdownOptions = useMemo(() => {
+    if (config.categoryKind === 'podcast') return categoryOptions.map((c) => ({ value: String(c.id), label: categoryName(c) }));
+    if (config.categoryKind === 'blog') return blogCategoryOptions.map((c) => ({ value: String(c.id), label: c.name }));
+    return [];
+  }, [config.categoryKind, categoryOptions, blogCategoryOptions]);
+
   // ── Sub-category dropdown options (multi-select, filtered by selected category) ──
   const subCategoryDropdownOptions = useMemo(
     () => filteredSubCategories.map((sc) => ({ value: String(sc.id), label: subCategoryName(sc) })),
@@ -793,11 +813,14 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
   );
 
   // ── Content Type checkbox group (visibility-gated) ──
+  // Single-select (radio): "All types" = the default product mix
+  // (courses+bundles+batches); any other option isolates that one type.
   const contentTypeGroup: FilterGroup = useMemo(() => ({
     key: 'contentTypes',
     label: 'Content Type',
-    options: visibleContentTypeOptions,
-    maxVisible: 10,
+    type: 'radio',
+    options: [{ value: 'all', label: 'All types' }, ...visibleContentTypeOptions],
+    maxVisible: 12,
   }), [visibleContentTypeOptions]);
 
   // ── Dynamic per-content-type filter groups ──
@@ -833,7 +856,9 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
 
   // Map of group key → selected set for the FilterSidebar
   const selectedMap: Record<string, Set<string>> = {
-    contentTypes: filters.contentTypes,
+    // Content type is single-select (radio): mark the one isolated type, or "all"
+    // when the default product mix (courses+bundles+batches) is active.
+    contentTypes: new Set([filters.contentTypes.size === 1 ? [...filters.contentTypes][0] : 'all']),
     categories: filters.categories,
     subCategories: filters.subCategories,
     levels: filters.levels,
@@ -895,7 +920,44 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
         return { ...prev, categories, subCategories: new Set<string>(), page: 1 };
       }
 
-      // Checkbox groups (Set-based: contentTypes, levels, languages, tags, etc.)
+      // Content Type — single-select radio. "All types" (or deselecting) restores the
+      // default product mix; picking one type isolates it. Switching type clears the
+      // secondary + per-type filters so you get a clean slate (and avoids a stale
+      // per-type filter narrowing the fetch to zero rows).
+      if (groupKey === 'contentTypes') {
+        const contentTypes = (value === 'all' || !checked)
+          ? new Set<string>(DEFAULT_CONTENT_TYPES)
+          : new Set<string>([value]);
+        return {
+          ...prev,
+          contentTypes,
+          categories: new Set<string>(),
+          subCategories: new Set<string>(),
+          levels: new Set<string>(),
+          languages: new Set<string>(),
+          tags: new Set<string>(),
+          ratingMin: '',
+          isFree: false,
+          priceMin: '',
+          priceMax: '',
+          batchStatus: '',
+          webinarStatus: '',
+          webinarFree: false,
+          sessionStatus: '',
+          meetingPlatform: '',
+          sessionRecurring: false,
+          instructorType: '',
+          instructorVerified: false,
+          instructorFeatured: false,
+          blogFeatured: false,
+          bundleFeatured: false,
+          podcastFeatured: false,
+          batchFree: false,
+          page: 1,
+        };
+      }
+
+      // Checkbox groups (Set-based: levels, languages, tags, sub-categories, etc.)
       const key = groupKey as keyof FilterState;
       const current = prev[key];
       if (current instanceof Set) {
@@ -924,26 +986,22 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
   const chips: FilterChip[] = useMemo(() => {
     const result: FilterChip[] = [];
 
-    // Content type chips (multi-type catalog only — single-type pages are locked)
+    // Content type chip (multi-type catalog only — single-type pages are locked).
+    // Single-select: one chip when a type is isolated; none for the default "All types".
     if (!config.fixedType) {
-      for (const v of filters.contentTypes) {
-        if (!DEFAULT_CONTENT_TYPES.has(v)) {
-          const opt = ALL_CONTENT_TYPE_OPTIONS.find((o) => o.value === v);
-          if (opt) result.push({ key: `contentTypes:${v}`, label: opt.label });
-        }
-      }
-      // Show chips for removed defaults
-      for (const v of DEFAULT_CONTENT_TYPES) {
-        if (!filters.contentTypes.has(v)) {
-          const opt = ALL_CONTENT_TYPE_OPTIONS.find((o) => o.value === v);
-          if (opt) result.push({ key: `contentTypes-off:${v}`, label: `No ${opt.label}` });
-        }
+      const isAllTypes = [...filters.contentTypes].sort().join(',') === [...DEFAULT_CONTENT_TYPES].sort().join(',');
+      if (!isAllTypes && filters.contentTypes.size >= 1) {
+        const v = [...filters.contentTypes][0];
+        const opt = ALL_CONTENT_TYPE_OPTIONS.find((o) => o.value === v);
+        if (opt) result.push({ key: `contentTypes:${v}`, label: opt.label });
       }
     }
 
     for (const v of filters.categories) {
       const cat = categoryOptions.find((c) => String(c.id) === v);
-      if (cat) result.push({ key: `categories:${v}`, label: categoryName(cat) });
+      if (cat) { result.push({ key: `categories:${v}`, label: categoryName(cat) }); continue; }
+      const blogCat = blogCategoryOptions.find((c) => String(c.id) === v);
+      if (blogCat) result.push({ key: `categories:${v}`, label: blogCat.name });
     }
     for (const v of filters.subCategories) {
       const sc = subCategoryOptions.find((s) => String(s.id) === v);
@@ -1001,7 +1059,7 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
     if (filters.podcastFeatured) result.push({ key: 'podcastFeatured', label: 'Featured Podcasts' });
     if (filters.batchFree) result.push({ key: 'batchFree', label: 'Free Batches' });
     return result;
-  }, [filters, categoryOptions, subCategoryOptions, languageOptions]);
+  }, [filters, categoryOptions, subCategoryOptions, languageOptions, blogCategoryOptions]);
 
   function handleChipRemove(chipKey: string) {
     // Handle special chip keys
@@ -1059,9 +1117,10 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
         placeholder={config.searchPlaceholder}
       />
 
-      {config.showCategory && (
+      {config.showCategory && filters.contentTypes.has('courses') && (
         <>
-          {/* Category dropdown (single-select) */}
+          {/* Category dropdown (single-select) — course-specific, hidden when a
+              non-course type is isolated. */}
           <FilterDropdown
             label="Category"
             placeholder="All Categories"
@@ -1090,7 +1149,24 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
         </>
       )}
 
-      {/* Content type checkboxes — multi-type catalog only */}
+      {/* Category dropdown for single-type pages with their own taxonomy (blog/podcast) */}
+      {config.categoryKind && typeCategoryDropdownOptions.length > 0 && (
+        <FilterDropdown
+          label="Category"
+          placeholder="All Categories"
+          options={typeCategoryDropdownOptions}
+          value={selectedCategoryValue}
+          onChange={(val) => {
+            updateFilters((prev) => ({
+              ...prev,
+              categories: val ? new Set([val]) : new Set<string>(),
+              page: 1,
+            }));
+          }}
+        />
+      )}
+
+      {/* Content type selector — multi-type catalog only */}
       {!config.fixedType && (
         <FilterSidebar
           groups={[contentTypeGroup]}
@@ -1192,10 +1268,10 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
 
           {/* ── Main layout: Sidebar + Grid ── */}
           <div className="mt-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
-            {/* Desktop sidebar */}
-            {/* Full-length sidebar (no nested scroll) so every filter option is
-                visible — the internal scrollbar was clipping options. */}
-            <aside className="hidden lg:block self-start">{sidebarContent}</aside>
+            {/* Desktop sidebar — sticky so it follows the page scroll.
+                `scrollbar-gutter: stable` (via .catalog-sidebar-scroll) keeps the
+                scrollbar in its own lane so it never hides filter options. */}
+            <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto pr-1 catalog-sidebar-scroll">{sidebarContent}</aside>
 
             {/* Course grid */}
             <div>

@@ -190,3 +190,10 @@ body::before {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--sky-200); border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--sky-400); }
+
+/* Catalog filter sidebar — sticky + stable gutter so the scrollbar never hides options */
+.catalog-sidebar-scroll { scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: var(--sky-200) transparent; }
+.catalog-sidebar-scroll::-webkit-scrollbar { width: 7px; }
+.catalog-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.catalog-sidebar-scroll::-webkit-scrollbar-thumb { background: var(--sky-200); border-radius: 9999px; }
+.catalog-sidebar-scroll::-webkit-scrollbar-thumb:hover { background: var(--sky-400); }

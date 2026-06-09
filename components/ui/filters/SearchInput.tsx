@@ -37,7 +37,7 @@ export function SearchInput({ value, onChange, placeholder = 'Search…', deboun
         value={local}
         onChange={(e) => handleChange(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 bg-transparent outline-none text-sm placeholder:text-slate-400"
+        className="flex-1 min-w-0 bg-transparent outline-none text-sm text-ellipsis placeholder:text-slate-400"
       />
       {local && (
         <button onClick={handleClear} className="p-0.5 rounded-full hover:bg-slate-100 transition-colors" aria-label="Clear search">

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
   Star, BookOpen, ArrowRight, Layers, Users, Calendar, Clock,
-  Mic, Video, Radio, Newspaper, GraduationCap, User, FileText,
+  Mic, Video, Radio, Newspaper, GraduationCap, User, FileText, BadgeCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type {
@@ -15,7 +15,7 @@ export type ContentType =
   | 'courses' | 'bundles' | 'batches' | 'instructors'
   | 'blogs' | 'webinars' | 'live_sessions' | 'podcasts' | 'live_classes';
 
-const TYPE_META: Record<ContentType, {
+export const TYPE_META: Record<ContentType, {
   label: string;
   badgeBg: string;
   badgeText: string;
@@ -76,9 +76,20 @@ function relativeDate(dateStr?: string | null): string {
   return months === 1 ? '1 month ago' : `${months} months ago`;
 }
 
+/** Resolve a person's display name regardless of which join shape the API
+ *  returns (`full_name` on some endpoints, `first_name`+`last_name` on others). */
+function personName(
+  u?: { full_name?: string | null; first_name?: string | null; last_name?: string | null } | null,
+): string | null {
+  if (!u) return null;
+  if (u.full_name && u.full_name.trim()) return u.full_name.trim();
+  const joined = [u.first_name, u.last_name].filter(Boolean).join(' ').trim();
+  return joined || null;
+}
+
 // ─── Unified card shape — every variant populates these ────────────────
 
-interface CardData {
+export interface CardData {
   type: ContentType;
   href?: string;
   badge: string;
@@ -253,7 +264,7 @@ function bundleData(item: BundleListItem): CardData {
 function batchData(item: CourseBatch): CardData {
   const courseName = item.courses?.name || item.title || 'Batch';
   const courseSlug = item.courses?.slug;
-  const instructorName = item.users?.full_name;
+  const instructorName = personName(item.users);
   const price = formatPrice(item.price);
   return {
     type: 'batches',
@@ -274,7 +285,8 @@ function batchData(item: CourseBatch): CardData {
 }
 
 function instructorData(item: InstructorProfile): CardData {
-  const name = item.users?.full_name || 'Instructor';
+  const name = personName(item.users) || 'Instructor';
+  const memberSince = item.created_at ? new Date(item.created_at).getFullYear() : null;
   return {
     type: 'instructors',
     href: `/instructors/${item.user_id ?? item.id}`,
@@ -284,6 +296,8 @@ function instructorData(item: InstructorProfile): CardData {
     title: name,
     description: item.instructor_type ? `${item.instructor_type.replace('_', ' ')} instructor` : null,
     stats: [
+      ...(item.is_verified ? [{ icon: BadgeCheck, label: 'Verified' }] : []),
+      ...(memberSince ? [{ icon: Calendar, label: `Since ${memberSince}` }] : []),
       ...(item.course_count != null ? [{ icon: BookOpen, label: `${item.course_count} Courses` }] : []),
       ...(item.student_count != null ? [{ icon: Users, label: `${(item.student_count).toLocaleString('en-IN')}+ Students` }] : []),
     ],
@@ -293,7 +307,7 @@ function instructorData(item: InstructorProfile): CardData {
 }
 
 function blogData(item: BlogPost): CardData {
-  const author = item.users ? `${item.users.first_name} ${item.users.last_name}` : 'Staff';
+  const author = personName(item.users) || 'Staff';
   return {
     type: 'blogs',
     href: `/blog/${item.slug}`,
@@ -313,7 +327,7 @@ function blogData(item: BlogPost): CardData {
 }
 
 function webinarData(item: Webinar): CardData {
-  const instructor = item.users?.full_name;
+  const instructor = personName(item.users);
   const date = item.scheduled_at ? new Date(item.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
   return {
     type: 'webinars',
@@ -336,7 +350,7 @@ function webinarData(item: Webinar): CardData {
 }
 
 function liveSessionData(item: LiveSession): CardData {
-  const instructor = item.users ? `${item.users.first_name} ${item.users.last_name}` : null;
+  const instructor = personName(item.users);
   const date = item.scheduled_at ? new Date(item.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : null;
   return {
     type: 'live_sessions',
@@ -357,7 +371,7 @@ function liveSessionData(item: LiveSession): CardData {
 }
 
 function podcastData(item: Podcast): CardData {
-  const host = item.users ? `${item.users.first_name} ${item.users.last_name}` : 'Staff';
+  const host = personName(item.users) || 'Staff';
   return {
     type: 'podcasts',
     href: `/podcasts/${item.slug || item.id}`,
@@ -382,28 +396,25 @@ interface Props {
   index?: number;
 }
 
-export function ContentCard({ item, index = 0 }: Props) {
-  let d: CardData;
+/** Map a unified item to its display data — shared by the desktop ContentCard
+ *  and the mobile MobileContentCard so both render identical per-type data. */
+export function extractCardData(item: UnifiedItem): CardData | null {
   switch (item.type) {
-    case 'courses':
-      d = courseData(item.data as CourseListItem); break;
-    case 'bundles':
-      d = bundleData(item.data as BundleListItem); break;
-    case 'batches':
-      d = batchData(item.data as CourseBatch); break;
-    case 'instructors':
-      d = instructorData(item.data as InstructorProfile); break;
-    case 'blogs':
-      d = blogData(item.data as BlogPost); break;
-    case 'webinars':
-      d = webinarData(item.data as Webinar); break;
+    case 'courses':       return courseData(item.data as CourseListItem);
+    case 'bundles':       return bundleData(item.data as BundleListItem);
+    case 'batches':       return batchData(item.data as CourseBatch);
+    case 'instructors':   return instructorData(item.data as InstructorProfile);
+    case 'blogs':         return blogData(item.data as BlogPost);
+    case 'webinars':      return webinarData(item.data as Webinar);
     case 'live_sessions':
-    case 'live_classes':
-      d = liveSessionData(item.data as LiveSession); break;
-    case 'podcasts':
-      d = podcastData(item.data as Podcast); break;
-    default:
-      return null;
+    case 'live_classes':  return liveSessionData(item.data as LiveSession);
+    case 'podcasts':      return podcastData(item.data as Podcast);
+    default:              return null;
   }
+}
+
+export function ContentCard({ item, index = 0 }: Props) {
+  const d = extractCardData(item);
+  if (!d) return null;
   return <UnifiedCard d={d} index={index} />;
 }
