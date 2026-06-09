@@ -544,6 +544,7 @@ function CoursesPageInner() {
 
     if (typesToFetch.has('courses')) {
       const p = stateToApiParams(filters);
+      p.page = 1;               // fetch the full set; the merged grid is paginated client-side
       p.limit = perTypeLimit;
       if (activeLang?.id) p.language_id = activeLang.id;
       fetches.push(
