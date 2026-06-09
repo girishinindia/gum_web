@@ -102,7 +102,7 @@ function UnifiedCard({ d, index }: { d: CardData; index: number }) {
   const Icon = meta.icon;
 
   const card = (
-    <div className="group flex flex-col rounded-xl bg-white border border-slate-200/80 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover h-full">
+    <div className="group flex flex-col rounded-md bg-white border border-slate-200/80 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover h-full">
       {/* ── Gradient thumbnail area ── */}
       {d.thumbnailUrl ? (
         <div className="relative aspect-video bg-slate-100">
@@ -277,7 +277,7 @@ function instructorData(item: InstructorProfile): CardData {
   const name = item.users?.full_name || 'Instructor';
   return {
     type: 'instructors',
-    href: undefined,
+    href: `/instructors/${item.user_id ?? item.id}`,
     badge: item.instructor_type ? item.instructor_type.replace('_', ' ') : 'Instructor',
     thumbnailUrl: item.users?.avatar_url,
     category: 'Instructor',
@@ -317,7 +317,7 @@ function webinarData(item: Webinar): CardData {
   const date = item.scheduled_at ? new Date(item.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
   return {
     type: 'webinars',
-    href: undefined,
+    href: `/webinars/${item.id}`,
     badge: 'Webinar',
     thumbnailUrl: item.translated_thumbnail || item.thumbnail_url || null,
     category: 'Webinar',
@@ -340,7 +340,7 @@ function liveSessionData(item: LiveSession): CardData {
   const date = item.scheduled_at ? new Date(item.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : null;
   return {
     type: 'live_sessions',
-    href: undefined,
+    href: `/live-sessions/${item.id}`,
     badge: item.session_status ? item.session_status.replace('_', ' ') : 'Live',
     thumbnailUrl: null,
     category: 'Live Session',
