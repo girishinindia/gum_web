@@ -98,3 +98,16 @@ export const liveSessionsConfig: CatalogConfig = {
     subtitle: 'Join interactive live sessions, ask questions, and learn alongside a community of peers.',
   },
 };
+
+export const batchesConfig: CatalogConfig = {
+  basePath: '/batches',
+  searchPlaceholder: 'Search batches…',
+  fixedType: 'batches',
+  hero: {
+    eyebrow: 'Course Batches',
+    title: (
+      <>Join a <span className="text-gradient">live cohort</span></>
+    ),
+    subtitle: 'Structured, time-boxed batches with a start date, peers and mentor support.',
+  },
+};

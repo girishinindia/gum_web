@@ -543,20 +543,22 @@ function CatalogBody({ config }: { config: CatalogConfig }) {
     const SORT_DEFAULTS: Record<string, { sort: string; order: 'asc' | 'desc' }> = {
       bundles: { sort: 'rating_count', order: 'desc' },
       batches: { sort: 'created_at', order: 'desc' },
-      instructors: { sort: 'rating_average', order: 'desc' },
+      instructors: { sort: 'created_at', order: 'desc' },
       blogs: { sort: 'published_at', order: 'desc' },
       webinars: { sort: 'scheduled_at', order: 'desc' },
       live_sessions: { sort: 'created_at', order: 'desc' },
       podcasts: { sort: 'published_at', order: 'desc' },
     };
+    // Only columns that actually exist per table — the grid re-sorts client-side
+    // for display, so the server sort just needs to be a real column (no 500s).
     const SORT_SUPPORT: Record<string, Set<string>> = {
       bundles: new Set(['price', 'name', 'rating_count', 'rating_average', 'created_at']),
-      batches: new Set(['price', 'name', 'created_at']),
-      instructors: new Set(['name', 'rating_average', 'rating_count', 'created_at']),
-      blogs: new Set(['name', 'published_at', 'created_at']),
-      webinars: new Set(['name', 'scheduled_at', 'created_at']),
-      live_sessions: new Set(['name', 'created_at']),
-      podcasts: new Set(['name', 'published_at', 'created_at']),
+      batches: new Set(['price', 'created_at']),
+      instructors: new Set(['created_at']),
+      blogs: new Set(['published_at', 'created_at']),
+      webinars: new Set(['scheduled_at', 'created_at']),
+      live_sessions: new Set(['created_at']),
+      podcasts: new Set(['published_at', 'created_at']),
     };
     function sortFor(type: string): { sort: string; order: 'asc' | 'desc' } {
       const supported = SORT_SUPPORT[type];
