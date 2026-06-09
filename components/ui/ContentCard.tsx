@@ -105,22 +105,14 @@ function UnifiedCard({ d, index }: { d: CardData; index: number }) {
     <div className="group flex flex-col rounded-xl bg-white border border-slate-200/80 shadow-card overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-cardHover h-full">
       {/* ── Gradient thumbnail area ── */}
       {d.thumbnailUrl ? (
-        <div className="relative aspect-[16/10] bg-slate-100">
+        <div className="relative aspect-video bg-slate-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={d.thumbnailUrl} alt={d.title} className="absolute inset-0 w-full h-full object-cover" />
-          {/* Badge top-left */}
-          <div className={cn('absolute top-3 left-3 z-10 rounded-md px-3 py-1 text-[10px] font-bold uppercase tracking-wider', meta.badgeBg, meta.badgeText)}>
-            {d.badge}
-          </div>
         </div>
       ) : (
-        <div className={cn('relative aspect-[16/10] bg-gradient-to-br', grad)}>
+        <div className={cn('relative aspect-video bg-gradient-to-br', grad)}>
           {/* Subtle overlay */}
           <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.08),_transparent_55%)]" />
-          {/* Badge top-left */}
-          <div className={cn('absolute top-3 left-3 z-10 rounded-md px-3 py-1 text-[10px] font-bold uppercase tracking-wider', meta.badgeBg, meta.badgeText)}>
-            {d.badge}
-          </div>
           {/* Centered icon */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-14 h-14 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 flex items-center justify-center">
@@ -132,10 +124,17 @@ function UnifiedCard({ d, index }: { d: CardData; index: number }) {
 
       {/* ── Card body ── */}
       <div className="flex flex-col flex-1 px-5 pt-4 pb-5">
-        {/* Category label */}
-        <p className={cn('text-[10px] font-bold uppercase tracking-[0.1em]', meta.categoryColor)}>
-          {d.category}
-        </p>
+        {/* Category label + badge (badge moved off the thumbnail to the right, above the title) */}
+        <div className="flex items-center justify-between gap-2">
+          <p className={cn('text-[10px] font-bold uppercase tracking-[0.1em]', meta.categoryColor)}>
+            {d.category}
+          </p>
+          {d.badge && (
+            <span className={cn('shrink-0 rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider', meta.badgeBg, meta.badgeText)}>
+              {d.badge}
+            </span>
+          )}
+        </div>
 
         {/* Title */}
         <h3 className="mt-1.5 text-[15px] font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-brand-700 transition-colors">

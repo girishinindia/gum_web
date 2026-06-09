@@ -46,7 +46,7 @@ import { useLanguage } from '@/components/layout/LanguageProvider';
 
 // ─── Constants ──────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 24;
 
 /**
  * Per-type fetch cap. We pull the full matching set for each selected content
@@ -264,16 +264,19 @@ interface FilterState {
 
 /** Parse URL search params → filter state */
 function paramsToState(sp: URLSearchParams): FilterState {
-  const typeStr = sp.get('type') || '';
+  // `type` ABSENT → untouched, fall back to the 3 defaults.
+  // `type` PRESENT (even empty) → honour the explicit selection, so a single
+  // type stays isolated and unchecking all no longer snaps back to the default.
+  const typeParam = sp.get('type');
   return {
     search: sp.get('search') || '',
     sort: sp.get('sort') || 'rating_count',
     order: (sp.get('order') || 'desc') as 'asc' | 'desc',
     page: parseInt(sp.get('page') || '1') || 1,
     pageSize: parseInt(sp.get('limit') || String(PAGE_SIZE)) || PAGE_SIZE,
-    contentTypes: typeStr
-      ? new Set(typeStr.split(',').filter(Boolean))
-      : new Set(DEFAULT_CONTENT_TYPES),
+    contentTypes: typeParam === null
+      ? new Set(DEFAULT_CONTENT_TYPES)
+      : new Set(typeParam.split(',').filter(Boolean)),
     categories: new Set((sp.get('cat') || '').split(',').filter(Boolean)),
     subCategories: new Set((sp.get('sub') || '').split(',').filter(Boolean)),
     levels: new Set((sp.get('level') || '').split(',').filter(Boolean)),
@@ -1157,7 +1160,9 @@ function CoursesPageInner() {
           {/* ── Main layout: Sidebar + Grid ── */}
           <div className="mt-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
             {/* Desktop sidebar */}
-            <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">{sidebarContent}</aside>
+            {/* Full-length sidebar (no nested scroll) so every filter option is
+                visible — the internal scrollbar was clipping options. */}
+            <aside className="hidden lg:block self-start">{sidebarContent}</aside>
 
             {/* Course grid */}
             <div>
@@ -1171,8 +1176,17 @@ function CoursesPageInner() {
                 </div>
               ) : items.length === 0 ? (
                 <div className="py-20 text-center">
-                  <p className="text-lg font-semibold text-slate-700">No results found</p>
-                  <p className="mt-2 text-sm text-slate-500">Try adjusting your filters or search query.</p>
+                  {filters.contentTypes.size === 0 ? (
+                    <>
+                      <p className="text-lg font-semibold text-slate-700">Select a content type</p>
+                      <p className="mt-2 text-sm text-slate-500">Pick at least one content type from the sidebar to see results.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-lg font-semibold text-slate-700">No results found</p>
+                      <p className="mt-2 text-sm text-slate-500">Try adjusting your filters or search query.</p>
+                    </>
+                  )}
                   <button
                     onClick={handleClearAll}
                     className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand-500 text-white text-sm font-medium shadow-btn hover:bg-brand-600 transition-colors"
