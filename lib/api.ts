@@ -244,6 +244,377 @@ export interface Podcast {
   sub_categories?:   { id: number; name: string; slug: string; category_id: number } | null;
 }
 
+// ─── Detail page types (full translation + enrichment) ──────────────────
+
+export interface CourseTranslation {
+  id: number;
+  course_id: number;
+  language_id: number;
+  title: string;
+  short_intro?: string | null;
+  long_intro?: string | null;
+  tagline?: string | null;
+  web_thumbnail?: string | null;
+  web_banner?: string | null;
+  app_thumbnail?: string | null;
+  app_banner?: string | null;
+  video_title?: string | null;
+  video_description?: string | null;
+  video_thumbnail?: string | null;
+  video_duration_minutes?: number | null;
+  tags?: any[] | null;
+  is_new_title?: string | null;
+  prerequisites?: any[] | null;
+  skills_gain?: any[] | null;
+  what_you_will_learn?: any[] | null;
+  course_includes?: any[] | null;
+  course_is_for?: any[] | null;
+  apply_for_designations?: any[] | null;
+  demand_in_countries?: any[] | null;
+  salary_standard?: any[] | null;
+  future_courses?: any[] | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  meta_keywords?: string | null;
+  canonical_url?: string | null;
+  og_site_name?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  og_type?: string | null;
+  og_image?: string | null;
+  og_url?: string | null;
+  twitter_site?: string | null;
+  twitter_title?: string | null;
+  twitter_description?: string | null;
+  twitter_image?: string | null;
+  twitter_card?: string | null;
+  robots_directive?: string | null;
+  focus_keyword?: string | null;
+  structured_data?: any | null;
+}
+
+export interface InstructorInfo {
+  id: number | string;
+  full_name: string;
+  email?: string;
+  profile_image_url?: string | null;
+  designation?: string | null;
+  bio?: string | null;
+  expertise?: string | null;
+  linkedin_url?: string | null;
+  website_url?: string | null;
+  total_students?: number | null;
+  total_courses?: number | null;
+  years_experience?: number | null;
+  rating_average?: number | null;
+}
+
+export interface ChapterWithTopics {
+  id: number;
+  title: string;
+  sort_order: number;
+  description?: string | null;
+  topics: {
+    id: number;
+    chapter_id: number;
+    title: string;
+    sort_order: number;
+    content_type?: string | null;
+    duration_minutes?: number | null;
+    is_free_preview?: boolean;
+  }[];
+}
+
+// ─── Curriculum tree types (4-level hierarchy) ─────────────────────────
+
+export interface CurriculumSubTopic {
+  id: number;
+  name: string;
+  estimated_minutes?: number | null;
+}
+
+export interface CurriculumTopic {
+  id: number;
+  name: string;
+  display_order: number;
+  subtopic_count: number;
+  sub_topics: CurriculumSubTopic[];
+}
+
+export interface CurriculumChapter {
+  id: number;
+  name: string;
+  display_order: number;
+  topic_count: number;
+  subtopic_count: number;
+  topics: CurriculumTopic[];
+}
+
+export interface CurriculumModule {
+  id: number;
+  name: string;
+  display_order: number;
+  chapter_count: number;
+  topic_count: number;
+  subtopic_count: number;
+  chapters: CurriculumChapter[];
+}
+
+export interface CurriculumCounts {
+  modules: number;
+  chapters: number;
+  topics: number;
+  subtopics: number;
+}
+
+// ─── FAQ / Review types ────────────────────────────────────────────────
+
+export interface CourseFaqItem {
+  id: number;
+  question: string;
+  answer: string;
+  display_order?: number;
+}
+
+export interface CourseReview {
+  id: number;
+  user_id: number | string;
+  rating: number;
+  title?: string | null;
+  review_text?: string | null;
+  is_verified_purchase?: boolean;
+  helpful_count?: number;
+  created_at?: string | null;
+  reviewer_name: string;
+  reviewer_image?: string | null;
+}
+
+export interface ReviewSummary {
+  average: number;
+  total: number;
+  breakdown: Record<number, number>; // { 5: count, 4: count, ... 1: count }
+}
+
+// ─── Related course type ───────────────────────────────────────────────
+
+export interface RelatedCourse {
+  id: number;
+  slug: string;
+  name: string;
+  price?: number | null;
+  original_price?: number | null;
+  is_free?: boolean;
+  rating_average?: number | null;
+  trailer_thumbnail_url?: string | null;
+  translated_title?: string | null;
+  translated_thumbnail?: string | null;
+  short_description?: string | null;
+  difficulty_level?: string | null;
+  module_count?: number;
+  category_name?: string | null;
+}
+
+// ─── Course detail (full page) ─────────────────────────────────────────
+
+export interface CourseDetail {
+  id: number;
+  slug: string;
+  name?: string | null;
+  code?: string | null;
+  instructor_id?: number | null;
+  course_language_id?: number | null;
+  difficulty_level?: string | null;
+  course_status?: string | null;
+  duration_hours?: number | null;
+  price?: number | null;
+  original_price?: number | null;
+  discount_percentage?: number | null;
+  is_free?: boolean;
+  trailer_video_url?: string | null;
+  trailer_thumbnail_url?: string | null;
+  video_url?: string | null;
+  brochure_url?: string | null;
+  is_new?: boolean;
+  is_featured?: boolean;
+  is_bestseller?: boolean;
+  has_placement_assistance?: boolean;
+  has_certificate?: boolean;
+  max_students?: number | null;
+  refund_days?: number | null;
+  enrollment_count?: number | null;
+  rating_average?: number | null;
+  rating_count?: number | null;
+  total_lessons?: number | null;
+  total_assignments?: number | null;
+  total_projects?: number | null;
+  new_until?: string | null;
+  translation: CourseTranslation | null;
+  instructor: InstructorInfo | null;
+  chapters: ChapterWithTopics[];
+  curriculum: CurriculumModule[];
+  curriculum_counts: CurriculumCounts;
+  faqs: CourseFaqItem[];
+  reviews: CourseReview[];
+  review_summary: ReviewSummary;
+  related_courses: RelatedCourse[];
+  language_name: string | null;
+  language_native_name: string | null;
+  category: { category_id: number; category_name: string; sub_category_id: number; sub_category_name: string } | null;
+}
+
+export interface BundleTranslation {
+  id: number;
+  bundle_id: number;
+  language_id: number;
+  title: string;
+  short_description?: string | null;
+  description?: string | null;
+  highlights?: any[] | null;
+  tags?: any[] | null;
+  thumbnail_url?: string | null;
+  banner_url?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  meta_keywords?: string | null;
+  canonical_url?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  og_image?: string | null;
+  og_url?: string | null;
+  twitter_title?: string | null;
+  twitter_description?: string | null;
+  twitter_image?: string | null;
+  twitter_card?: string | null;
+  robots_directive?: string | null;
+  focus_keyword?: string | null;
+  structured_data?: any | null;
+}
+
+export interface BundleDetail {
+  id: number;
+  slug: string;
+  name?: string | null;
+  code?: string | null;
+  price?: number | null;
+  original_price?: number | null;
+  discount_percent?: number | null;
+  is_active?: boolean;
+  is_featured?: boolean;
+  course_count?: number | null;
+  student_count?: number | null;
+  rating_average?: number | null;
+  translation: BundleTranslation | null;
+  instructor: InstructorInfo | null;
+  included_courses: (Course & { translated_title?: string | null; translated_description?: string | null; translated_thumbnail?: string | null })[];
+}
+
+export interface BatchTranslation {
+  id: number;
+  batch_id: number;
+  language_id: number;
+  title?: string | null;
+  description?: string | null;
+  short_description?: string | null;
+  requirements?: string | null;
+  what_you_learn?: string | null;
+  tags?: any[] | null;
+  thumbnail_url?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  meta_keywords?: string | null;
+  canonical_url?: string | null;
+  robots_directive?: string | null;
+  focus_keyword?: string | null;
+  og_site_name?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  og_type?: string | null;
+  og_image?: string | null;
+  og_url?: string | null;
+  twitter_site?: string | null;
+  twitter_title?: string | null;
+  twitter_description?: string | null;
+  twitter_image?: string | null;
+  twitter_card?: string | null;
+  structured_data?: any | null;
+}
+
+export interface BatchDetail {
+  id: number;
+  slug?: string | null;
+  title?: string | null;
+  code?: string | null;
+  course_id?: number | null;
+  instructor_id?: number | null;
+  batch_status?: string | null;
+  max_students?: number | null;
+  enrolled_count?: number | null;
+  price?: number | null;
+  is_free?: boolean;
+  start_date?: string | null;
+  end_date?: string | null;
+  meeting_platform?: string | null;
+  meeting_link?: string | null;
+  schedule?: any | null;
+  courses?: { id: number; name: string; slug: string; code?: string; course_status?: string; difficulty_level?: string; price?: number; original_price?: number; is_free?: boolean; trailer_thumbnail_url?: string | null } | null;
+  translation: BatchTranslation | null;
+  instructor: InstructorInfo | null;
+  course_translation?: { title?: string; short_intro?: string; web_thumbnail?: string } | null;
+}
+
+export interface WebinarTranslation {
+  id: number;
+  webinar_id: number;
+  language_id: number;
+  title: string;
+  description?: string | null;
+  short_description?: string | null;
+  thumbnail?: string | null;
+  tags?: any[] | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  meta_keywords?: string | null;
+  canonical_url?: string | null;
+  og_site_name?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  og_type?: string | null;
+  og_image?: string | null;
+  og_url?: string | null;
+  twitter_site?: string | null;
+  twitter_title?: string | null;
+  twitter_description?: string | null;
+  twitter_image?: string | null;
+  twitter_card?: string | null;
+  robots_directive?: string | null;
+  focus_keyword?: string | null;
+  structured_data?: any | null;
+}
+
+export interface WebinarDetail {
+  id: number;
+  slug?: string | null;
+  title: string;
+  code?: string | null;
+  instructor_id?: number | null;
+  course_id?: number | null;
+  webinar_status?: string | null;
+  scheduled_at?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  duration_minutes?: number | null;
+  is_free?: boolean;
+  price?: number | null;
+  max_attendees?: number | null;
+  registration_count?: number | null;
+  meeting_url?: string | null;
+  recording_url?: string | null;
+  thumbnail_url?: string | null;
+  courses?: { name: string; slug: string } | null;
+  translation: WebinarTranslation | null;
+  instructor: InstructorInfo | null;
+}
+
 // ─── Endpoint helpers ────────────────────────────────────────────────────
 
 // ─── Client-side fetcher for the mega-menu language switch ───────────────
@@ -374,6 +745,24 @@ export const api = {
   /** S9: Languages that have at least one published course (for course filter dropdown). */
   courseLanguages: () =>
     request<Language[]>('/courses/languages', { revalidate: 300 }),
+
+  // ─── Detail-by-slug helpers (public, ISR 5 min) ─────────────────────
+
+  /** Full course detail by slug with translation, instructor, chapters, category. */
+  courseBySlug: (slug: string, langId?: number) =>
+    request<CourseDetail>(`/courses/by-slug/${slug}${langId ? `?language_id=${langId}` : ''}`, { revalidate: 300 }),
+
+  /** Full bundle detail by slug with translation, instructor, included courses. */
+  bundleBySlug: (slug: string, langId?: number) =>
+    request<BundleDetail>(`/bundles/by-slug/${slug}${langId ? `?language_id=${langId}` : ''}`, { revalidate: 300 }),
+
+  /** Full batch detail by slug with translation, instructor, parent course info. */
+  batchBySlug: (slug: string, langId?: number) =>
+    request<BatchDetail>(`/course-batches/by-slug/${slug}${langId ? `?language_id=${langId}` : ''}`, { revalidate: 300 }),
+
+  /** Full webinar detail by slug with translation, instructor. */
+  webinarBySlug: (slug: string, langId?: number) =>
+    request<WebinarDetail>(`/webinars/by-slug/${slug}${langId ? `?language_id=${langId}` : ''}`, { revalidate: 300 }),
 };
 
 // ─── Paginated response type ──────────────────────────────────────────────
