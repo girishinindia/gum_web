@@ -48,6 +48,16 @@ import { useLanguage } from '@/components/layout/LanguageProvider';
 
 const PAGE_SIZE = 12;
 
+/**
+ * Per-type fetch cap. We pull the full matching set for each selected content
+ * type (up to this many), then merge + globally sort + paginate client-side so
+ * the count, the sort and the pagination all derive from ONE consistent set —
+ * which is what makes the count and the visible results agree. Server list
+ * endpoints clamp `limit` to 100; beyond ~100 items per type, adopt the
+ * `fn_catalog_search` RPC for true single-query server-side pagination.
+ */
+const FETCH_CAP = 100;
+
 const SORT_OPTIONS: SortOption[] = [
   { label: 'Most Popular', sort: 'rating_count', order: 'desc' },
   { label: 'Highest Rated', sort: 'rating_average', order: 'desc' },
@@ -472,17 +482,26 @@ function CoursesPageInner() {
       typesWithActiveFilters.add('bundles');
     }
 
+    // ── Tag semantics ──
+    //  bestseller / new / certificate exist only on courses → the FILTER_CONFIG
+    //  loop above already narrows to courses when any tag is set.
+    //  'featured' also exists on bundles + podcasts, so let it span those too.
+    if (filters.tags.has('featured')) {
+      typesWithActiveFilters.add('courses');
+      typesWithActiveFilters.add('bundles');
+      typesWithActiveFilters.add('podcasts');
+    }
+
     const typesToFetch = new Set(
       typesWithActiveFilters.size > 0
         ? selectedTypes.filter(t => typesWithActiveFilters.has(t))
         : selectedTypes,
     );
 
-    // ── Fix E: Request full pageSize from each type so the merged grid
-    //    always has enough items to fill the page. Previously this divided
-    //    pageSize by the number of types, causing underfilled pages
-    //    (e.g. 48/3=16 per type → only 19 items if bundles has 2 + batches 1). ──
-    const perTypeLimit = filters.pageSize;
+    // ── Fetch the full matching set per type (capped), so the merged grid can
+    //    be globally sorted and paginated client-side from ONE consistent set.
+    //    This is what makes the count, sort and pagination agree. ──
+    const perTypeLimit = FETCH_CAP;
 
     // Build parallel fetch promises for each selected content type
     const fetches: Promise<{ type: ContentType; items: UnifiedItem[]; total: number; totalPages: number }>[] = [];
@@ -518,9 +537,10 @@ function CoursesPageInner() {
       return SORT_DEFAULTS[type] || { sort: 'created_at', order: 'desc' as const };
     }
 
-    // Common params
+    // Common params. We always fetch page 1 of each type (the whole set under
+    // the cap); the merged result is paginated client-side by filters.page below.
     const search = filters.search || undefined;
-    const page = filters.page;
+    const page = 1;
 
     if (typesToFetch.has('courses')) {
       const p = stateToApiParams(filters);
@@ -541,7 +561,7 @@ function CoursesPageInner() {
           search, page, limit: perTypeLimit,
           is_free: filters.isFree || undefined,
           rating_min: filters.ratingMin ? parseFloat(filters.ratingMin) : undefined,
-          is_featured: filters.bundleFeatured || undefined,
+          is_featured: filters.bundleFeatured || filters.tags.has('featured') || undefined,
           price_min: filters.priceMin ? parseFloat(filters.priceMin) : undefined,
           price_max: filters.priceMax ? parseFloat(filters.priceMax) : undefined,
           language_id: activeLang?.id || undefined,
@@ -638,7 +658,7 @@ function CoursesPageInner() {
       fetches.push(
         fetchPodcastList({
           search, page, limit: perTypeLimit,
-          is_featured: filters.podcastFeatured || undefined,
+          is_featured: filters.podcastFeatured || filters.tags.has('featured') || undefined,
           ...sortFor('podcasts'),
         }).then((r) => ({
           type: 'podcasts' as ContentType,
@@ -697,16 +717,15 @@ function CoursesPageInner() {
         return asc ? cmp : -cmp;
       });
 
-      // ── Fix E: Cap the displayed items to pageSize. Since each type now
-      //    fetches up to the full pageSize, the merged array may exceed it.
-      //    Slice so the grid shows exactly the requested number of items. ──
-      const display = merged.slice(0, filters.pageSize);
+      // ── Paginate the fully-merged, globally-sorted set client-side. `total`,
+      //    the visible page and `totalPages` all derive from `merged` — a single
+      //    source — so the count and the rendered results can never disagree. ──
+      const startIdx = (filters.page - 1) * filters.pageSize;
+      const display = merged.slice(startIdx, startIdx + filters.pageSize);
 
       setItems(display);
-      setTotal(results.reduce((sum, r) => sum + r.total, 0));
-      // Recompute totalPages from the combined total so pagination reflects reality
-      const combinedTotal = results.reduce((sum, r) => sum + r.total, 0);
-      setTotalPages(Math.ceil(combinedTotal / filters.pageSize) || 1);
+      setTotal(merged.length);
+      setTotalPages(Math.ceil(merged.length / filters.pageSize) || 1);
       setLoading(false);
     });
 

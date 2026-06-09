@@ -42,7 +42,9 @@ export function ResultStrip({
   onPageSizeChange,
 }: Props) {
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
-  const end = Math.min(page * pageSize, total);
+  // Derive `end` from the actual rendered count so the label always matches the
+  // grid (e.g. a short last page shows the real number, never an inflated one).
+  const end = total === 0 ? 0 : Math.min((page - 1) * pageSize + showing, total);
 
   return (
     <div className="rounded-xl bg-gradient-to-r from-sky-50 via-sky-50/60 to-white border border-sky-100/80 px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
