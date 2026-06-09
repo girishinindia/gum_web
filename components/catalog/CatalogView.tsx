@@ -102,7 +102,7 @@ const SECTION_KEY_MAP: Record<string, string> = {
 
 // Values MUST match the DB CHECK constraint `chk_courses_difficulty` exactly,
 // otherwise the filter sends a string the column never stores → 0 results.
-const LEVEL_OPTIONS: FilterOption[] = [
+export const LEVEL_OPTIONS: FilterOption[] = [
   { value: 'absolute beginner', label: 'Absolute Beginner' },
   { value: 'beginner', label: 'Beginner' },
   { value: 'intermediate', label: 'Intermediate' },
@@ -112,13 +112,13 @@ const LEVEL_OPTIONS: FilterOption[] = [
   { value: 'mega', label: 'Mega' },
 ];
 
-const RATING_OPTIONS: FilterOption[] = [
+export const RATING_OPTIONS: FilterOption[] = [
   { value: '4.5', label: '4.5 & above' },
   { value: '4.0', label: '4.0 & above' },
   { value: '3.5', label: '3.5 & above' },
 ];
 
-const TAG_OPTIONS: FilterOption[] = [
+export const TAG_OPTIONS: FilterOption[] = [
   { value: 'bestseller', label: 'Bestseller', icon: Star, iconColor: 'text-amber-500' },
   { value: 'new', label: 'New', icon: Sparkles, iconColor: 'text-violet-500' },
   { value: 'certificate', label: 'Certificate', icon: Award, iconColor: 'text-emerald-500' },
@@ -132,7 +132,7 @@ interface TypeFilterGroup extends FilterGroup {
 }
 
 /** Filter groups specific to each content type */
-const FILTER_CONFIG: Record<string, TypeFilterGroup[]> = {
+export const FILTER_CONFIG: Record<string, TypeFilterGroup[]> = {
   courses: [
     { key: 'levels', label: 'Level', options: LEVEL_OPTIONS, maxVisible: 7 },
     { key: 'ratingMin', label: 'Rating', options: RATING_OPTIONS, type: 'radio' },

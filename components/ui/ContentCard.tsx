@@ -107,7 +107,7 @@ export interface CardData {
 
 // ─── Unified card renderer ─────────────────────────────────────────────
 
-function UnifiedCard({ d, index }: { d: CardData; index: number }) {
+export function UnifiedCard({ d, index }: { d: CardData; index: number }) {
   const meta = TYPE_META[d.type];
   const grad = GRADIENTS[index % GRADIENTS.length];
   const Icon = meta.icon;
