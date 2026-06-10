@@ -3,6 +3,7 @@ import { Star, Users, Clock, PlayCircle, CheckCircle2, Award, BookOpen, Globe, C
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
 import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
 import { Reviews } from '@/components/reviews/Reviews';
+import { CoursePromo } from '@/components/commerce/CoursePromo';
 import { api } from '@/lib/api';
 
 export const revalidate = 300;
@@ -72,6 +73,12 @@ export default async function MobileCourseDetail({ params }: { params: Promise<{
           </div>
         )}
       </section>
+
+      {!course.is_free && (
+        <section className="px-4 mt-3">
+          <CoursePromo courseId={course.id} compact />
+        </section>
+      )}
 
       {learn.length > 0 && (
         <section className="px-4 mt-5">

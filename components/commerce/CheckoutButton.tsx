@@ -22,7 +22,7 @@ function loadRazorpay(): Promise<boolean> {
 
 /** Razorpay checkout: initiate an order from the cart, open the modal, verify
  *  the signature on success, then land on My Courses. */
-export function CheckoutButton({ basePath = '', label = 'Proceed to checkout', disabled }: { basePath?: '' | '/m'; label?: string; disabled?: boolean }) {
+export function CheckoutButton({ basePath = '', label = 'Proceed to checkout', disabled, couponCode, promoCode }: { basePath?: '' | '/m'; label?: string; disabled?: boolean; couponCode?: string | null; promoCode?: string | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export function CheckoutButton({ basePath = '', label = 'Proceed to checkout', d
     if (busy) return;
     setBusy(true); setErr(null);
     try {
-      const [cfg, order, ok] = await Promise.all([checkoutConfig(), checkoutInitiate(), loadRazorpay()]);
+      const [cfg, order, ok] = await Promise.all([checkoutConfig(), checkoutInitiate({ coupon_code: couponCode || null, promo_code: promoCode || null }), loadRazorpay()]);
       if (!ok || !window.Razorpay) throw new Error('Could not load the payment gateway.');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const o = order as any;

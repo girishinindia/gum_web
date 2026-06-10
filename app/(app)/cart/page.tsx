@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { X, ShoppingCart, LogIn } from 'lucide-react';
+import { X, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { fetchCart, removeCart, mergeGuestCart, getGuestCart, removeGuestCart, type CommerceType } from '@/lib/commerce';
-import { CheckoutButton } from '@/components/commerce/CheckoutButton';
+import { CartSummary } from '@/components/commerce/CartSummary';
 
 const inr = (n?: number | null) => `₹${Math.round(Number(n ?? 0)).toLocaleString('en-IN')}`;
 
@@ -14,7 +13,6 @@ interface Row { key: string; serverId?: number; item_type: CommerceType; item_id
 
 export default function CartPage() {
   const { user, signedIn } = useAuth();
-  const router = useRouter();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -44,7 +42,6 @@ export default function CartPage() {
 
   const items = rows ?? [];
   const subtotal = items.reduce((s, i) => s + (i.isFree ? 0 : i.price), 0);
-  const gst = Math.round(subtotal * 0.18);
 
   return (
     <div className="max-w-6xl mx-auto pt-6 sm:pt-10">
@@ -80,26 +77,7 @@ export default function CartPage() {
             ))}
           </div>
 
-          <aside className="rounded-md bg-white border border-slate-200 shadow-cardHover p-5 lg:sticky lg:top-24 self-start">
-            <h2 className="heading text-lg text-slate-900">Order summary</h2>
-            <dl className="mt-4 space-y-2 text-sm">
-              <div className="flex justify-between"><dt className="text-slate-600">Subtotal</dt><dd className="font-semibold">{inr(subtotal)}</dd></div>
-              <div className="flex justify-between"><dt className="text-slate-600">GST (18%)</dt><dd className="font-semibold">{inr(gst)}</dd></div>
-              <div className="flex justify-between pt-3 border-t border-slate-100 text-base"><dt className="font-semibold text-slate-900">Total</dt><dd className="heading text-slate-900">{inr(subtotal + gst)}</dd></div>
-            </dl>
-            <div className="mt-5">
-              {signedIn ? (
-                <CheckoutButton basePath="" />
-              ) : (
-                <>
-                  <button onClick={() => router.push(`/login?next=${encodeURIComponent('/cart')}`)} className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-600 to-brand-500 text-white font-semibold py-2.5 shadow-btn active:scale-[0.99] transition-all">
-                    <LogIn className="h-4 w-4" /> Sign in to checkout
-                  </button>
-                  <p className="mt-2 text-[11.5px] text-slate-500 text-center">Your cart is saved — sign in to complete payment.</p>
-                </>
-              )}
-            </div>
-          </aside>
+          <CartSummary basePath="" signedIn={signedIn} clientSubtotal={subtotal} />
         </div>
       )}
 

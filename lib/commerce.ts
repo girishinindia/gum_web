@@ -78,8 +78,16 @@ export function notifyCartAdded(title?: string | null) {
 
 // ── Checkout (Razorpay) ───────────────────────────────────────────────
 export const checkoutConfig = () => authed<{ keyId: string; currency: string }>('/checkout/config');
+export interface CheckoutPreview {
+  subtotal: number; discount_amount: number; tax_amount: number; total: number; item_count: number;
+  coupon: { code: string; valid: boolean; message?: string } | null;
+  promo: { code: string; valid: boolean; message?: string } | null;
+}
+/** Compute cart totals + coupon/promo discount without creating an order. */
+export const checkoutPreview = (p: { coupon_code?: string | null; promo_code?: string | null } = {}) =>
+  authed<CheckoutPreview>('/checkout/preview', { method: 'POST', body: p });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const checkoutInitiate = () => authed<any>('/checkout/initiate', { method: 'POST', body: {} });
+export const checkoutInitiate = (p: { coupon_code?: string | null; promo_code?: string | null } = {}) => authed<any>('/checkout/initiate', { method: 'POST', body: p });
 export const checkoutVerify = (p: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   authed<any>('/checkout/verify', { method: 'POST', body: p });

@@ -10,6 +10,7 @@ import {
 import { ButtonLink, Button } from '@/components/ui/Button';
 import { EnrollButton } from '@/components/commerce/EnrollButton';
 import { WishlistButton } from '@/components/commerce/WishlistButton';
+import { CoursePromo } from '@/components/commerce/CoursePromo';
 import { CourseDetailTabs } from '@/components/course/CourseDetailTabs';
 import { CurriculumAccordion } from '@/components/course/CurriculumAccordion';
 import { Reviews } from '@/components/reviews/Reviews';
@@ -565,6 +566,8 @@ export default async function CourseDetailPage({
                     </span>
                   )}
                 </div>
+
+                {!isFree && <div className="mt-3"><CoursePromo courseId={course.id} /></div>}
 
                 {/* Actions */}
                 <div className="mt-4 space-y-2.5">
