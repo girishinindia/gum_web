@@ -63,10 +63,10 @@ export const fetchEnrollments = (userId: number) => authed<EnrollmentRow[]>(`/en
 export const enrollFree = (item_type: CommerceType, item_id: number) => authed<EnrollmentRow>('/enrollments', { method: 'POST', body: { item_type, item_id } });
 
 // ── Cart ──────────────────────────────────────────────────────────────
-export const fetchCart = (userId: number) => authed<CartRow[]>(`/cart/user/${userId}`);
+export const fetchCart = (userId: number) => authed<CartRow[]>(`/cart-items/user/${userId}`);
 function dispatchCartChanged() { if (typeof window !== 'undefined') window.dispatchEvent(new Event('gum-cart-changed')); }
-export async function addToCart(item_type: CommerceType, item_id: number) { const r = await authed<CartRow>('/cart', { method: 'POST', body: { item_type, item_id, quantity: 1 } }); dispatchCartChanged(); return r; }
-export async function removeCart(id: number) { const r = await authed(`/cart/${id}`, { method: 'DELETE' }); dispatchCartChanged(); return r; }
+export async function addToCart(item_type: CommerceType, item_id: number) { const r = await authed<CartRow>('/cart-items', { method: 'POST', body: { item_type, item_id, quantity: 1 } }); dispatchCartChanged(); return r; }
+export async function removeCart(id: number) { const r = await authed(`/cart-items/${id}`, { method: 'DELETE' }); dispatchCartChanged(); return r; }
 
 /** "Just added to cart" signal — drives the global confirmation toast.
  *  (`gum-cart-changed`, already fired by addToCart/saveGuestCart, drives the
