@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useUnreadCount } from '@/lib/notifications';
 
 interface NavItem { href: string; label: string; Icon: LucideIcon; badge?: string | number; }
 
@@ -47,6 +48,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
+  const { count: unread } = useUnreadCount();
 
   const fullName    = user ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() : '';
   const displayName = user?.display_name || fullName || user?.email?.split('@')[0] || 'User';
@@ -69,6 +71,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ul className="space-y-0.5">
               {group.items.map((it) => {
                 const active = pathname === it.href || pathname.startsWith(it.href + '/');
+                const badgeVal = it.href === '/notifications'
+                  ? (unread > 0 ? (unread > 9 ? '9+' : unread) : null)
+                  : it.badge;
                 return (
                   <li key={it.href}>
                     <Link
@@ -83,11 +88,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     >
                       <it.Icon className="h-4 w-4 shrink-0" />
                       <span className="flex-1 truncate">{it.label}</span>
-                      {it.badge != null && (
+                      {badgeVal != null && (
                         <span className={cn(
                           'rounded-full text-[10px] font-bold px-1.5 py-0.5 min-w-[18px] text-center',
                           active ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-600',
-                        )}>{it.badge}</span>
+                        )}>{badgeVal}</span>
                       )}
                     </Link>
                   </li>
@@ -136,10 +141,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <kbd className="hidden sm:inline-flex font-mono text-[10px] bg-white border border-slate-200 rounded-full px-2 py-0.5 text-slate-500">Ctrl K</kbd>
               </div>
             </div>
-            <button className="relative h-10 w-10 inline-flex items-center justify-center rounded-md hover:bg-brand-50 text-slate-700">
+            <Link href="/notifications" aria-label="Notifications" className="relative h-10 w-10 inline-flex items-center justify-center rounded-md hover:bg-brand-50 text-slate-700">
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500" />
-            </button>
+              {unread > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </Link>
             <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-slate-50 hover:bg-brand-50 cursor-pointer transition-colors">
               {avatarUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */

@@ -9,6 +9,7 @@ import { useT } from '@/lib/i18n/useT';
 import { useLanguage } from '@/components/layout/LanguageProvider';
 import { cn } from '@/lib/cn';
 import { CartBadge } from '@/components/commerce/CartBadge';
+import { useUnreadCount } from '@/lib/notifications';
 
 interface Props {
   unreadCount?:    number;
@@ -41,6 +42,8 @@ export function MobileTopBar({ unreadCount = 0, onOpenDrawer, onOpenLanguage, cl
   const { active } = useLanguage();
   const iso = (active?.iso_code || 'en').toUpperCase();
   const [mounted, setMounted] = useState(false);
+  const { count: liveUnread } = useUnreadCount();
+  const badge = unreadCount || liveUnread;
 
   useEffect(() => setMounted(true), []);
 
@@ -104,9 +107,9 @@ export function MobileTopBar({ unreadCount = 0, onOpenDrawer, onOpenLanguage, cl
             className="relative h-9 w-9 inline-flex items-center justify-center rounded-full text-slate-700 hover:bg-brand-50 active:scale-95 transition-all"
           >
             <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
+            {badge > 0 && (
               <span className="absolute top-1.5 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
-                {unreadCount > 9 ? '9+' : unreadCount}
+                {badge > 9 ? '9+' : badge}
               </span>
             )}
           </Link>
