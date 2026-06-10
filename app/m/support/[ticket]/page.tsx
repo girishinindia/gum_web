@@ -1,16 +1,38 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { Send, Loader2, CheckCircle2, Paperclip, X, FileText } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
 import { useAuth } from '@/components/auth/AuthProvider';
 import {
   fetchMyTicket, replyToTicket, closeTicket,
+  fetchTicketAttachments, uploadTicketAttachment,
   TICKET_STATUS_STYLE, ticketStatusLabel,
-  type TicketDetail, type TicketMessage,
+  type TicketDetail, type TicketMessage, type TicketAttachment,
 } from '@/lib/tickets';
+
+function AttachmentList({ items, align = 'left' }: { items: TicketAttachment[]; align?: 'left' | 'right' }) {
+  if (!items.length) return null;
+  return (
+    <div className={`mt-1 flex flex-wrap gap-1.5 ${align === 'right' ? 'justify-end' : ''}`}>
+      {items.map((a) => {
+        const isImg = (a.file_type || '').startsWith('image/');
+        return isImg ? (
+          <a key={a.id} href={a.file_url} target="_blank" rel="noreferrer">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={a.file_url} alt={a.file_name} className="h-16 w-16 rounded-lg object-cover border border-slate-200" />
+          </a>
+        ) : (
+          <a key={a.id} href={a.file_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-700 max-w-[150px]">
+            <FileText className="h-3 w-3 text-slate-400 shrink-0" /> <span className="truncate">{a.file_name}</span>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
 
 function senderName(m: TicketMessage): string {
   if (m.sender_type === 'user') return 'You';
@@ -33,21 +55,39 @@ export default function MobileTicketPage() {
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [attachments, setAttachments] = useState<TicketAttachment[]>([]);
+  const [pending, setPending] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!signedIn || !id) return;
     fetchMyTicket(id).then(setTicket).catch(() => setNotFound(true));
+    fetchTicketAttachments(id).then(setAttachments).catch(() => {});
   }, [signedIn, id]);
 
   const isClosed = ticket?.ticket_status === 'closed';
 
   async function onSend() {
-    if (!reply.trim() || sending || !id) return;
+    if ((!reply.trim() && pending.length === 0) || sending || !id) return;
     setSending(true);
     try {
-      const msg = await replyToTicket(id, reply.trim());
-      setReply('');
-      setTicket((t) => (t ? { ...t, messages: [...t.messages, msg] } : t));
+      let msg: TicketMessage | null = null;
+      if (reply.trim()) {
+        msg = await replyToTicket(id, reply.trim());
+        setReply('');
+        setTicket((t) => (t ? { ...t, messages: [...t.messages, msg!] } : t));
+      }
+      if (pending.length) {
+        setUploading(true);
+        const uploaded: TicketAttachment[] = [];
+        for (const f of pending) {
+          try { uploaded.push(await uploadTicketAttachment(id, f, msg?.id ?? null)); } catch { /* skip */ }
+        }
+        if (uploaded.length) setAttachments((a) => [...a, ...uploaded]);
+        setPending([]);
+        setUploading(false);
+      }
     } catch { /* keep */ } finally { setSending(false); }
   }
   async function onClose() {
@@ -90,26 +130,56 @@ export default function MobileTicketPage() {
                   <div className={`max-w-[80%] ${mine ? 'text-right' : ''}`}>
                     <div className="text-[10px] text-slate-400 mb-0.5">{senderName(m)} · {fmt(m.created_at)}</div>
                     <div className={`inline-block rounded-lg px-3 py-2 text-[12.5px] text-left ${mine ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-800'}`}>{m.message}</div>
+                    <AttachmentList items={attachments.filter((a) => a.message_id === m.id)} align={mine ? 'right' : 'left'} />
                   </div>
                 </div>
               );
             })}
+            {attachments.some((a) => a.message_id == null) && (
+              <div>
+                <div className="text-[10px] text-slate-400 mb-1">Attachments</div>
+                <AttachmentList items={attachments.filter((a) => a.message_id == null)} />
+              </div>
+            )}
           </div>
 
           {isClosed ? (
             <div className="mt-3 text-center text-[12px] text-slate-400">This ticket is closed.</div>
           ) : (
-            <div className="mt-3 flex items-center gap-2">
-              <input
-                value={reply}
-                onChange={(e) => setReply(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSend(); } }}
-                className="flex-1 rounded-full bg-white border border-slate-200 px-4 py-2.5 text-[13px] outline-none focus:border-brand-400"
-                placeholder="Reply…"
-              />
-              <button onClick={onSend} disabled={sending || !reply.trim()} className="h-10 w-10 rounded-full bg-brand-500 text-white flex items-center justify-center shrink-0 disabled:opacity-60">
-                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              </button>
+            <div className="mt-3">
+              {pending.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {pending.map((f, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] text-slate-700">
+                      <FileText className="h-3 w-3 text-slate-400" /> <span className="truncate max-w-[110px]">{f.name}</span>
+                      <button onClick={() => setPending((p) => p.filter((_, j) => j !== i))} aria-label="Remove file" className="text-slate-400"><X className="h-3 w-3" /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                  className="hidden"
+                  onChange={(e) => { if (e.target.files) setPending((p) => [...p, ...Array.from(e.target.files!)]); e.target.value = ''; }}
+                />
+                <button type="button" onClick={() => fileRef.current?.click()} aria-label="Attach file" className="h-10 w-10 rounded-full border border-slate-200 text-slate-500 flex items-center justify-center shrink-0 active:scale-95">
+                  <Paperclip className="h-4 w-4" />
+                </button>
+                <input
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSend(); } }}
+                  className="flex-1 rounded-full bg-white border border-slate-200 px-4 py-2.5 text-[13px] outline-none focus:border-brand-400"
+                  placeholder="Reply…"
+                />
+                <button onClick={onSend} disabled={sending || uploading || (!reply.trim() && pending.length === 0)} className="h-10 w-10 rounded-full bg-brand-500 text-white flex items-center justify-center shrink-0 disabled:opacity-60">
+                  {sending || uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
           )}
         </div>

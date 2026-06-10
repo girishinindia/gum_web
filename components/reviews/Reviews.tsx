@@ -110,6 +110,12 @@ export function Reviews({
     } finally { setSubmitting(false); }
   }
 
+  function goToWrite() {
+    if (!signedIn) { router.push(`${basePath}/login?next=${encodeURIComponent(pathname || '/')}`); return; }
+    const el = typeof document !== 'undefined' ? document.getElementById('gum-write-review') : null;
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   const activeStars = hover || rating;
 
   return (
@@ -128,10 +134,16 @@ export function Reviews({
             ))}
           </div>
         </div>
+        <div className="mt-5 pt-5 border-t border-sky-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-[12.5px] text-slate-600">{mine ? `You've reviewed this ${noun}.` : `Share your experience with this ${noun}.`}</span>
+          <button onClick={goToWrite} className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-600 to-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-sm active:scale-95 transition-all">
+            <Star className="h-4 w-4" /> {mine ? 'Edit your review' : 'Write a review'}
+          </button>
+        </div>
       </div>
 
       {/* Write a review */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 mb-6">
+      <div id="gum-write-review" className="rounded-2xl border border-slate-200 bg-white p-5 mb-6 scroll-mt-24">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-bold text-slate-900">{mine ? 'Update your review' : 'Write a review'}</h4>
           {mine?.is_verified_purchase && (

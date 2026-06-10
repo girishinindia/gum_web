@@ -10,6 +10,8 @@ import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { CourseCard } from '@/components/ui/CourseCard';
 import { Reviews } from '@/components/reviews/Reviews';
+import { EnrollButton } from '@/components/commerce/EnrollButton';
+import { WishlistButton } from '@/components/commerce/WishlistButton';
 import { api, type BundleDetail } from '@/lib/api';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { productLd, breadcrumbLd } from '@/lib/jsonld';
@@ -192,12 +194,13 @@ export default async function BundleDetailPage({ params }: { params: Promise<{ s
                   )}
 
                   <div className="mt-4 space-y-2.5">
-                    <Button variant="primary" className="w-full rounded-full">
-                      <ShoppingCart className="h-4 w-4" /> Buy bundle
-                    </Button>
-                    <Button variant="outline" className="w-full rounded-full">
-                      <Heart className="h-4 w-4" /> Save
-                    </Button>
+                    <EnrollButton
+                      itemType="bundle"
+                      itemId={bundle.id}
+                      item={{ title, price, original_price: originalPrice, thumbnail_url: thumbnail, slug }}
+                      className="w-full inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-white px-6 py-2.5 text-sm font-bold shadow-btn active:scale-95 transition-all disabled:opacity-70"
+                    />
+                    <WishlistButton itemType="bundle" itemId={bundle.id} variant="full" className="rounded-full border border-slate-200" />
                   </div>
 
                   <div className="mt-5 pt-5 border-t border-slate-100 text-[12px] text-slate-500 flex items-start gap-2">

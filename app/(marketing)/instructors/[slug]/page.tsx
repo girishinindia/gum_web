@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { Star, Users, BookOpen, BadgeCheck, ChevronRight, CalendarDays } from 'lucide-react';
+import { Star, Users, BookOpen, BadgeCheck, ChevronRight, CalendarDays, MessageSquare } from 'lucide-react';
 import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Reviews } from '@/components/reviews/Reviews';
@@ -82,10 +82,15 @@ export default async function InstructorDetailPage({ params }: { params: Promise
                   )}
                 </div>
 
+                {/* Real stats only — the table stores average_rating + total_reviews_received.
+                    (Older course_count/student_count/rating_average fields don't exist on the row,
+                    so the card used to show — / 0.) */}
                 <div className="mt-5 grid grid-cols-3 gap-1 text-[11px] text-slate-500 pt-5 border-t border-slate-100">
+                  {(() => { const rating = p.average_rating ?? p.rating_average; return (
+                    <div className="flex flex-col items-center gap-0.5"><Star className="h-3.5 w-3.5 fill-warn text-warn" /><span className="font-semibold text-slate-800 text-sm">{rating != null ? Number(rating).toFixed(1) : '—'}</span><span>Rating</span></div>
+                  ); })()}
+                  <div className="flex flex-col items-center gap-0.5"><MessageSquare className="h-3.5 w-3.5" /><span className="font-semibold text-slate-800 text-sm">{(p.total_reviews_received ?? 0).toLocaleString('en-IN')}</span><span>Reviews</span></div>
                   <div className="flex flex-col items-center gap-0.5"><BookOpen className="h-3.5 w-3.5" /><span className="font-semibold text-slate-800 text-sm">{p.course_count ?? 0}</span><span>Courses</span></div>
-                  <div className="flex flex-col items-center gap-0.5"><Users className="h-3.5 w-3.5" /><span className="font-semibold text-slate-800 text-sm">{(p.student_count ?? 0).toLocaleString('en-IN')}</span><span>Students</span></div>
-                  <div className="flex flex-col items-center gap-0.5"><Star className="h-3.5 w-3.5 fill-warn text-warn" /><span className="font-semibold text-slate-800 text-sm">{p.rating_average != null ? Number(p.rating_average).toFixed(1) : '—'}</span><span>Rating</span></div>
                 </div>
               </div>
             </Reveal>

@@ -73,6 +73,40 @@ export const replyToTicket = (id: number | string, message: string) =>
 export const closeTicket = (id: number | string) =>
   authed<TicketRow>(`/user-tickets/${id}/close`, { method: 'PATCH' });
 
+// ── Attachments (ownership-scoped self-serve) ──
+export interface TicketAttachment {
+  id: number;
+  message_id?: number | null;
+  file_name: string;
+  file_url: string;
+  file_size?: number | null;
+  file_type?: string | null;
+  created_at?: string | null;
+}
+
+export const fetchTicketAttachments = (id: number | string) =>
+  authed<TicketAttachment[]>(`/user-tickets/${id}/attachments`);
+
+/** Upload one file to a ticket (optionally tied to a message). Uses multipart —
+ *  the browser sets the Content-Type boundary, so we must NOT set it ourselves. */
+export async function uploadTicketAttachment(id: number | string, file: File, messageId?: number | null): Promise<TicketAttachment> {
+  const tok = getAccessToken();
+  const fd = new FormData();
+  fd.append('file', file);
+  if (messageId != null) fd.append('message_id', String(messageId));
+  const res = await fetch(`${apiBase()}/user-tickets/${id}/attachments`, {
+    method: 'POST',
+    headers: { ...(tok ? { Authorization: `Bearer ${tok}` } : {}) },
+    body: fd,
+    cache: 'no-store',
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let json: any = null;
+  try { json = await res.json(); } catch { /* no body */ }
+  if (!res.ok || (json && json.success === false)) throw new Error(json?.error || `Upload failed (${res.status})`);
+  return (json?.data ?? json) as TicketAttachment;
+}
+
 // ── Shared status styling ──
 export const TICKET_STATUS_STYLE: Record<string, string> = {
   open: 'bg-blue-50 text-blue-700',

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import {
   X, BookOpen, Radio, Video, Calendar, FileText, MessagesSquare, UserSquare2, Star, Megaphone,
   Globe, Info, Users as UsersIcon, MessageCircle, LifeBuoy, FileQuestion, Monitor, LogIn,
-  LogOut, ChevronRight, Ticket, Gift, type LucideIcon,
+  LogOut, ChevronRight, Ticket, Gift, Mic, type LucideIcon,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n/useT';
 import { useLanguage } from '@/components/layout/LanguageProvider';
@@ -69,6 +69,7 @@ export function MobileDrawer({ open, onClose, onOpenLanguage }: Props) {
     { href: '/m/live-sessions', label: t.secondary.liveSessions,  Icon: Video          },
     { href: '/m/batches',       label: t.secondary.batches,       Icon: Calendar       },
     { href: '/m/blog',          label: t.secondary.blogs,         Icon: FileText       },
+    { href: '/m/podcasts',      label: 'Podcasts',                Icon: Mic            },
     { href: '/m/discussion',    label: t.secondary.discussion,    Icon: MessagesSquare },
     { href: '/m/instructors',   label: t.secondary.instructors,   Icon: UserSquare2    },
     { href: '/m/reviews',       label: t.secondary.reviews,       Icon: Star           },
