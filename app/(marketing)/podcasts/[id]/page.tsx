@@ -4,6 +4,7 @@ import { ChevronRight, Headphones, Play, Clock, Calendar, Share2, ArrowLeft } fr
 import { ButtonLink } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Reviews } from '@/components/reviews/Reviews';
 import { cn } from '@/lib/cn';
 import { api } from '@/lib/api';
 
@@ -163,6 +164,11 @@ export default async function PodcastDetailPage({ params }: { params: Promise<{ 
             )}
           </div>
         </article>
+
+        {/* Reviews */}
+        <div className="mt-12">
+          <Reviews itemType="podcast" itemId={podcast.id} noun="podcast" />
+        </div>
 
         {/* Back to all episodes */}
         <div className="mt-14 text-center">

@@ -12,6 +12,7 @@ export interface ItemSummary {
   id: number;
   type: CommerceType;
   title: string;
+  short_description?: string | null;
   slug?: string | null;
   course_slug?: string | null;
   price?: number | null;

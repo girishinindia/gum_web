@@ -8,6 +8,7 @@ import {
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Reviews } from '@/components/reviews/Reviews';
 import { api, type WebinarDetail } from '@/lib/api';
 
 export const revalidate = 300;
@@ -297,6 +298,11 @@ export default async function WebinarDetailPage({ params }: { params: Promise<{ 
               )}
             </div>
           </Reveal>
+        </div>
+
+        {/* Reviews */}
+        <div className="mt-12">
+          <Reviews itemType="webinar" itemId={webinar.id} noun="webinar" />
         </div>
 
         {/* Back link */}

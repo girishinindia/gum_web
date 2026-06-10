@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Star, Users, BookOpen, BadgeCheck, Briefcase, GraduationCap } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
 import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
+import { Reviews } from '@/components/reviews/Reviews';
 import { fetchInstructorsList } from '@/lib/api';
 
 export const revalidate = 300;
@@ -51,6 +52,10 @@ export default async function MobileInstructorDetail({ params }: { params: Promi
           <p className="mt-2 text-[12.5px] text-slate-600 leading-relaxed">{bio}</p>
         </section>
       )}
+
+      <section className="px-4 mt-6">
+        <Reviews itemType="instructor" itemId={p.id} basePath="/m" noun="instructor" />
+      </section>
 
       <MobileDetailBar
         cta="View courses"

@@ -9,6 +9,7 @@ import {
 import { ButtonLink, Button } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Reviews } from '@/components/reviews/Reviews';
 import { api, type BatchDetail } from '@/lib/api';
 
 export const revalidate = 300;
@@ -336,6 +337,13 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ sl
           </div>
         </section>
       )}
+
+      {/* Reviews */}
+      <section className="py-12">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+          <Reviews itemType="batch" itemId={batch.id} noun="batch" />
+        </div>
+      </section>
 
       {/* CTA */}
       <section className="py-12">

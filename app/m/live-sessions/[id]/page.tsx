@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Calendar, Clock, Radio, User, Video, Share2 } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
 import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
+import { Reviews } from '@/components/reviews/Reviews';
 import { api } from '@/lib/api';
 
 export const revalidate = 120;
@@ -53,6 +54,10 @@ export default async function MobileLiveSessionDetail({ params }: { params: Prom
           {host && <div className="flex items-center gap-2.5 rounded-md bg-white border border-slate-200 p-3 text-[12.5px] text-slate-700"><User className="h-4 w-4 text-brand-600" /> {host}</div>}
           {platform && <div className="flex items-center gap-2.5 rounded-md bg-white border border-slate-200 p-3 text-[12.5px] text-slate-700 capitalize"><Video className="h-4 w-4 text-brand-600" /> {String(platform).replace('_', ' ')}</div>}
         </div>
+      </section>
+
+      <section className="px-4 mt-6">
+        <Reviews itemType="live_session" itemId={s.id} basePath="/m" noun="live session" />
       </section>
 
       <MobileDetailBar

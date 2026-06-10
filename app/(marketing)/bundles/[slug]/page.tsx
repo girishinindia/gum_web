@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { CourseCard } from '@/components/ui/CourseCard';
+import { Reviews } from '@/components/reviews/Reviews';
 import { api, type BundleDetail } from '@/lib/api';
 
 export const revalidate = 300;
@@ -266,6 +267,13 @@ export default async function BundleDetailPage({ params }: { params: Promise<{ s
           </div>
         </section>
       )}
+
+      {/* Reviews */}
+      <section className="py-12">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+          <Reviews itemType="bundle" itemId={bundle.id} noun="bundle" />
+        </div>
+      </section>
 
       {/* CTA */}
       <section className="py-12">

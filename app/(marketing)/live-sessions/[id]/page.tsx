@@ -4,6 +4,7 @@ import { Calendar, Clock, Radio, Video, User, ChevronRight, Share2 } from 'lucid
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
+import { Reviews } from '@/components/reviews/Reviews';
 import { api } from '@/lib/api';
 
 export const revalidate = 120;
@@ -90,6 +91,11 @@ export default async function LiveSessionDetailPage({ params }: { params: Promis
               </div>
             </div>
           </Reveal>
+        </div>
+
+        {/* Reviews */}
+        <div className="mt-12">
+          <Reviews itemType="live_session" itemId={session.id} noun="live session" />
         </div>
 
         <div className="mt-12 text-center">

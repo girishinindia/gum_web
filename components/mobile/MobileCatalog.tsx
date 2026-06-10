@@ -335,9 +335,9 @@ export function MobileCatalog({ config }: { config: CatalogConfig }) {
 
       {/* Detailed filter bottom-sheet */}
       {sheetOpen && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-[60]">
           <div className="absolute inset-0 bg-black/40" onClick={() => setSheetOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 max-h-[86vh] overflow-y-auto bg-white rounded-t-2xl shadow-2xl animate-slide-up">
+          <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto bg-white rounded-t-2xl shadow-2xl animate-slide-up">
             <div className="sticky top-0 bg-white flex items-center justify-between px-4 py-3.5 border-b border-slate-100">
               <h3 className="heading text-[15px] font-bold text-slate-900">Filters {activeCount > 0 && <span className="text-brand-600">({activeCount})</span>}</h3>
               <button onClick={() => setSheetOpen(false)} aria-label="Close" className="p-1 rounded-full hover:bg-slate-100"><X className="h-5 w-5 text-slate-500" /></button>
@@ -397,7 +397,7 @@ export function MobileCatalog({ config }: { config: CatalogConfig }) {
               </Section>
             </div>
 
-            <div className="sticky bottom-0 bg-white border-t border-slate-100 p-3 flex gap-2">
+            <div className="sticky bottom-0 bg-white border-t border-slate-100 p-3 pb-[max(env(safe-area-inset-bottom),12px)] flex gap-2">
               <button onClick={() => { clearAll(); setSortKey(sortOpts[0].key); }} className="flex-1 rounded-full border border-slate-200 py-2.5 text-[13px] font-semibold text-slate-600 active:scale-[0.98] transition-all">Clear all</button>
               <button onClick={() => setSheetOpen(false)} className="flex-1 rounded-full bg-brand-500 py-2.5 text-[13px] font-bold text-white active:scale-[0.98] transition-all shadow-btn">Show results</button>
             </div>

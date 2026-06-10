@@ -12,7 +12,7 @@ import { EnrollButton } from '@/components/commerce/EnrollButton';
 import { WishlistButton } from '@/components/commerce/WishlistButton';
 import { CourseDetailTabs } from '@/components/course/CourseDetailTabs';
 import { CurriculumAccordion } from '@/components/course/CurriculumAccordion';
-import { ReviewSection } from '@/components/course/ReviewSection';
+import { Reviews } from '@/components/reviews/Reviews';
 import { CourseCertificatePreview } from '@/components/course/CourseCertificatePreview';
 import { FAQ } from '@/components/home/FAQ';
 import { api } from '@/lib/api';
@@ -213,7 +213,7 @@ export default async function CourseDetailPage({
           <span className="text-slate-400">({reviewSummary.total} review{reviewSummary.total !== 1 ? 's' : ''})</span>
         </span>
       </div>
-      <ReviewSection reviews={reviews} summary={reviewSummary} />
+      <Reviews itemType="course" itemId={course.id} initialReviews={reviews} initialSummary={reviewSummary} noun="course" />
     </div>
   );
 

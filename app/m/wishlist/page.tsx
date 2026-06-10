@@ -57,6 +57,7 @@ export default function MobileWishlistPage() {
               </Link>
               <div className="flex-1 min-w-0">
                 <Link href={itemHref(r)} className="heading text-[13.5px] text-slate-900 line-clamp-2 leading-tight">{r.item?.title ?? `${r.item_type} #${r.item_id}`}</Link>
+                {r.item?.short_description && <p className="mt-0.5 text-[11px] text-slate-500 line-clamp-1 leading-snug">{r.item.short_description}</p>}
                 <div className="mt-1 heading text-[13px] text-slate-900">{r.item?.is_free ? <span className="text-emerald-600">Free</span> : inr(r.item?.price)}</div>
                 <div className="mt-2 flex gap-2">
                   <button onClick={() => toCart(r)} disabled={busyId === r.id} className="inline-flex items-center gap-1 rounded-full bg-brand-500 text-white px-2.5 py-1 text-[11px] font-semibold active:scale-95 disabled:opacity-60">{busyId === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShoppingCart className="h-3 w-3" />} Cart</button>

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Mic, Clock, User, PlayCircle, Share2 } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
 import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
+import { Reviews } from '@/components/reviews/Reviews';
 import { api } from '@/lib/api';
 
 export const revalidate = 300;
@@ -49,6 +50,10 @@ export default async function MobilePodcastDetail({ params }: { params: Promise<
             <p className="mt-2 text-[12.5px] text-slate-600 leading-relaxed">{pod.short_summary}</p>
           </>
         )}
+      </section>
+
+      <section className="px-4 mt-6">
+        <Reviews itemType="podcast" itemId={pod.id} basePath="/m" noun="podcast" />
       </section>
 
       <MobileDetailBar

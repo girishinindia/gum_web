@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Star, Users, Clock, PlayCircle, CheckCircle2, Award, BookOpen, Globe, ChevronRight, Share2, FileText } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
 import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
+import { Reviews } from '@/components/reviews/Reviews';
 import { api } from '@/lib/api';
 
 export const revalidate = 300;
@@ -121,6 +122,10 @@ export default async function MobileCourseDetail({ params }: { params: Promise<{
           {course.has_certificate && <li className="flex items-center gap-2 rounded-md bg-white border border-slate-200 p-2.5"><Award className="h-4 w-4 text-brand-600" /> Certificate</li>}
           {course.total_lessons != null && <li className="flex items-center gap-2 rounded-md bg-white border border-slate-200 p-2.5"><FileText className="h-4 w-4 text-brand-600" /> {course.total_lessons} lessons</li>}
         </ul>
+      </section>
+
+      <section className="px-4 mt-6">
+        <Reviews itemType="course" itemId={course.id} basePath="/m" noun="course" />
       </section>
 
       <MobileDetailBar

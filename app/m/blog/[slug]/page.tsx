@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Calendar, Clock, User, Share2, Newspaper } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
 import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
+import { Reviews } from '@/components/reviews/Reviews';
 import { api } from '@/lib/api';
 
 export const revalidate = 300;
@@ -46,6 +47,10 @@ export default async function MobileBlogDetail({ params }: { params: Promise<{ s
           <p className="mt-3 text-[12.5px] text-slate-500">Full article coming soon.</p>
         )}
       </article>
+
+      <section className="px-4 mt-6">
+        <Reviews itemType="blog" itemId={post.id} basePath="/m" noun="article" />
+      </section>
 
       <MobileDetailBar
         cta="Share"

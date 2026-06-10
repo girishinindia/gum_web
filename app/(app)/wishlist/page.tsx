@@ -74,6 +74,7 @@ export default function WishlistPage() {
                 <div className="p-4 flex flex-col flex-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600 capitalize">{r.item_type}</span>
                   <h3 className="heading text-base text-slate-900 mt-0.5 line-clamp-2"><Link href={itemHref(r)}>{it?.title ?? `${r.item_type} #${r.item_id}`}</Link></h3>
+                  {it?.short_description && <p className="mt-1 text-[12.5px] text-slate-500 line-clamp-2 leading-relaxed">{it.short_description}</p>}
                   <div className="mt-2 heading text-lg text-slate-900">{it?.is_free ? <span className="text-emerald-600">Free</span> : inr(it?.price)}</div>
                   <div className="flex-1" />
                   <div className="mt-3 grid grid-cols-2 gap-2">

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Layers, Users, Star, CheckCircle2, Share2, BookOpen } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
 import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
+import { Reviews } from '@/components/reviews/Reviews';
 import { api } from '@/lib/api';
 
 export const revalidate = 300;
@@ -56,6 +57,10 @@ export default async function MobileBundleDetail({ params }: { params: Promise<{
           </div>
         </section>
       )}
+
+      <section className="px-4 mt-6">
+        <Reviews itemType="bundle" itemId={bundle.id} basePath="/m" noun="bundle" />
+      </section>
 
       <MobileDetailBar
         enroll={{ itemType: 'bundle', itemId: bundle.id, isFree: false, item: { title, price: bundle.price, original_price: bundle.original_price, is_free: false, slug } }}
