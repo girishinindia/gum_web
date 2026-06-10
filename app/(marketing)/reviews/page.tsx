@@ -3,6 +3,11 @@ import { PageHero } from '@/components/ui/PageHero';
 import { Reveal } from '@/components/ui/Reveal';
 import { STUDENT_REVIEWS } from '@/lib/homeContent';
 
+export const metadata = {
+  title: 'Student Reviews',
+  description: 'Read what learners say about Grow Up More — ratings and reviews from real students.',
+};
+
 export default function ReviewsPage() {
   const avg = (STUDENT_REVIEWS.reduce((s, r) => s + r.rating, 0) / STUDENT_REVIEWS.length).toFixed(1);
 

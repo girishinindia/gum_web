@@ -1,6 +1,19 @@
 import { LegalPage } from '@/components/ui/LegalPage';
+import { fetchPolicy, formatPolicyDate } from '@/lib/legal';
 
-export default function PrivacyPage() {
+export const revalidate = 300;
+
+export const metadata = {
+  title: 'Privacy Policy',
+  description: 'How Grow Up More collects, uses, and protects your personal data.',
+};
+
+export default async function PrivacyPage() {
+  const p = await fetchPolicy('PRIVACY');
+  if (p) {
+    return <LegalPage eyebrow="Legal" title={p.title} updated={formatPolicyDate(p.updated_at)} content={p.content} contentFormat={p.content_format} />;
+  }
+  // Fallback (no published policy in the CMS yet)
   return (
     <LegalPage
       eyebrow="Legal"

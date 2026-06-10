@@ -11,6 +11,8 @@ import { Eyebrow } from '@/components/ui/Eyebrow';
 import { CourseCard } from '@/components/ui/CourseCard';
 import { Reviews } from '@/components/reviews/Reviews';
 import { api, type BundleDetail } from '@/lib/api';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { productLd, breadcrumbLd } from '@/lib/jsonld';
 
 export const revalidate = 300;
 
@@ -97,6 +99,8 @@ export default async function BundleDetailPage({ params }: { params: Promise<{ s
 
   return (
     <>
+      <JsonLd data={bundle.translation?.structured_data || productLd({ name: title, description, url: `/bundles/${slug}`, image: thumbnail, price, rating: ratingAvg })} />
+      <JsonLd data={breadcrumbLd([{ name: 'Home', url: '/' }, { name: 'Bundles', url: '/bundles' }, { name: title, url: `/bundles/${slug}` }])} />
       {/* Hero */}
       <section className="pt-10 sm:pt-14 pb-10">
         <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">

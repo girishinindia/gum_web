@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Minus } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
 import { cn } from '@/lib/cn';
+import { fetchSiteFaqs, flattenFaqs } from '@/lib/legal';
 
-const FAQS = [
+const FALLBACK = [
   { q: 'What languages are the courses taught in?', a: 'Every program is recorded and live-taught in Hindi, English, and 10+ regional languages — including Tamil, Telugu, Marathi, Bengali, Gujarati and Kannada.' },
   { q: 'Do I get placement assistance?',            a: 'Yes — 95% placement rate with 250+ hiring partners. Mock interviews, resume reviews, direct introductions.' },
   { q: 'How much do the courses cost?',             a: 'Most programs ₹20,000–₹40,000 with no-cost EMI. A few intro courses are free.' },
@@ -16,11 +17,22 @@ const FAQS = [
 
 export default function MobileFaqPage() {
   const [open, setOpen] = useState(0);
+  const [faqs, setFaqs] = useState(FALLBACK);
+
+  useEffect(() => {
+    fetchSiteFaqs()
+      .then((g) => {
+        const flat = flattenFaqs(g).map((f) => ({ q: f.question, a: f.answer }));
+        if (flat.length) setFaqs(flat);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div>
       <MobilePageHeader title="FAQs" />
       <div className="px-3 pt-2 space-y-2 pb-4">
-        {FAQS.map((f, i) => {
+        {faqs.map((f, i) => {
           const isOpen = open === i;
           return (
             <div key={i} className={cn('rounded-md bg-white border shadow-card overflow-hidden', isOpen ? 'border-brand-300' : 'border-slate-200')}>

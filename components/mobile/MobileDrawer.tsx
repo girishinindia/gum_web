@@ -83,6 +83,9 @@ export function MobileDrawer({ open, onClose, onOpenLanguage }: Props) {
     { href: '/m/support', label: 'Support tickets', Icon: Ticket      },
     { href: '/m/help',    label: 'Help Centre', Icon: LifeBuoy        },
     { href: '/m/faq',     label: t.nav.faqs,    Icon: FileQuestion    },
+    { href: '/m/legal/PRIVACY', label: 'Privacy policy', Icon: FileText },
+    { href: '/m/legal/TERMS',   label: 'Terms of service', Icon: FileText },
+    { href: '/m/legal/REFUND',  label: 'Refund policy', Icon: FileText },
   ];
 
   function handleSwitchToDesktop() {

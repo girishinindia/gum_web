@@ -1,6 +1,18 @@
 import { LegalPage } from '@/components/ui/LegalPage';
+import { fetchPolicy, formatPolicyDate } from '@/lib/legal';
 
-export default function RefundPage() {
+export const revalidate = 300;
+
+export const metadata = {
+  title: 'Refund Policy',
+  description: 'Grow Up More refund and cancellation policy.',
+};
+
+export default async function RefundPage() {
+  const p = await fetchPolicy('REFUND');
+  if (p) {
+    return <LegalPage eyebrow="Legal" title={p.title} updated={formatPolicyDate(p.updated_at)} content={p.content} contentFormat={p.content_format} />;
+  }
   return (
     <LegalPage
       eyebrow="Legal"

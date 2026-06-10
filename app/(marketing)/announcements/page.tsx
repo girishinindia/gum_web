@@ -5,6 +5,11 @@ import { ANNOUNCEMENTS } from '@/lib/homeContent';
 
 const TIME_LABELS = ['Just now', 'Yesterday', '3 days ago', '1 week ago', '2 weeks ago'];
 
+export const metadata = {
+  title: 'Announcements',
+  description: 'Latest announcements, product updates, and news from Grow Up More.',
+};
+
 export default function AnnouncementsPage() {
   return (
     <>

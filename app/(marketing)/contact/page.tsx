@@ -3,6 +3,12 @@ import { PageHero } from '@/components/ui/PageHero';
 import { Button } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 
+export const metadata = {
+  title: 'Contact Us',
+  description: 'Get in touch with the Grow Up More team — support, sales, and partnership enquiries.',
+  openGraph: { title: 'Contact Grow Up More', description: 'Reach our support, sales, and partnerships team.' },
+};
+
 export default function ContactPage() {
   return (
     <>

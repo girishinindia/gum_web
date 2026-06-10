@@ -6,6 +6,10 @@ import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Reviews } from '@/components/reviews/Reviews';
 import { cn } from '@/lib/cn';
+import type { Metadata } from 'next';
+import { siteMeta } from '@/lib/seo';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { articleLd } from '@/lib/jsonld';
 import { api } from '@/lib/api';
 
 export const revalidate = 300;
@@ -26,6 +30,14 @@ function formatDuration(seconds?: number | null): string {
   return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const p: any = await api.podcastById(id).catch(() => null);
+  if (!p) return { title: 'Podcast' };
+  return siteMeta({ title: p.title, description: p.short_summary || p.description || 'Listen on Grow Up More.', path: `/podcasts/${id}`, image: p.thumbnail_url, type: 'article' });
+}
+
 export default async function PodcastDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const podcast = await api.podcastById(id);
@@ -41,6 +53,7 @@ export default async function PodcastDetailPage({ params }: { params: Promise<{ 
 
   return (
     <section className="pt-10 sm:pt-14 pb-16">
+      <JsonLd data={articleLd({ headline: podcast.title, description: podcast.short_summary, url: `/podcasts/${id}`, image: podcast.thumbnail_url, datePublished: podcast.published_at, authorName: poster })} />
       <div className="max-w-4xl mx-auto px-5 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <div className="text-xs text-slate-500 flex items-center gap-1.5">

@@ -5,6 +5,10 @@ import { Button, ButtonLink } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Reviews } from '@/components/reviews/Reviews';
+import type { Metadata } from 'next';
+import { siteMeta } from '@/lib/seo';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { eventLd } from '@/lib/jsonld';
 import { api } from '@/lib/api';
 
 export const revalidate = 120;
@@ -20,6 +24,14 @@ function formatDate(d?: string | null) {
 function formatTime(d?: string | null) {
   if (!d) return '';
   return new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s: any = await api.liveSessionById(id).catch(() => null);
+  if (!s) return { title: 'Live Session' };
+  return siteMeta({ title: s.title, description: s.description || 'Join this live session on Grow Up More.', path: `/live-sessions/${id}`, type: 'website' });
 }
 
 export default async function LiveSessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -39,6 +51,7 @@ export default async function LiveSessionDetailPage({ params }: { params: Promis
 
   return (
     <section className="pt-10 sm:pt-14 pb-16">
+      <JsonLd data={eventLd({ name: session.title, description: session.description, url: `/live-sessions/${id}`, startDate: when, isFree: true })} />
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="text-xs text-slate-500 flex items-center gap-1.5">
           <Link href="/" className="hover:text-brand-700">Home</Link>

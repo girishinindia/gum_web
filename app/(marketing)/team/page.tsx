@@ -22,6 +22,11 @@ const TEAM = [
   { name: 'Priya I.',      role: 'Mentor — DevOps',          initial: 'P' },
 ];
 
+export const metadata = {
+  title: 'Our Team',
+  description: 'Meet the team behind Grow Up More — educators, engineers, and mentors building the platform.',
+};
+
 export default function TeamPage() {
   return (
     <>

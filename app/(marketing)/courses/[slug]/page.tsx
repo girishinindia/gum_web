@@ -17,6 +17,9 @@ import { Reviews } from '@/components/reviews/Reviews';
 import { CourseCertificatePreview } from '@/components/course/CourseCertificatePreview';
 import { FAQ } from '@/components/home/FAQ';
 import { api } from '@/lib/api';
+import { metaFromTranslation } from '@/lib/seo';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { courseLd, breadcrumbLd } from '@/lib/jsonld';
 
 export const revalidate = 300;
 
@@ -91,27 +94,14 @@ export async function generateMetadata({
   if (!course) return { title: 'Course Not Found' };
 
   const t = course.translation;
-  return {
-    title: t?.meta_title || t?.title || course.name || 'Course',
-    description: t?.meta_description || t?.short_intro || '',
-    openGraph: {
-      title: t?.og_title || t?.meta_title || t?.title || '',
-      description: t?.og_description || t?.meta_description || '',
-      images: t?.og_image ? [{ url: t.og_image }] : [],
-      url: t?.og_url || undefined,
-      siteName: t?.og_site_name || 'Grow Up More',
-      type: (t?.og_type as 'website' | 'article') || 'website',
-    },
-    twitter: {
-      card: (t?.twitter_card as 'summary' | 'summary_large_image') || 'summary_large_image',
-      title: t?.twitter_title || t?.meta_title || t?.title || '',
-      description: t?.twitter_description || t?.meta_description || '',
-      images: t?.twitter_image ? [t.twitter_image] : [],
-      site: t?.twitter_site || undefined,
-    },
-    robots: t?.robots_directive || undefined,
-    alternates: t?.canonical_url ? { canonical: t.canonical_url } : undefined,
-  };
+  const thumb = t?.web_thumbnail || course.trailer_thumbnail_url || null;
+  return metaFromTranslation(t, {
+    title: t?.title || course.name || 'Course',
+    description: t?.short_intro || t?.long_intro || '',
+    path: `/courses/${slug}`,
+    image: thumb,
+    type: 'article',
+  });
 }
 
 /* ─── Page ─────────────────────────────────────────────────────────────── */
@@ -231,6 +221,8 @@ export default async function CourseDetailPage({
 
   return (
     <div className="bg-sky-50 min-h-screen">
+      <JsonLd data={course.translation?.structured_data || courseLd({ name: title, description: subtitle, url: `/courses/${slug}`, image: thumbnail, rating, ratingCount, price, isFree })} />
+      <JsonLd data={breadcrumbLd([{ name: 'Home', url: '/' }, { name: 'Courses', url: '/courses' }, { name: title, url: `/courses/${slug}` }])} />
       {/* ═══════════════════ TWO-COLUMN BODY (sticky sidebar) ═══════════════════ */}
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 pt-8 sm:pt-12">
         {/* Breadcrumb */}

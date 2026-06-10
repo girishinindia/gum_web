@@ -16,6 +16,8 @@ import { FAQ }                from '@/components/home/FAQ';
 import { Newsletter }         from '@/components/home/Newsletter';
 import { CTA }                from '@/components/home/CTA';
 import { LanguagesBanner }    from '@/components/home/LanguagesBanner';
+import { JsonLd }             from '@/components/seo/JsonLd';
+import { organizationLd, websiteLd, faqLd } from '@/lib/jsonld';
 import { api }                from '@/lib/api';
 
 export const revalidate = 300;
@@ -36,6 +38,8 @@ export default async function HomePage() {
 
   return (
     <>
+      <JsonLd data={[organizationLd(), websiteLd()]} />
+      {faqs && faqs.length > 0 && <JsonLd data={faqLd(faqs.map((f) => ({ question: f.question, answer: f.answer })))} />}
       <Hero />
       <TrustedStrip />
       {show('categories')      && <Categories />}

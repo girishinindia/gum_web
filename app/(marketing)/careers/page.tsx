@@ -22,6 +22,11 @@ const PERKS = [
   { Icon: Briefcase, title: 'Learning budget',    desc: '₹50,000 / year for books, conferences, courses' },
 ];
 
+export const metadata = {
+  title: 'Careers',
+  description: 'Explore careers at Grow Up More — join our mission to make job-ready IT education accessible to everyone.',
+};
+
 export default function CareersPage() {
   return (
     <>

@@ -10,6 +10,8 @@ import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Reviews } from '@/components/reviews/Reviews';
 import { api, type WebinarDetail } from '@/lib/api';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { eventLd, breadcrumbLd } from '@/lib/jsonld';
 
 export const revalidate = 300;
 
@@ -111,6 +113,8 @@ export default async function WebinarDetailPage({ params }: { params: Promise<{ 
 
   return (
     <section className="pt-10 sm:pt-14 pb-16">
+      <JsonLd data={webinar.translation?.structured_data || eventLd({ name: title, description, url: `/webinars/${slug}`, image: thumbnail, startDate: scheduledAt, isFree, price })} />
+      <JsonLd data={breadcrumbLd([{ name: 'Home', url: '/' }, { name: 'Webinars', url: '/webinars' }, { name: title, url: `/webinars/${slug}` }])} />
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <div className="text-xs text-slate-500 flex items-center gap-1.5">

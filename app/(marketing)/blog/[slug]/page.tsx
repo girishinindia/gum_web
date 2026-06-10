@@ -6,6 +6,8 @@ import { ButtonLink } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Reviews } from '@/components/reviews/Reviews';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { articleLd, breadcrumbLd } from '@/lib/jsonld';
 import { api } from '@/lib/api';
 
 export const revalidate = 300;
@@ -44,6 +46,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   return (
     <section className="pt-10 sm:pt-14 pb-16">
+      <JsonLd data={articleLd({ headline: post.title, description: p.excerpt, url: `/blog/${slug}`, image: p.featured_image_url, datePublished: p.published_at, authorName: author })} />
+      <JsonLd data={breadcrumbLd([{ name: 'Home', url: '/' }, { name: 'Blog', url: '/blog' }, { name: post.title, url: `/blog/${slug}` }])} />
       <div className="max-w-4xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="text-xs text-slate-500 flex items-center gap-1.5">
           <Link href="/" className="hover:text-brand-700">Home</Link><ChevronRight className="h-3 w-3" />

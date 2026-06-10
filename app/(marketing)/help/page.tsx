@@ -3,6 +3,9 @@ import { Search, MessageCircle, Mail, FileQuestion, BookOpen, CreditCard, Shield
 import { PageHero } from '@/components/ui/PageHero';
 import { Reveal } from '@/components/ui/Reveal';
 import { FAQ } from '@/components/home/FAQ';
+import { fetchSiteFaqs, flattenFaqs } from '@/lib/legal';
+
+export const revalidate = 300;
 
 const TOPICS = [
   { Icon: BookOpen,    title: 'Courses & Learning',     desc: 'Enrolment, schedules, syllabus, assignments' },
@@ -13,7 +16,13 @@ const TOPICS = [
   { Icon: MessageCircle, title: 'Talk to us',           desc: 'WhatsApp, email and call support' },
 ];
 
-export default function HelpPage() {
+export const metadata = {
+  title: 'Help Center',
+  description: 'Find answers to common questions about courses, payments, certificates, and your Grow Up More account.',
+};
+
+export default async function HelpPage() {
+  const faqItems = flattenFaqs(await fetchSiteFaqs());
   return (
     <>
       <PageHero
@@ -50,7 +59,7 @@ export default function HelpPage() {
         </div>
       </section>
 
-      <FAQ />
+      <FAQ items={faqItems.length ? faqItems : undefined} />
 
       <section className="py-12">
         <div className="max-w-3xl mx-auto px-5 sm:px-6 lg:px-8 text-center">

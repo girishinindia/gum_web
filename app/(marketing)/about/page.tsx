@@ -16,6 +16,12 @@ const VALUES = [
   { Icon: Heart,   title: 'Mentor obsession',        desc: 'Every cohort gets dedicated mentor time. No bot replies, no copy-paste feedback.' },
 ];
 
+export const metadata = {
+  title: 'About Us',
+  description: 'Grow Up More is a multilingual e-learning platform helping learners build job-ready IT skills with mentorship and placement support.',
+  openGraph: { title: 'About Grow Up More', description: 'A multilingual e-learning platform for job-ready IT skills.' },
+};
+
 export default function AboutPage() {
   return (
     <>

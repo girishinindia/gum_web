@@ -6,6 +6,8 @@ import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Reviews } from '@/components/reviews/Reviews';
 import { fetchInstructorsList } from '@/lib/api';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { personLd, breadcrumbLd } from '@/lib/jsonld';
 
 export const revalidate = 300;
 
@@ -44,6 +46,8 @@ export default async function InstructorDetailPage({ params }: { params: Promise
 
   return (
     <section className="pt-8 sm:pt-10 pb-16">
+      <JsonLd data={personLd({ name, url: `/instructors/${slug}`, image: avatar, jobTitle: type })} />
+      <JsonLd data={breadcrumbLd([{ name: 'Home', url: '/' }, { name: 'Instructors', url: '/instructors' }, { name, url: `/instructors/${slug}` }])} />
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <nav className="text-xs text-slate-500 flex items-center gap-1.5" aria-label="Breadcrumb">

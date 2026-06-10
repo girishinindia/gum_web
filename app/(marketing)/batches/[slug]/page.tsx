@@ -11,6 +11,8 @@ import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Reviews } from '@/components/reviews/Reviews';
 import { api, type BatchDetail } from '@/lib/api';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { eventLd, breadcrumbLd } from '@/lib/jsonld';
 
 export const revalidate = 300;
 
@@ -95,6 +97,8 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ sl
 
   return (
     <>
+      <JsonLd data={batch.translation?.structured_data || eventLd({ name: title, description, url: `/batches/${slug}`, image: thumbnail, startDate: startDate, isFree, price })} />
+      <JsonLd data={breadcrumbLd([{ name: 'Home', url: '/' }, { name: 'Courses', url: '/courses' }, { name: title, url: `/batches/${slug}` }])} />
       {/* Hero */}
       <section className="pt-10 sm:pt-14 pb-10">
         <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
