@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { BookOpen, Clock, Trophy, Flame, ChevronRight, PlayCircle, Calendar, ArrowRight, Award, Target } from 'lucide-react';
+import { BookOpen, Clock, Trophy, Flame, ChevronRight, PlayCircle, Calendar, ArrowRight, Target } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
 import { DashboardWelcome } from '@/components/app/DashboardWelcome';
+import { Achievements } from '@/components/app/Achievements';
 
 const STATS = [
   { label: 'Active courses',  value: 3,  Icon: BookOpen, accent: 'from-brand-500 to-brand-700' },
@@ -103,18 +104,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Achievements */}
-      <div className="mt-10">
-        <h2 className="heading text-xl text-slate-900">Recent achievements</h2>
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-          {['7-day streak','First quiz','5 lessons','Module mastery','Mentor reply','Profile 100%'].map((b, i) => (
-            <div key={b} className="rounded-md bg-white border border-slate-200 shadow-card p-4 text-center">
-              <div className="mx-auto h-12 w-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-btn"><Award className="h-5 w-5" /></div>
-              <div className="mt-2 text-[12px] font-semibold text-slate-800 leading-tight">{b}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Achievements — real badges + certificates (June 2026) */}
+      <Achievements />
     </div>
   );
 }

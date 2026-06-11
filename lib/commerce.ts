@@ -58,6 +58,23 @@ export const fetchWishlist = (userId: number) => authed<WishlistRow[]>(`/wishlis
 export const addToWishlist = (item_type: CommerceType, item_id: number) => authed<WishlistRow>('/wishlists', { method: 'POST', body: { item_type, item_id } });
 export const removeWishlist = (id: number) => authed(`/wishlists/${id}`, { method: 'DELETE' });
 
+// ── Achievements: badges + certificates (self-service) ───────────────
+export interface MyBadge {
+  id: number;
+  earned_at?: string | null;
+  badges?: { id: number; name: string; slug?: string | null; description?: string | null; icon_url?: string | null; category?: string | null; xp_reward?: number | null } | null;
+}
+export interface MyCertificate {
+  id: number;
+  certificate_number: string;
+  certificate_url?: string | null;
+  png_url?: string | null;
+  issued_at?: string | null;
+  certificate_templates?: { id: number; name?: string | null; courses?: { id: number; name?: string | null; slug?: string | null } | null } | null;
+}
+export const fetchMyBadges = () => authed<MyBadge[]>('/user-badges/me');
+export const fetchMyCertificates = () => authed<MyCertificate[]>('/issued-certificates/me');
+
 // ── Wallet (self-service — June 2026 /wallet page) ───────────────────
 export interface MyWallet { id: number; balance: number | string; total_credited?: number | string | null; total_debited?: number | string | null; is_frozen?: boolean; frozen_reason?: string | null }
 export interface WalletTxn { id: number; transaction_type: 'credit' | 'debit'; amount: number | string; balance_after?: number | string | null; source_type?: string | null; source_id?: number | null; description?: string | null; status?: string | null; created_at?: string }
