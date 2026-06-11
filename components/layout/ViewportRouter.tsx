@@ -72,38 +72,27 @@ export function ViewportRouter() {
       if (bucket === 'mobile' && onMobileUrl) { lastWidthBucket.current = bucket; return; }
       if (bucket === 'desktop' && !onMobileUrl) { lastWidthBucket.current = bucket; return; }
 
-      // Don't redirect routes that have no mobile/desktop mirror (e.g. /login,
-      // /signup, /dashboard, /admin, /api). Those should stay where they are
-      // regardless of viewport — there's no /m/login etc.
-      const HAS_MIRROR = [
-        '/', '/m',
-        '/courses', '/m/courses',
-        '/bundles', '/m/bundles',
-        '/webinars', '/m/webinars',
-        '/instructors', '/m/instructors',
-        '/blog', '/m/blog',
-        '/about', '/m/about',
-        '/team', '/m/team',
-        '/contact', '/m/contact',
-        '/faq', '/m/faq',
-        '/help', '/m/help',
-        '/announcements', '/m/announcements',
-        '/reviews', '/m/reviews',
-        '/discussion', '/m/discussion',
-        '/live-sessions', '/m/live-sessions',
-        '/batches', '/m/batches',
-        // Auth pages have full mirrors on both portals — keep the resize
-        // swap working so a teammate flipping their dev viewport doesn't
-        // get stranded on the wrong layout mid-signup.
-        '/login', '/m/login',
-        '/signup', '/m/signup',
-        '/forgot-password', '/m/forgot-password',
-        '/reset-password',  '/m/reset-password',
-        '/verify-email',    '/m/verify-email',
-      ];
+      // Don't redirect routes that have no mobile/desktop mirror (e.g.
+      // /dashboard, /wallet, /checkout, /learn, /instructor/*). Those stay
+      // where they are regardless of viewport. Synced with the REAL app/m
+      // directory + middleware.ts M_SEGMENTS (June 2026 — the old hardcoded
+      // list was missing cart/my-courses/profile/podcasts/search/support/
+      // wishlist/referrals/notifications/legal, so "mobile mode" never
+      // switched on those pages).
+      const MIRRORED_SEGMENTS = new Set([
+        '', // root
+        'about', 'announcements', 'batches', 'blog', 'bundles', 'cart',
+        'contact', 'courses', 'discussion', 'faq', 'forgot-password', 'help',
+        'instructors', 'legal', 'live-sessions', 'login', 'my-courses',
+        'notifications', 'podcasts', 'profile', 'referrals', 'reset-password',
+        'reviews', 'search', 'signup', 'support', 'team', 'verify-email',
+        'webinars', 'wishlist',
+      ]);
       const head = pathname.split('?')[0];
-      const baseMatch = HAS_MIRROR.some((r) => head === r || head.startsWith(r + '/'));
-      if (!baseMatch) { lastWidthBucket.current = bucket; return; }
+      // First segment of the DESKTOP path (strip the /m prefix when present).
+      const desktopHead = isMobilePath(head) ? toDesktopPath(head) : head;
+      const firstSegment = desktopHead.split('/')[1] ?? '';
+      if (!MIRRORED_SEGMENTS.has(firstSegment)) { lastWidthBucket.current = bucket; return; }
 
       const qs = params?.toString();
       const suffix = qs ? `?${qs}` : '';

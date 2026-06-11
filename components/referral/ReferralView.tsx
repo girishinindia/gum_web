@@ -88,15 +88,27 @@ export function ReferralView() {
 
       {rewards.length > 0 && (
         <div>
-          <h3 className="text-sm font-bold text-slate-900 mb-2">Rewards</h3>
+          <h3 className="text-sm font-bold text-slate-900 mb-2">Your reward earnings</h3>
           <div className="rounded-lg border border-slate-200 bg-white divide-y divide-slate-100">
-            {rewards.map((r) => (
-              <div key={r.id} className="flex items-center justify-between p-3 text-[13px]">
-                <span className="text-emerald-700 font-semibold">+ ₹{Math.round(Number(r.reward_amount)).toLocaleString('en-IN')}</span>
-                <span className="text-slate-500 capitalize">{r.status}</span>
-              </div>
-            ))}
+            {rewards.map((r) => {
+              const when = r.credited_at || r.created_at;
+              return (
+                <div key={r.id} className="flex items-center justify-between gap-3 p-3 text-[13px]">
+                  <div className="min-w-0">
+                    <span className="text-emerald-700 font-semibold">+ ₹{Math.round(Number(r.reward_amount)).toLocaleString('en-IN')}</span>
+                    <span className="ml-2 text-[11px] text-slate-400 capitalize">{(r.reward_type || '').replace(/_/g, ' ')}</span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-slate-500 capitalize">{r.status}</span>
+                    {when && <div className="text-[10.5px] text-slate-400">{new Date(when).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>}
+                  </div>
+                </div>
+              );
+            })}
           </div>
+          <p className="mt-2 text-[11.5px] text-slate-500">
+            Credited rewards land in your <a href="/wallet" className="text-brand-700 font-semibold hover:underline">GUM Wallet</a>.
+          </p>
         </div>
       )}
     </div>

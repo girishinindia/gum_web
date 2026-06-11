@@ -75,6 +75,55 @@ export interface MyCertificate {
 export const fetchMyBadges = () => authed<MyBadge[]>('/user-badges/me');
 export const fetchMyCertificates = () => authed<MyCertificate[]>('/issued-certificates/me');
 
+// ── Student dashboard summary (June 2026) ────────────────────────────
+export interface DashboardSummary {
+  stats: { active_courses: number; total_enrollments: number; completed: number; certificates: number; badges: number };
+  continue: { enrollment_id: number; progress_pct: number; course: { id: number; name: string; slug?: string | null; trailer_thumbnail_url?: string | null; total_lessons?: number | null } }[];
+  upcoming: { kind: 'live_session' | 'webinar'; id: number; title: string; slug?: string | null; scheduled_at?: string | null; duration_minutes?: number | null; meeting_platform?: string | null }[];
+}
+export const fetchDashboard = () => authed<DashboardSummary>('/dashboard/me');
+
+// ── Orders / payment history (self-service — June 2026) ──────────────
+export interface MyOrderItem { id: number; item_type: string; item_id: number; original_price?: number | string | null; final_price?: number | string | null; quantity?: number | null }
+export interface MyOrder {
+  id: number; order_number?: string | null; order_status?: string | null; payment_status?: string | null;
+  subtotal?: number | string | null; discount_amount?: number | string | null; tax_amount?: number | string | null; total_amount?: number | string | null;
+  coupon_code?: string | null; promo_code?: string | null; created_at?: string; order_items?: MyOrderItem[];
+}
+export const fetchMyOrders = (page = 1, limit = 20) => authed<MyOrder[]>(`/orders/me?page=${page}&limit=${limit}`);
+export const fetchMyOrder = (id: number) => authed<MyOrder>(`/orders/me/${id}`);
+
+// ── Instructor self-service (June 2026) ──────────────────────────────
+export interface MyEarning {
+  id: number; order_id?: number | null; item_type?: string | null; item_id?: number | null;
+  order_amount?: number | string | null; gst_amount?: number | string | null; instructor_share?: number | string | null;
+  earning_amount?: number | string | null; platform_fee?: number | string | null; earning_status?: string | null; created_at?: string;
+  orders?: { id: number; order_number?: string | null } | null;
+}
+export interface MyEarningsSummary {
+  total_earnings: number; pending_earnings: number; confirmed_earnings: number; paid_earnings: number; reversed_earnings: number; gross_sales: number;
+  by_item: { item_type: string; item_id: number; name?: string; gross: number; earning: number; sales: number }[];
+}
+export const fetchMyEarnings = (page = 1, limit = 20, status?: string) =>
+  authed<MyEarning[]>(`/instructor-earnings/me?page=${page}&limit=${limit}${status ? `&earning_status=${status}` : ''}`);
+export const fetchMyEarningsSummary = () => authed<MyEarningsSummary>('/instructor-earnings/me/summary');
+
+export interface MyPayoutRequest { id: number; request_number?: string | null; requested_amount?: number | string | null; request_status?: string | null; payment_method?: string | null; created_at?: string; review_notes?: string | null }
+export interface MyPayoutSettlement { id: number; settlement_amount?: number | string | null; settlement_status?: string | null; payment_method?: string | null; transaction_reference?: string | null; created_at?: string; payout_requests?: { id: number; request_number?: string | null } | null }
+export const fetchMyPayoutRequests = () => authed<MyPayoutRequest[]>('/payout-requests/me');
+export const fetchMyPayoutSettlements = () => authed<MyPayoutSettlement[]>('/payout-settlements/me');
+export const createMyPayoutRequest = (p: { requested_amount: number; payment_method?: string; bank_account_id?: number | null; notes?: string | null }) =>
+  authed<MyPayoutRequest>('/payout-requests/me', { method: 'POST', body: p });
+
+export interface MyBankAccount {
+  id: number; account_holder_name?: string | null; account_number?: string | null; ifsc_code?: string | null;
+  bank_name?: string | null; branch_name?: string | null; account_type?: string | null; is_primary?: boolean; is_verified?: boolean;
+}
+export const fetchMyBankAccounts = () => authed<MyBankAccount[]>('/bank-accounts/me');
+export const createBankAccount = (p: Partial<MyBankAccount>) => authed<MyBankAccount>('/bank-accounts', { method: 'POST', body: p });
+export const setPrimaryBankAccount = (id: number) => authed<MyBankAccount>(`/bank-accounts/${id}/primary`, { method: 'PATCH' });
+export const deleteBankAccount = (id: number) => authed(`/bank-accounts/${id}`, { method: 'DELETE' });
+
 // ── Wallet (self-service — June 2026 /wallet page) ───────────────────
 export interface MyWallet { id: number; balance: number | string; total_credited?: number | string | null; total_debited?: number | string | null; is_frozen?: boolean; frozen_reason?: string | null }
 export interface WalletTxn { id: number; transaction_type: 'credit' | 'debit'; amount: number | string; balance_after?: number | string | null; source_type?: string | null; source_id?: number | null; description?: string | null; status?: string | null; created_at?: string }
