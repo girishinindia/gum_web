@@ -45,31 +45,50 @@ export async function isPushSubscribed(): Promise<boolean> {
   return !!(await reg.pushManager.getSubscription());
 }
 
-/** Full opt-in flow. Returns the outcome for UI messaging. */
-export async function enablePush(): Promise<'subscribed' | 'denied' | 'unsupported' | 'error'> {
+/**
+ * Full opt-in flow. Returns the outcome for UI messaging.
+ * BUG-05 fix (June 2026): failures now carry the REASON (`error:<detail>`) so
+ * the settings toggle can tell the user exactly what went wrong instead of a
+ * generic "could not enable" message.
+ */
+export async function enablePush(): Promise<'subscribed' | 'denied' | 'unsupported' | `error:${string}`> {
   if (!pushSupported()) return 'unsupported';
   const token = getAccessToken();
-  if (!token) return 'error';
+  if (!token) return 'error:You must be signed in to enable push.';
 
+  let reg: ServiceWorkerRegistration;
   try {
-    const reg =
+    reg =
       (await navigator.serviceWorker.getRegistration('/sw.js')) ??
       (await navigator.serviceWorker.register('/sw.js'));
+  } catch (e) {
+    return `error:Service worker failed to register (${e instanceof Error ? e.message : 'unknown'}).`;
+  }
 
-    let perm = Notification.permission;
-    if (perm === 'default') perm = await Notification.requestPermission();
-    if (perm !== 'granted') return 'denied';
+  let perm = Notification.permission;
+  if (perm === 'default') perm = await Notification.requestPermission();
+  if (perm !== 'granted') return 'denied';
 
-    let sub = await reg.pushManager.getSubscription();
-    if (!sub) {
-      const vapid = await fetchVapidPublicKey();
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    let vapid: string;
+    try {
+      vapid = await fetchVapidPublicKey();
+    } catch {
+      return 'error:The server has no push key configured (VAPID). Ask the admin to set VAPID keys and restart the API.';
+    }
+    try {
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapid) as unknown as BufferSource,
       });
+    } catch (e) {
+      return `error:Browser refused the subscription (${e instanceof Error ? e.message : 'unknown'}).`;
     }
+  }
 
-    const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+  const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+  try {
     const res = await fetch(`${apiBase()}/push-devices/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -80,9 +99,11 @@ export async function enablePush(): Promise<'subscribed' | 'denied' | 'unsupport
         platform: 'web',
       }),
     });
-    return res.ok ? 'subscribed' : 'error';
+    if (res.ok) return 'subscribed';
+    const body = await res.json().catch(() => null);
+    return `error:Saving the device failed (${body?.error || `HTTP ${res.status}`}).`;
   } catch {
-    return 'error';
+    return 'error:Network error while saving the device.';
   }
 }
 

@@ -55,6 +55,8 @@ export default function TicketPage() {
   const [attachments, setAttachments] = useState<TicketAttachment[]>([]);
   const [pending, setPending] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  // BUG-08 fix: upload failures were swallowed silently — now they're shown.
+  const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function load() {
@@ -78,12 +80,22 @@ export default function TicketPage() {
       }
       if (pending.length) {
         setUploading(true);
-        const uploaded: TicketAttachment[] = [];
+        setUploadErrors([]);
+        const errors: string[] = [];
+        const stillPending: File[] = [];
         for (const f of pending) {
-          try { uploaded.push(await uploadTicketAttachment(id, f, msg?.id ?? null)); } catch { /* skip a bad file, keep going */ }
+          if (f.size > 25 * 1024 * 1024) { errors.push(`${f.name}: larger than 25 MB`); continue; }
+          try {
+            await uploadTicketAttachment(id, f, msg?.id ?? null);
+          } catch (e) {
+            errors.push(`${f.name}: ${e instanceof Error ? e.message : 'upload failed'}`);
+            stillPending.push(f); // keep it so the user can retry
+          }
         }
-        if (uploaded.length) setAttachments((a) => [...a, ...uploaded]);
-        setPending([]);
+        // Re-fetch from the server so what you see is what was truly saved
+        try { setAttachments(await fetchTicketAttachments(id)); } catch { /* keep current */ }
+        setPending(stillPending);
+        setUploadErrors(errors);
         setUploading(false);
       }
     } catch { /* keep text on failure */ } finally { setSending(false); }
@@ -162,6 +174,13 @@ export default function TicketPage() {
                       <FileText className="h-3 w-3 text-slate-400" /> <span className="truncate max-w-[140px]">{f.name}</span>
                       <button onClick={() => setPending((p) => p.filter((_, j) => j !== i))} aria-label="Remove file" className="text-slate-400 hover:text-slate-600"><X className="h-3 w-3" /></button>
                     </span>
+                  ))}
+                </div>
+              )}
+              {uploadErrors.length > 0 && (
+                <div className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
+                  {uploadErrors.map((er, i) => (
+                    <p key={i} className="text-[11.5px] text-rose-600">⚠ {er}</p>
                   ))}
                 </div>
               )}

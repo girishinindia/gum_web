@@ -29,6 +29,7 @@ export function PushToggle({ className }: { className?: string }) {
       if (r === 'subscribed') { setSubscribed(true); setMsg('Browser push enabled on this device.'); }
       else if (r === 'denied') setMsg('Permission is blocked — enable notifications in your browser settings.');
       else if (r === 'unsupported') setMsg('This browser does not support push.');
+      else if (r.startsWith('error:')) setMsg(r.slice(6)); // BUG-05 fix: show the real reason
       else setMsg('Could not enable push. Please try again.');
     }
     setBusy(false);

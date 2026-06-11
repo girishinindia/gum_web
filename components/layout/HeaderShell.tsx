@@ -5,11 +5,12 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  GraduationCap, Menu, X, ArrowRight, UserRound,
+  GraduationCap, Menu, X, ArrowRight, UserRound, Bell,
   BookOpen, Radio, Video, Calendar, FileText, MessagesSquare, UserSquare2, Star, Megaphone,
   type LucideIcon,
 } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
+import { useUnreadCount } from '@/lib/notifications';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { CoursesMegaMenu } from './CoursesMegaMenu';
 import { UserMenu } from './UserMenu';
@@ -18,6 +19,25 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useT } from '@/lib/i18n/useT';
 import type { SubCategory } from '@/lib/api';
 import { cn } from '@/lib/cn';
+
+/** BUG-03 fix (June 2026): the desktop header had NO notification button (mobile did). */
+function HeaderBell() {
+  const { count } = useUnreadCount();
+  return (
+    <Link
+      href="/notifications"
+      aria-label="Notifications"
+      className="relative h-10 w-10 inline-flex items-center justify-center rounded-sm hover:bg-brand-50 text-slate-700"
+    >
+      <Bell className="h-5 w-5" />
+      {count > 0 && (
+        <span className="absolute top-1 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+          {count > 99 ? '99+' : count}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 /**
  * Maps a secondary-nav href to the corresponding site_section_settings key.
@@ -146,6 +166,7 @@ export function HeaderShell({ categories, sectionVisibility = {} }: Props) {
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
+          {signedIn && !loading ? <HeaderBell /> : null}
           <CartBadge href="/cart" className="h-10 w-10 rounded-sm hover:bg-brand-50" />
           <LanguageSwitcher className="hidden md:block" />
           {signedIn && !loading ? (
