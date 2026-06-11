@@ -9,7 +9,7 @@ import { fetchInstructorsList } from '@/lib/api';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { personLd, breadcrumbLd } from '@/lib/jsonld';
 
-export const revalidate = 300;
+export const revalidate = 60; // SEO fix: og/meta changes propagate within a minute
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function resolveInstructor(slug: string): Promise<any | null> {

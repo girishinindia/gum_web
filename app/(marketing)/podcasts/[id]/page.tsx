@@ -12,7 +12,7 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { articleLd } from '@/lib/jsonld';
 import { api } from '@/lib/api';
 
-export const revalidate = 300;
+export const revalidate = 60; // SEO fix: og/meta changes propagate within a minute
 
 const COVER_GRADIENTS = [
   'from-brand-600 to-violet-500',

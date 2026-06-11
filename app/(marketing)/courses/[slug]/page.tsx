@@ -22,7 +22,7 @@ import { TrailerPlayButton } from '@/components/course/TrailerPlayButton';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { courseLd, breadcrumbLd } from '@/lib/jsonld';
 
-export const revalidate = 300;
+export const revalidate = 60; // SEO fix: og/meta changes propagate within a minute
 
 /* ─── helpers ──────────────────────────────────────────────────────────── */
 

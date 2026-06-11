@@ -11,7 +11,7 @@ import { articleLd, breadcrumbLd } from '@/lib/jsonld';
 import { api } from '@/lib/api';
 import { SITE } from '@/lib/seo';
 
-export const revalidate = 300;
+export const revalidate = 60; // SEO fix: og/meta changes propagate within a minute
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function personName(u?: any): string {

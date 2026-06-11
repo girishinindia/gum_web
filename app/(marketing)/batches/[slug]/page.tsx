@@ -14,7 +14,7 @@ import { api, type BatchDetail } from '@/lib/api';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { eventLd, breadcrumbLd } from '@/lib/jsonld';
 
-export const revalidate = 300;
+export const revalidate = 60; // SEO fix: og/meta changes propagate within a minute
 
 // ─── helpers ────────────────────────────────────────────────────────────
 

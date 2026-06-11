@@ -791,19 +791,19 @@ export const api = {
 
   /** Full course detail by slug with translation, instructor, chapters, category. */
   courseBySlug: (slug: string, langId?: number) =>
-    request<CourseDetail>(`/courses/by-slug/${slug}${langId ? `?language_id=${langId}` : ''}`, { revalidate: 300 }),
+    request<CourseDetail>(`/courses/by-slug/${slug}${langId ? `?language_id=${langId}` : ''}`, { revalidate: 60 }),
 
   /** Full bundle detail by slug with translation, instructor, included courses. */
   bundleBySlug: (slug: string, langId?: number) =>
-    request<BundleDetail>(`/bundles/by-slug/${slug}${langId ? `?language_id=${langId}` : ''}`, { revalidate: 300 }),
+    request<BundleDetail>(`/bundles/by-slug/${slug}${langId ? `?language_id=${langId}` : ''}`, { revalidate: 60 }),
 
   /** Full batch detail by slug with translation, instructor, parent course info. */
   batchBySlug: (slug: string, langId?: number) =>
-    request<BatchDetail>(`/course-batches/by-slug/${slug}${langId ? `?language_id=${langId}` : ''}`, { revalidate: 300 }),
+    request<BatchDetail>(`/course-batches/by-slug/${slug}${langId ? `?language_id=${langId}` : ''}`, { revalidate: 60 }),
 
   /** Full webinar detail by slug with translation, instructor. */
   webinarBySlug: (slug: string, langId?: number) =>
-    request<WebinarDetail>(`/webinars/by-slug/${slug}${langId ? `?language_id=${langId}` : ''}`, { revalidate: 300 }),
+    request<WebinarDetail>(`/webinars/by-slug/${slug}${langId ? `?language_id=${langId}` : ''}`, { revalidate: 60 }),
 };
 
 // ─── Paginated response type ──────────────────────────────────────────────
