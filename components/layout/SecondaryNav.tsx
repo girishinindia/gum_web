@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BookOpen, Radio, Video, Calendar, FileText, MessagesSquare, UserSquare2, Star,
-  Megaphone,
+  Megaphone, Lightbulb,
   type LucideIcon,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n/useT';
@@ -54,6 +54,7 @@ export function SecondaryNav({ newAnnouncementsCount = 0, sectionVisibility = {}
     { href: '/instructors',    label: t.secondary.instructors,   Icon: UserSquare2    },
     { href: '/reviews',        label: t.secondary.reviews,       Icon: Star           },
     { href: '/announcements',  label: t.secondary.announcements, Icon: Megaphone,     badge: newAnnouncementsCount },
+    { href: '/ideas',          label: 'Ideas',                   Icon: Lightbulb      },
   ];
 
   // Hide items whose section is explicitly disabled (false). Missing keys default to visible.

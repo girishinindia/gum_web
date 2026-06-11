@@ -153,6 +153,18 @@ export default function DashboardPage() {
 
       {/* Achievements — real badges + certificates */}
       <Achievements />
+
+      {/* Idea & Reward CTA (June 2026) */}
+      <div className="mt-8 rounded-md border border-amber-200 bg-gradient-to-r from-amber-50 to-emerald-50 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="text-2xl">💡</span>
+          <div>
+            <h3 className="heading text-base text-slate-900">Have an idea? Submit it and get rewarded.</h3>
+            <p className="text-[12.5px] text-slate-600 mt-0.5">If we implement your idea you may receive a cash reward in your GUM Wallet, recognition, or a partnership opportunity.</p>
+          </div>
+        </div>
+        <Link href="/submit-idea" className="shrink-0 rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 text-center">Submit an idea</Link>
+      </div>
     </div>
   );
 }

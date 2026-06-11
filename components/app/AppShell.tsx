@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, BookOpen, Heart, ShoppingCart, Wallet, Bell, MessageSquare,
   LifeBuoy, User, FileText, CreditCard, Search, Menu, X, ChevronDown, LogOut,
-  GraduationCap, type LucideIcon,
+  GraduationCap, Lightbulb, type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -22,6 +22,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
       { href: '/dashboard',   label: 'Dashboard',     Icon: LayoutDashboard },
       { href: '/my-courses',  label: 'My Courses',    Icon: BookOpen, badge: 3 },
       { href: '/wishlist',    label: 'Wishlist',      Icon: Heart, badge: 5 },
+      { href: '/my-ideas',    label: 'My Ideas',      Icon: Lightbulb },
     ],
   },
   {
