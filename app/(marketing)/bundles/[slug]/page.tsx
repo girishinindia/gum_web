@@ -15,6 +15,8 @@ import { WishlistButton } from '@/components/commerce/WishlistButton';
 import { api, type BundleDetail } from '@/lib/api';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { productLd, breadcrumbLd } from '@/lib/jsonld';
+import { metaFromTranslation } from '@/lib/seo';
+import { ShareBar } from '@/components/ui/ShareBar';
 
 export const revalidate = 60; // SEO fix: og/meta changes propagate within a minute
 
@@ -44,27 +46,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const bundle = await api.bundleBySlug(slug);
   if (!bundle) return { title: 'Bundle Not Found' };
-
   const t = bundle.translation;
-  return {
-    title: t?.meta_title || t?.title || bundle.name || 'Bundle',
-    description: t?.meta_description || t?.short_description || '',
-    openGraph: {
-      title: t?.og_title || t?.meta_title || t?.title || '',
-      description: t?.og_description || t?.meta_description || '',
-      images: t?.og_image ? [{ url: t.og_image }] : [],
-      url: t?.og_url || undefined,
-      siteName: 'Grow Up More',
-    },
-    twitter: {
-      card: (t?.twitter_card as 'summary' | 'summary_large_image') || 'summary_large_image',
-      title: t?.twitter_title || t?.meta_title || t?.title || '',
-      description: t?.twitter_description || t?.meta_description || '',
-      images: t?.twitter_image ? [t.twitter_image] : [],
-    },
-    robots: t?.robots_directive || undefined,
-    alternates: t?.canonical_url ? { canonical: t.canonical_url } : undefined,
-  };
+  // SEO audit (June 2026): full translation SEO block via the shared helper —
+  // adds canonical_url, robots_directive, meta_keywords and the
+  // og_image → item thumbnail → site default image chain (was images: []).
+  return metaFromTranslation((t as any) ?? null, {
+    title: t?.title || bundle.name || 'Bundle',
+    description: t?.short_description || null,
+    path: `/bundles/${slug}`,
+    image: (bundle as any).thumbnail_url || null,
+  });
 }
 
 // ─── Page ───────────────────────────────────────────────────────────────
@@ -125,6 +116,8 @@ export default async function BundleDetailPage({ params }: { params: Promise<{ s
               {description && (
                 <p className="mt-4 text-slate-600 max-w-2xl">{description}</p>
               )}
+
+              <ShareBar url={`/bundles/${slug}`} title={title} className="mt-4" />
 
               <div className="mt-5 flex flex-wrap items-center gap-5 text-sm text-slate-600">
                 {courseCount > 0 && (

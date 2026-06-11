@@ -5,6 +5,7 @@ import { fetchPublicIdea } from '@/lib/ideas';
 import LikeButton from '@/components/ideas/LikeButton';
 import { siteMeta } from '@/lib/seo';
 import type { Metadata } from 'next';
+import { ShareBar } from '@/components/ui/ShareBar';
 
 export const revalidate = 60;
 
@@ -55,6 +56,8 @@ export default async function PublicIdeaPage({ params }: { params: Promise<{ slu
           <LikeButton ideaId={idea.id} initialCount={idea.likes_count} />
           <span className="inline-flex items-center gap-1.5 text-sm text-slate-400"><Eye className="h-4 w-4" /> {idea.views_count.toLocaleString('en-IN')} views</span>
         </div>
+
+        <ShareBar url={`/ideas/${idea.slug}`} title={idea.title} className="mt-3" />
 
         {idea.short_summary ? (
           <p className="mt-6 rounded-md bg-brand-50/60 border border-brand-100 p-4 text-[15px] text-slate-700 leading-relaxed">{idea.short_summary}</p>

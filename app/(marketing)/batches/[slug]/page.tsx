@@ -13,6 +13,8 @@ import { Reviews } from '@/components/reviews/Reviews';
 import { api, type BatchDetail } from '@/lib/api';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { eventLd, breadcrumbLd } from '@/lib/jsonld';
+import { metaFromTranslation } from '@/lib/seo';
+import { ShareBar } from '@/components/ui/ShareBar';
 
 export const revalidate = 60; // SEO fix: og/meta changes propagate within a minute
 
@@ -40,29 +42,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const batch = await api.batchBySlug(slug);
   if (!batch) return { title: 'Batch Not Found' };
-
   const t = batch.translation;
-  return {
-    title: t?.meta_title || t?.title || batch.title || 'Batch',
-    description: t?.meta_description || t?.short_description || '',
-    openGraph: {
-      title: t?.og_title || t?.meta_title || t?.title || '',
-      description: t?.og_description || t?.meta_description || '',
-      images: t?.og_image ? [{ url: t.og_image }] : [],
-      url: t?.og_url || undefined,
-      siteName: t?.og_site_name || 'Grow Up More',
-      type: (t?.og_type as 'website' | 'article') || 'website',
-    },
-    twitter: {
-      card: (t?.twitter_card as 'summary' | 'summary_large_image') || 'summary_large_image',
-      title: t?.twitter_title || t?.meta_title || t?.title || '',
-      description: t?.twitter_description || t?.meta_description || '',
-      images: t?.twitter_image ? [t.twitter_image] : [],
-      site: t?.twitter_site || undefined,
-    },
-    robots: t?.robots_directive || undefined,
-    alternates: t?.canonical_url ? { canonical: t.canonical_url } : undefined,
-  };
+  // SEO audit (June 2026): full translation SEO block via the shared helper —
+  // adds canonical_url, robots_directive, meta_keywords and the
+  // og_image → item thumbnail → site default image chain (was images: []).
+  return metaFromTranslation((t as any) ?? null, {
+    title: t?.title || batch.title || 'Batch',
+    description: t?.short_description || null,
+    path: `/batches/${slug}`,
+    image: (batch as any).thumbnail_url || (batch as any).courses?.trailer_thumbnail_url || null,
+  });
 }
 
 // ─── Page ───────────────────────────────────────────────────────────────
@@ -140,6 +129,8 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ sl
               <h1 className="mt-3 heading text-4xl sm:text-5xl text-slate-900 leading-[1.05] tracking-tight">
                 {title}
               </h1>
+
+              <ShareBar url={`/batches/${slug}`} title={title} className="mt-3" />
 
               {parentCourseTitle && (
                 <p className="mt-2 text-sm text-brand-600 font-semibold">

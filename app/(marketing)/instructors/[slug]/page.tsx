@@ -8,6 +8,8 @@ import { Reviews } from '@/components/reviews/Reviews';
 import { fetchInstructorsList } from '@/lib/api';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { personLd, breadcrumbLd } from '@/lib/jsonld';
+import { siteMeta } from '@/lib/seo';
+import { ShareBar } from '@/components/ui/ShareBar';
 
 export const revalidate = 60; // SEO fix: og/meta changes propagate within a minute
 
@@ -28,7 +30,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const p = await resolveInstructor(slug);
   const name = p?.users?.full_name || 'Instructor';
-  return { title: `${name} — Instructor`, description: `Courses and profile of ${name} on Grow Up More.` };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const photo = (p as any)?.users?.avatar_url || null;
+  return siteMeta({
+    title: `${name} — Instructor | Grow Up More`,
+    description: `Courses and profile of ${name} on Grow Up More.`,
+    path: `/instructors/${slug}`,
+    image: photo,
+    type: 'profile',
+  });
 }
 
 export default async function InstructorDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -105,6 +115,8 @@ export default async function InstructorDetailPage({ params }: { params: Promise
             ) : (
               <p className="mt-4 text-slate-500">This instructor hasn&apos;t added a bio yet.</p>
             )}
+
+            <ShareBar url={`/instructors/${slug}`} title={name} className="mt-4" />
 
             {expertise.length > 0 && (
               <>

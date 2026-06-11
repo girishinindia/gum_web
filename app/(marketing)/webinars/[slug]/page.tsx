@@ -12,6 +12,8 @@ import { Reviews } from '@/components/reviews/Reviews';
 import { api, type WebinarDetail } from '@/lib/api';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { eventLd, breadcrumbLd } from '@/lib/jsonld';
+import { metaFromTranslation } from '@/lib/seo';
+import { ShareBar } from '@/components/ui/ShareBar';
 
 export const revalidate = 60; // SEO fix: og/meta changes propagate within a minute
 
@@ -51,29 +53,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const webinar = await api.webinarBySlug(slug);
   if (!webinar) return { title: 'Webinar Not Found' };
-
   const t = webinar.translation;
-  return {
-    title: t?.meta_title || t?.title || webinar.title || 'Webinar',
-    description: t?.meta_description || t?.short_description || t?.description || '',
-    openGraph: {
-      title: t?.og_title || t?.meta_title || t?.title || '',
-      description: t?.og_description || t?.meta_description || '',
-      images: t?.og_image ? [{ url: t.og_image }] : [],
-      url: t?.og_url || undefined,
-      siteName: t?.og_site_name || 'Grow Up More',
-      type: (t?.og_type as 'website' | 'article') || 'website',
-    },
-    twitter: {
-      card: (t?.twitter_card as 'summary' | 'summary_large_image') || 'summary_large_image',
-      title: t?.twitter_title || t?.meta_title || t?.title || '',
-      description: t?.twitter_description || t?.meta_description || '',
-      images: t?.twitter_image ? [t.twitter_image] : [],
-      site: t?.twitter_site || undefined,
-    },
-    robots: t?.robots_directive || undefined,
-    alternates: t?.canonical_url ? { canonical: t.canonical_url } : undefined,
-  };
+  // SEO audit (June 2026): full translation SEO block via the shared helper —
+  // adds canonical_url, robots_directive, meta_keywords and the
+  // og_image → item thumbnail → site default image chain (was images: []).
+  return metaFromTranslation((t as any) ?? null, {
+    title: t?.title || webinar.title || 'Webinar',
+    description: t?.short_description || t?.description || null,
+    path: `/webinars/${slug}`,
+    image: (webinar as any).thumbnail_url || null,
+  });
 }
 
 // ─── Page ───────────────────────────────────────────────────────────────
@@ -150,6 +139,8 @@ export default async function WebinarDetailPage({ params }: { params: Promise<{ 
             {shortDescription && (
               <p className="mt-4 text-lg text-slate-700 font-medium leading-relaxed max-w-2xl">{shortDescription}</p>
             )}
+
+            <ShareBar url={`/webinars/${slug}`} title={title} className="mt-4" />
 
             {/* Hero banner */}
             <div className="mt-6 rounded-md overflow-hidden relative">

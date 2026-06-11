@@ -36,13 +36,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '', '/courses', '/bundles', '/batches', '/webinars', '/podcasts', '/blog',
     '/instructors', '/about', '/team', '/careers', '/contact', '/help',
     '/reviews', '/announcements', '/faq', '/policies', '/terms', '/privacy', '/refund',
+    '/ideas', '/live-sessions', // June 2026: Idea Showcase + live sessions listing
   ].map((p) => ({
     url: `${base}${p}`,
     changeFrequency: p === '' || p === '/courses' ? 'daily' : 'weekly',
     priority: p === '' ? 1 : p === '/courses' ? 0.9 : 0.6,
   }));
 
-  const [courses, bundles, batches, webinars, blog, instructors, podcasts] = await Promise.all([
+  const [courses, bundles, batches, webinars, blog, instructors, podcasts, ideas, policies] = await Promise.all([
     fetchRows('/courses?limit=500&page=1'),
     fetchRows('/bundles?is_active=true&limit=500&page=1'),
     fetchRows('/course-batches?limit=500&page=1'),
@@ -50,6 +51,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     fetchRows('/blog-posts?limit=500&page=1'),
     fetchRows('/instructor-profiles/public?limit=500&page=1'),
     fetchRows('/podcasts?status=published&limit=500&page=1'),
+    fetchRows('/ideas/public?limit=500&page=1'),                 // June 2026: public Idea Showcase
+    fetchRows('/public-content/policies'),                        // June 2026: legal policy pages
   ]);
 
   const withSlug = (rows: SlugRow[], prefix: string, priority: number): MetadataRoute.Sitemap =>
@@ -71,6 +74,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.4,
     }));
 
+  // Policies expose a `code` (not a slug) -> /legal/<code>
+  const policyRoutes: MetadataRoute.Sitemap = (policies as Array<SlugRow & { code?: string | null }>)
+    .filter((r) => typeof r.code === 'string' && r.code)
+    .map((r) => ({
+      url: `${base}/legal/${String(r.code).toLowerCase()}`,
+      lastModified: lastMod(r),
+      changeFrequency: 'monthly' as const,
+      priority: 0.3,
+    }));
+
   return [
     ...staticRoutes,
     ...withSlug(courses, '/courses', 0.8),
@@ -79,6 +92,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...withSlug(webinars, '/webinars', 0.5),
     ...withSlug(blog, '/blog', 0.5),
     ...withSlug(instructors, '/instructors', 0.5),
+    ...withSlug(ideas, '/ideas', 0.4),
     ...podcastRoutes,
+    ...policyRoutes,
   ];
 }
