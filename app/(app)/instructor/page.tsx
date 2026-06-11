@@ -19,6 +19,7 @@ import { getAccessToken } from '@/lib/auth/session';
 const inr = (n?: number | null) => `₹${Number(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
 const QUICKS = [
+  { href: '/instructor/studio', label: 'Studio', Icon: BookOpen, desc: 'Create & manage courses, batches, webinars, blog, podcasts, FAQs, promos' },
   { href: '/instructor/earnings', label: 'Earnings', Icon: TrendingUp, desc: 'Item-wise breakdown, statuses, revenue share' },
   { href: '/instructor/payouts', label: 'Payouts', Icon: Wallet, desc: 'Request payout, view history' },
   { href: '/instructor/bank-accounts', label: 'Bank accounts', Icon: IndianRupee, desc: 'Add / manage bank details' },
@@ -66,7 +67,7 @@ export default function InstructorDashboard() {
         ))}
       </div>
 
-      <div className="mt-8 grid lg:grid-cols-3 gap-5">
+      <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {QUICKS.map((q) => (
           <Link key={q.href} href={q.href} className="group rounded-md bg-white border border-slate-200 shadow-card p-5 hover:-translate-y-1 hover:shadow-cardHover transition-all">
             <div className="inline-flex h-11 w-11 items-center justify-center rounded-md bg-gradient-to-br from-brand-100 to-brand-50 text-brand-700"><q.Icon className="h-5 w-5" /></div>
