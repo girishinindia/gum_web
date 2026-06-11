@@ -1,6 +1,7 @@
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Eyebrow } from '@/components/ui/Eyebrow';
+import { RevenueShareTerms } from '@/components/app/RevenueShareTerms';
 
 const BY_COURSE = [
   { name:'AI & ML Pro',           students:8420, gross:33000000, share:70, payout:1854000 },
@@ -33,6 +34,9 @@ export default function EarningsPage() {
           </div>
         ))}
       </div>
+
+      {/* Your revenue share — live slabs, counts & discount rules (June 2026) */}
+      <RevenueShareTerms />
 
       <div className="mt-6 rounded-md bg-white border border-slate-200 shadow-card overflow-hidden">
         <header className="px-5 py-4 border-b border-slate-200">
