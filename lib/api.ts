@@ -28,9 +28,18 @@ const BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5001/api
  */
 export function apiBase(): string {
   if (typeof window === 'undefined') return BASE;
+  // Dev-local hosts: loopback OR any private LAN IP (192.168.x / 10.x /
+  // 172.16-31.x). If the configured host is one of these but the page was
+  // loaded from a different hostname, the browser must call the API on the
+  // page's host instead. This also self-heals a *stale pinned* LAN IP —
+  // which once blanked every grid with ERR_ADDRESS_UNREACHABLE (June 2026).
+  // Real production domains never match and are left untouched.
   const swapped = BASE.replace(
-    /^(https?:\/\/)(localhost|127\.0\.0\.1)(?=[:/]|$)/i,
-    `$1${window.location.hostname}`,
+    /^(https?:\/\/)(localhost|127\.0\.0\.1|192\.168(?:\.\d{1,3}){2}|10(?:\.\d{1,3}){3}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2})(?=[:/]|$)/i,
+    (_m, proto: string, host: string) =>
+      host.toLowerCase() === window.location.hostname.toLowerCase()
+        ? `${proto}${host}`
+        : `${proto}${window.location.hostname}`,
   );
   if (process.env.NODE_ENV !== 'production' && swapped !== BASE) {
     // eslint-disable-next-line no-console
@@ -130,6 +139,17 @@ export interface Faq {
   question: string;
   answer:   string;
   display_order?: number;
+}
+
+export interface Announcement {
+  id:                 number;
+  title:              string;
+  content?:           string | null;
+  announcement_type?: string | null;
+  priority?:          string | null;
+  is_pinned?:         boolean;
+  published_at?:      string | null;
+  expires_at?:        string | null;
 }
 
 export interface Language {
@@ -695,12 +715,16 @@ export const api = {
   /** Languages enabled for material/site UI (header switcher, banners). */
   materialLanguages: () =>
     request<Language[]>('/languages?is_active=true&for_material=true&limit=50'),
+  // (Announcement type for api.announcements lives below with the other interfaces.)
 
   // ─── Home-page section endpoints ────────────────────────────────────────
 
   /** Active webinars, newest first (for "Upcoming Webinars" section). */
   upcomingWebinars: (limit = 4) =>
-    request<Webinar[]>(`/webinars?is_active=true&limit=${limit}&sort=scheduled_at&order=asc`, { revalidate: 300 }),
+    request<Webinar[]>(`/webinars?is_active=true&exclude_webinar_status=draft&limit=${limit}&sort=scheduled_at&order=asc`, { revalidate: 300 }),
+  /** Published, unexpired announcements — pinned first (public /announcements page). */
+  announcements: (limit = 50) =>
+    request<Announcement[]>(`/public-content/announcements?limit=${limit}`, { revalidate: 120 }),
 
   /** Featured bundles (for "Bundles & Savings" section). */
   featuredBundles: (limit = 3) =>
@@ -1194,6 +1218,9 @@ export function fetchWebinarsList(params: WebinarFilterParams = {}): Promise<Pag
   const p = new URLSearchParams();
   if (params.search)         p.set('search', params.search);
   if (params.webinar_status) p.set('webinar_status', params.webinar_status);
+  // Public site must never list work-in-progress webinars (cancelled is
+  // already hidden by the API default unless a status is explicitly chosen).
+  p.set('exclude_webinar_status', 'draft');
   if (params.is_free !== undefined) p.set('is_free', String(params.is_free));
   if (params.is_active !== undefined) p.set('is_active', String(params.is_active));
   if (params.language_id)            p.set('language_id', String(params.language_id));

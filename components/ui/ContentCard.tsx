@@ -335,7 +335,10 @@ function webinarData(item: Webinar): CardData {
   const date = item.scheduled_at ? new Date(item.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
   return {
     type: 'webinars',
-    href: `/webinars/${item.id}`,
+    // Prefer the slug: SEO-friendly URL + the by-slug endpoint returns the
+    // full translation row. Id remains a working fallback (getById now
+    // enriches translations too).
+    href: `/webinars/${(item as { slug?: string | null }).slug || item.id}`,
     badge: 'Webinar',
     thumbnailUrl: item.translated_thumbnail || item.thumbnail_url || null,
     category: 'Webinar',

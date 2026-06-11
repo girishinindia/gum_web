@@ -89,7 +89,10 @@ export default async function WebinarDetailPage({ params }: { params: Promise<{ 
 
   const t = webinar.translation;
   const title = t?.title || webinar.title || 'Untitled Webinar';
-  const description = t?.description || t?.short_description || '';
+  // Lede (short) + full body — both stored in webinar_translations; show both.
+  const shortDescription = t?.short_description || '';
+  const fullDescription = t?.description || '';
+  const description = shortDescription || fullDescription;
   const thumbnail = t?.thumbnail || webinar.thumbnail_url || null;
   const tags = toStrings(t?.tags);
 
@@ -125,7 +128,8 @@ export default async function WebinarDetailPage({ params }: { params: Promise<{ 
           <span className="truncate max-w-[200px]">{title}</span>
         </div>
 
-        <div className="mt-6 grid lg:grid-cols-[1fr_360px] gap-10">
+        {/* Course-detail frame: [content | 380px sticky sidebar] */}
+        <div className="mt-6 grid lg:grid-cols-[minmax(0,1fr)_380px] gap-8 lg:gap-12 items-start">
           <div>
             <Eyebrow>
               <span className="inline-flex items-center gap-1.5">
@@ -143,8 +147,8 @@ export default async function WebinarDetailPage({ params }: { params: Promise<{ 
               {title}
             </h1>
 
-            {description && (
-              <p className="mt-4 text-slate-600 max-w-2xl">{description}</p>
+            {shortDescription && (
+              <p className="mt-4 text-lg text-slate-700 font-medium leading-relaxed max-w-2xl">{shortDescription}</p>
             )}
 
             {/* Hero banner */}
@@ -186,6 +190,14 @@ export default async function WebinarDetailPage({ params }: { params: Promise<{ 
                 </div>
               )}
             </div>
+
+            {/* About — full description from webinar_translations.description */}
+            {fullDescription && fullDescription !== shortDescription && (
+              <div className="mt-8">
+                <h2 className="heading text-2xl text-slate-900">About this webinar</h2>
+                <p className="mt-3 text-[15.5px] leading-[1.8] text-slate-700 whitespace-pre-line">{fullDescription}</p>
+              </div>
+            )}
 
             {/* Tags */}
             {tags.length > 0 && (
@@ -249,7 +261,7 @@ export default async function WebinarDetailPage({ params }: { params: Promise<{ 
 
           {/* Sidebar – registration card */}
           <Reveal>
-            <div className="rounded-md bg-white border border-slate-200 shadow-cardHover p-6 lg:sticky lg:top-24 self-start">
+            <div className="rounded-md bg-white border border-slate-200 shadow-cardHover p-6 lg:sticky lg:top-28 self-start">
               <div className="text-[11px] font-bold uppercase tracking-wider text-success">
                 {isFree ? 'FREE' : formatPrice(price)}
               </div>
@@ -278,6 +290,12 @@ export default async function WebinarDetailPage({ params }: { params: Promise<{ 
                 {maxAttendees != null && (
                   <div className="flex items-center gap-2 text-slate-700">
                     <Users className="h-4 w-4 text-brand-600" /> Max {maxAttendees} attendees
+                  </div>
+                )}
+                {(webinar as any).rating_average != null && Number((webinar as any).rating_average) > 0 && (
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Star className="h-4 w-4 fill-warn text-warn" /> <b>{Number((webinar as any).rating_average).toFixed(1)}</b>
+                    {(webinar as any).rating_count != null ? <span className="text-slate-400">({(webinar as any).rating_count})</span> : null}
                   </div>
                 )}
               </div>

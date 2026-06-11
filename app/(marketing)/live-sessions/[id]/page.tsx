@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Calendar, Clock, Radio, Video, User, ChevronRight, Share2 } from 'lucide-react';
+import { Calendar, Clock, Radio, Video, User, ChevronRight, Share2, Users, Repeat, Star } from 'lucide-react';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
@@ -61,7 +61,8 @@ export default async function LiveSessionDetailPage({ params }: { params: Promis
           <span className="truncate max-w-[200px]">{session.title}</span>
         </div>
 
-        <div className="mt-6 grid lg:grid-cols-[1fr_360px] gap-10 items-start">
+        {/* Course-detail frame: [content | 380px sticky sidebar] */}
+        <div className="mt-6 grid lg:grid-cols-[minmax(0,1fr)_380px] gap-8 lg:gap-12 items-start">
           <div>
             <Eyebrow>
               <span className="inline-flex items-center gap-1.5">
@@ -89,7 +90,7 @@ export default async function LiveSessionDetailPage({ params }: { params: Promis
           </div>
 
           <Reveal>
-            <div className="rounded-md bg-white border border-slate-200 shadow-cardHover p-6 lg:sticky lg:top-24 self-start">
+            <div className="rounded-md bg-white border border-slate-200 shadow-cardHover p-6 lg:sticky lg:top-28 self-start">
               <div className="text-[11px] font-bold uppercase tracking-wider text-success">{isLive ? 'LIVE NOW' : isUpcoming ? 'UPCOMING' : 'SESSION'}</div>
               <div className="heading text-xl text-slate-900 mt-1">{isLive ? 'Join the session' : 'Reserve your seat'}</div>
               <div className="mt-4 space-y-2.5 text-sm">
@@ -97,6 +98,11 @@ export default async function LiveSessionDetailPage({ params }: { params: Promis
                 {when && <div className="flex items-center gap-2 text-slate-700"><Clock className="h-4 w-4 text-brand-600" /> {formatTime(when)}{session.duration_minutes ? ` · ${session.duration_minutes} min` : ''}</div>}
                 {platform && <div className="flex items-center gap-2 text-slate-700 capitalize"><Video className="h-4 w-4 text-brand-600" /> {platform.replace('_', ' ')}</div>}
                 {host && <div className="flex items-center gap-2 text-slate-700"><User className="h-4 w-4 text-brand-600" /> {host}</div>}
+                {sx.max_attendees ? <div className="flex items-center gap-2 text-slate-700"><Users className="h-4 w-4 text-brand-600" /> Limited to {Number(sx.max_attendees).toLocaleString('en-IN')} seats</div> : null}
+                {sx.is_recurring ? <div className="flex items-center gap-2 text-slate-700"><Repeat className="h-4 w-4 text-brand-600" /> Recurring session</div> : null}
+                {sx.rating_average != null && Number(sx.rating_average) > 0 ? (
+                  <div className="flex items-center gap-2 text-slate-700"><Star className="h-4 w-4 fill-warn text-warn" /> <b>{Number(sx.rating_average).toFixed(1)}</b>{sx.rating_count != null ? <span className="text-slate-400">({sx.rating_count})</span> : null}</div>
+                ) : null}
               </div>
               <div className="mt-5 space-y-2.5">
                 <Button variant="primary" className="w-full rounded-full">{isLive ? 'Join now' : 'Register'}</Button>

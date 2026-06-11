@@ -95,6 +95,16 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ sl
 
   const spotsLeft = maxStudents != null ? Math.max(0, maxStudents - enrolled) : null;
 
+  // Extra detail from batch_translations (previously stored but never shown):
+  // what_you_learn / requirements are comma-separated text; tags is a JSON array.
+  const splitList = (v: unknown): string[] =>
+    Array.isArray(v) ? v.map(String).filter(Boolean)
+    : typeof v === 'string' ? v.split(',').map(s => s.trim()).filter(Boolean)
+    : [];
+  const whatYouLearn = splitList(t?.what_you_learn);
+  const requirements = splitList(t?.requirements);
+  const batchTags = splitList(t?.tags);
+
   return (
     <>
       <JsonLd data={batch.translation?.structured_data || eventLd({ name: title, description, url: `/batches/${slug}`, image: thumbnail, startDate: startDate, isFree, price })} />
@@ -119,8 +129,9 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ sl
             <span className="truncate max-w-[200px]">{title}</span>
           </div>
 
-          <div className="mt-6 grid lg:grid-cols-[1fr_380px] gap-10">
-            <div>
+          {/* Course-detail frame: [content | 380px sticky sidebar] */}
+          <div className="mt-6 grid lg:grid-cols-[minmax(0,1fr)_380px] gap-8 lg:gap-12 items-start">
+            <div className="min-w-0">
               <Eyebrow>
                 Batch
                 {status && ` · ${status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}`}
@@ -190,11 +201,48 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ sl
                   </div>
                 </div>
               )}
+
+              {/* What you'll learn — from batch_translations.what_you_learn (comma-separated) */}
+              {whatYouLearn.length > 0 && (
+                <div className="mt-8">
+                  <h2 className="heading text-2xl text-slate-900">What you&rsquo;ll learn</h2>
+                  <ul className="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
+                    {whatYouLearn.map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-sm text-slate-700">
+                        <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" /> {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Requirements — from batch_translations.requirements (comma-separated) */}
+              {requirements.length > 0 && (
+                <div className="mt-8">
+                  <h2 className="heading text-2xl text-slate-900">Requirements</h2>
+                  <ul className="mt-4 space-y-2">
+                    {requirements.map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-sm text-slate-700">
+                        <ChevronRight className="h-4 w-4 text-brand-600 mt-0.5 shrink-0" /> {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Tags — from batch_translations.tags */}
+              {batchTags.length > 0 && (
+                <div className="mt-8 flex flex-wrap gap-1.5">
+                  {batchTags.map((tag) => (
+                    <span key={tag} className="rounded-full bg-brand-50 text-brand-700 text-[11.5px] font-semibold px-2.5 py-1">{tag}</span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Purchase card */}
             <Reveal>
-              <div className="relative rounded-md bg-white border border-slate-200 shadow-cardHover overflow-hidden lg:sticky lg:top-24 self-start">
+              <div className="relative rounded-md bg-white border border-slate-200 shadow-cardHover overflow-hidden lg:sticky lg:top-28 self-start">
                 {thumbnail ? (
                   <div className="aspect-video relative bg-slate-100 overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}

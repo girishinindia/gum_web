@@ -53,6 +53,20 @@ export function flattenFaqs(groups: FaqGroup[]): { question: string; answer: str
   return groups.flatMap((g) => g.items.map((i) => ({ question: i.question, answer: i.answer })));
 }
 
+export interface PolicyIndexEntry { code: string; name: string; slug?: string | null }
+
+/** Policy types that have at least one PUBLISHED version (for the /policies hub + footer). */
+export async function fetchPolicyIndex(): Promise<PolicyIndexEntry[]> {
+  try {
+    const res = await fetch(`${apiBase()}/public-content/policies`, { next: { revalidate: 300 } });
+    if (!res.ok) return [];
+    const j = await res.json();
+    return (j?.data ?? []) as PolicyIndexEntry[];
+  } catch {
+    return [];
+  }
+}
+
 export function formatPolicyDate(d?: string | null): string {
   const dt = d ? new Date(d) : new Date();
   return dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });

@@ -70,9 +70,11 @@ export function Footer() {
         <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div>© {year} Grow Up More. {t.footer.rights}</div>
           <div className="flex items-center gap-5">
-            <Link href="/privacy" className="hover:text-slate-300">{t.footer.privacy}</Link>
-            <Link href="/terms"   className="hover:text-slate-300">{t.footer.terms}</Link>
-            <Link href="/refund"  className="hover:text-slate-300">{t.footer.refund}</Link>
+            <Link href="/faq"      className="hover:text-slate-300">FAQs</Link>
+            <Link href="/privacy"  className="hover:text-slate-300">{t.footer.privacy}</Link>
+            <Link href="/terms"    className="hover:text-slate-300">{t.footer.terms}</Link>
+            <Link href="/refund"   className="hover:text-slate-300">{t.footer.refund}</Link>
+            <Link href="/policies" className="hover:text-slate-300">All policies</Link>
           </div>
         </div>
       </div>

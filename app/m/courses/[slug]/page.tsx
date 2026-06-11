@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Star, Users, Clock, PlayCircle, CheckCircle2, Award, BookOpen, Globe, ChevronRight, Share2, FileText } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
+import { TrailerPlayButton } from '@/components/course/TrailerPlayButton';
 import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
 import { Reviews } from '@/components/reviews/Reviews';
 import { CoursePromo } from '@/components/commerce/CoursePromo';
@@ -46,7 +47,16 @@ export default async function MobileCourseDetail({ params }: { params: Promise<{
             // eslint-disable-next-line @next/next/no-img-element
             <img src={course.trailer_thumbnail_url} alt={title} className="absolute inset-0 h-full w-full object-cover" />
           )}
-          <span className="relative h-14 w-14 rounded-full bg-white/95 flex items-center justify-center shadow-cardHover"><PlayCircle className="h-7 w-7 text-brand-700" /></span>
+          {course.trailer_video_url ? (
+            <TrailerPlayButton
+              courseId={course.id}
+              hasTrailer
+              className="relative h-14 w-14 rounded-full bg-white/95 flex items-center justify-center shadow-cardHover"
+              iconClassName="h-7 w-7 text-brand-700"
+            />
+          ) : (
+            <span className="relative h-14 w-14 rounded-full bg-white/30 flex items-center justify-center"><PlayCircle className="h-7 w-7 text-white/80" /></span>
+          )}
         </div>
       </div>
 

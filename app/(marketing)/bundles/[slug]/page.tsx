@@ -115,8 +115,9 @@ export default async function BundleDetailPage({ params }: { params: Promise<{ s
             <span className="truncate max-w-[200px]">{title}</span>
           </div>
 
-          <div className="mt-6 grid lg:grid-cols-[1fr_380px] gap-10">
-            <div>
+          {/* Course-detail frame: [content | 380px sticky sidebar] */}
+          <div className="mt-6 grid lg:grid-cols-[minmax(0,1fr)_380px] gap-8 lg:gap-12 items-start">
+            <div className="min-w-0">
               <Eyebrow>Bundle{courseCount > 0 ? ` · ${courseCount} courses` : ''}</Eyebrow>
               <h1 className="mt-3 heading text-4xl sm:text-5xl text-slate-900 leading-[1.05] tracking-tight">
                 {title}
@@ -156,11 +157,20 @@ export default async function BundleDetailPage({ params }: { params: Promise<{ s
                   </ul>
                 </div>
               )}
+
+              {/* Tags — from bundle_translations.tags (previously stored but never shown) */}
+              {toStrings(t?.tags).length > 0 && (
+                <div className="mt-6 flex flex-wrap gap-1.5">
+                  {toStrings(t?.tags).map((tag) => (
+                    <span key={tag} className="rounded-full bg-brand-50 text-brand-700 text-[11.5px] font-semibold px-2.5 py-1">{tag}</span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Purchase card */}
             <Reveal>
-              <div className="rounded-md bg-white border border-slate-200 shadow-cardHover overflow-hidden lg:sticky lg:top-24 self-start">
+              <div className="rounded-md bg-white border border-slate-200 shadow-cardHover overflow-hidden lg:sticky lg:top-28 self-start">
                 <div className="relative h-32 overflow-hidden flex items-end p-5">
                   {thumbnail ? (
                     <>

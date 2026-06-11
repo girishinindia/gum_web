@@ -1,79 +1,110 @@
-import { CreditCard, Smartphone, Building2, Wallet, CheckCircle2, ShieldCheck } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+'use client';
 
-const STEPS = ['Cart','Details','Payment','Receipt'];
+/**
+ * Checkout — order review (Phase 6, June 2026).
+ *
+ * Previously a static mockup (hardcoded "Anjali Sharma" + fake totals, dead
+ * Pay button). Now wired to the real commerce flow used by the cart page:
+ * fetchCart/guest-cart → authoritative /checkout/preview totals (inside
+ * CartSummary) → CheckoutButton (Razorpay modal → /checkout/verify).
+ * Card details are collected by Razorpay's PCI-DSS-compliant modal, so this
+ * page intentionally has no billing/payment-method form of its own.
+ */
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { ShoppingCart, CheckCircle2, ShieldCheck, LogIn } from 'lucide-react';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { fetchCart, mergeGuestCart, getGuestCart, type CommerceType } from '@/lib/commerce';
+import { CartSummary } from '@/components/commerce/CartSummary';
+
+const inr = (n?: number | null) => `₹${Math.round(Number(n ?? 0)).toLocaleString('en-IN')}`;
+
+interface Row { key: string; item_type: CommerceType; item_id: number; title: string; price: number; original?: number | null; isFree?: boolean; thumbnail?: string | null }
 
 export default function CheckoutPage() {
+  const { user, signedIn } = useAuth();
+  const [rows, setRows] = useState<Row[] | null>(null);
+
+  useEffect(() => {
+    if (signedIn && user) {
+      mergeGuestCart()
+        .then(() => fetchCart(user.id))
+        .then((server) => setRows(server.map((r) => ({ key: `srv:${r.id}`, item_type: r.item_type, item_id: r.item_id, title: r.item?.title || `${r.item_type} #${r.item_id}`, price: Number(r.item?.price ?? r.price ?? 0), original: r.item?.original_price, isFree: r.item?.is_free, thumbnail: r.item?.thumbnail_url }))))
+        .catch(() => setRows([]));
+    } else {
+      setRows(getGuestCart().map((x) => ({ key: `${x.item_type}:${x.item_id}`, item_type: x.item_type, item_id: x.item_id, title: x.title || `${x.item_type} #${x.item_id}`, price: Number(x.price ?? 0), original: x.original_price, isFree: x.is_free, thumbnail: x.thumbnail_url })));
+    }
+  }, [signedIn, user]);
+
+  const items = rows ?? [];
+  const subtotal = items.reduce((s, i) => s + (i.isFree ? 0 : i.price), 0);
+
   return (
-    <div className="max-w-6xl">
-      {/* Stepper */}
-      <div className="flex items-center gap-1">
-        {STEPS.map((s, i) => (
-          <div key={s} className="flex items-center gap-1">
-            <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[12px] font-bold ${i <= 2 ? 'bg-brand-500 text-white' : 'bg-slate-200 text-slate-500'}`}>{i + 1}</div>
-            <span className={`text-[12px] font-semibold ${i <= 2 ? 'text-brand-700' : 'text-slate-500'}`}>{s}</span>
-            {i < STEPS.length - 1 && <div className={`w-10 h-px ${i < 2 ? 'bg-brand-500' : 'bg-slate-200'}`} />}
-          </div>
-        ))}
-      </div>
+    <div className="max-w-6xl mx-auto pt-6 sm:pt-10">
+      <h1 className="heading text-3xl text-slate-900">Checkout</h1>
+      <p className="mt-1 text-sm text-slate-500">
+        {rows == null ? 'Loading…' : `${items.length} item${items.length === 1 ? '' : 's'} in your order`}
+      </p>
 
-      <h1 className="mt-6 heading text-3xl text-slate-900">Payment</h1>
-
-      <div className="mt-5 grid lg:grid-cols-[1fr_360px] gap-6">
-        <div className="space-y-5">
-          {/* Billing */}
-          <div className="rounded-md bg-white border border-slate-200 shadow-card p-5">
-            <h2 className="heading text-base text-slate-900">Billing details</h2>
-            <div className="mt-3 grid sm:grid-cols-2 gap-3">
-              <input className="px-3.5 py-2.5 rounded-sm border border-slate-200 text-sm" placeholder="Full name" defaultValue="Anjali Sharma" />
-              <input className="px-3.5 py-2.5 rounded-sm border border-slate-200 text-sm" placeholder="Email" defaultValue="anjali@example.com" />
-              <input className="px-3.5 py-2.5 rounded-sm border border-slate-200 text-sm" placeholder="Mobile" defaultValue="+91 98000 00000" />
-              <input className="px-3.5 py-2.5 rounded-sm border border-slate-200 text-sm" placeholder="GST number (optional)" />
-            </div>
-          </div>
-
-          {/* Payment method */}
-          <div className="rounded-md bg-white border border-slate-200 shadow-card p-5">
-            <h2 className="heading text-base text-slate-900">Payment method</h2>
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {[
-                { Icon: Smartphone, label:'UPI',          active:true  },
-                { Icon: CreditCard, label:'Card',         active:false },
-                { Icon: Building2,  label:'Netbanking',   active:false },
-                { Icon: Wallet,     label:'Wallet / EMI', active:false },
-              ].map((p) => (
-                <button key={p.label} className={`rounded-md border p-4 text-left flex flex-col gap-2 transition-all ${p.active ? 'border-brand-500 bg-brand-50/40 ring-2 ring-brand-200' : 'border-slate-200 hover:border-brand-300'}`}>
-                  <p.Icon className={`h-5 w-5 ${p.active ? 'text-brand-700' : 'text-slate-500'}`} />
-                  <div className="text-sm font-semibold text-slate-800">{p.label}</div>
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-4">
-              <label className="block text-[12px] font-semibold text-slate-700 mb-1.5">UPI ID</label>
-              <input className="w-full px-3.5 py-2.5 rounded-sm border border-slate-200 text-sm" placeholder="yourname@upi" />
-            </div>
-          </div>
-
-          <Button variant="primary" className="w-full rounded-full">Pay ₹61,378</Button>
-          <div className="flex items-center justify-center gap-2 text-[11.5px] text-slate-500"><ShieldCheck className="h-3.5 w-3.5 text-success" /> Encrypted &amp; PCI-DSS compliant payment</div>
+      {rows == null ? (
+        <div className="mt-6 space-y-3">{Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-24 rounded-md bg-white border border-slate-200 animate-pulse" />)}</div>
+      ) : items.length === 0 ? (
+        <div className="mt-10 rounded-md bg-white border border-slate-200 p-10 text-center">
+          <ShoppingCart className="h-8 w-8 mx-auto text-slate-300" />
+          <p className="mt-3 heading text-lg text-slate-800">Nothing to check out</p>
+          <p className="mt-1 text-sm text-slate-500">Add a course to your cart first.</p>
+          <Link href="/courses" className="mt-4 inline-flex rounded-full bg-brand-600 text-white px-5 py-2.5 text-sm font-semibold">Browse courses</Link>
         </div>
+      ) : (
+        <div className="mt-6 grid lg:grid-cols-[1fr_360px] gap-6 items-start">
+          <div className="space-y-4">
+            <div className="rounded-md bg-white border border-slate-200 shadow-card p-5">
+              <h2 className="heading text-base text-slate-900">Review your order</h2>
+              <ul className="mt-3 divide-y divide-slate-100">
+                {items.map((i) => (
+                  <li key={i.key} className="py-3 flex items-center gap-4">
+                    <div className="h-12 w-20 rounded-md bg-gradient-to-br from-brand-700 to-brand-500 shrink-0 overflow-hidden">
+                      {i.thumbnail && /* eslint-disable-next-line @next/next/no-img-element */ <img src={i.thumbnail} alt="" className="h-full w-full object-cover" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-slate-900 truncate">{i.title}</div>
+                      <div className="text-[12px] text-slate-500 capitalize">{i.item_type} · lifetime access</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="heading text-sm text-slate-900">{i.isFree ? 'Free' : inr(i.price)}</div>
+                      {i.original ? <div className="text-[11px] text-slate-400 line-through">{inr(i.original)}</div> : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <Link href="/cart" className="mt-3 inline-block text-[12.5px] text-brand-700 font-semibold hover:underline">Edit cart</Link>
+            </div>
 
-        <aside className="rounded-md bg-white border border-slate-200 shadow-cardHover p-5 lg:sticky lg:top-24 self-start">
-          <h2 className="heading text-base text-slate-900">Your order</h2>
-          <ul className="mt-3 space-y-3 text-[13px]">
-            <li className="flex justify-between"><span className="text-slate-700">Data Science with Python</span><span className="font-semibold">₹29,999</span></li>
-            <li className="flex justify-between"><span className="text-slate-700">Generative AI Builder</span><span className="font-semibold">₹22,999</span></li>
-            <li className="flex justify-between text-success"><span>Discount</span><span>– ₹0</span></li>
-            <li className="flex justify-between text-slate-600"><span>GST (18%)</span><span>₹9,540</span></li>
-          </ul>
-          <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between heading">
-            <span className="text-slate-900">Total</span>
-            <span className="text-slate-900">₹62,538</span>
+            {!signedIn && (
+              <div className="rounded-md bg-white border border-slate-200 shadow-card p-5 flex items-start gap-3">
+                <LogIn className="h-5 w-5 text-brand-600 mt-0.5 shrink-0" />
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">Sign in to pay</div>
+                  <p className="mt-0.5 text-[12.5px] text-slate-500">Your cart is saved — sign in and these items come with you.</p>
+                  <Link href="/login?next=/checkout" className="mt-2 inline-flex rounded-full bg-brand-600 text-white px-4 py-2 text-[12.5px] font-semibold">Sign in</Link>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-center gap-2 text-[11.5px] text-slate-500">
+              <ShieldCheck className="h-3.5 w-3.5 text-success" /> Payments are processed by Razorpay — encrypted &amp; PCI-DSS compliant
+            </div>
           </div>
-          <div className="mt-5 flex items-start gap-2 text-[11.5px] text-slate-600 bg-success/10 text-success rounded-sm px-3 py-2"><CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" /> Lifetime access · 7-day refund · Verified certificate</div>
-        </aside>
-      </div>
+
+          <div className="space-y-3">
+            <CartSummary basePath="" signedIn={signedIn} clientSubtotal={subtotal} />
+            <div className="flex items-start gap-2 text-[11.5px] text-slate-600 bg-success/10 text-success rounded-sm px-3 py-2">
+              <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" /> Lifetime access · 7-day refund · Verified certificate
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
