@@ -21,8 +21,12 @@ export const metadata: Metadata = {
  * /public-content/faqs data (admin-managed, translation-aware), grouped by
  * FAQ category, in the standard course-detail frame with a sticky sidebar.
  */
-export default async function FaqPage() {
-  const groups = await fetchSiteFaqs(); // item_type = 'general'
+export default async function FaqPage({ searchParams }: { searchParams: Promise<{ language_id?: string }> }) {
+  // BUG-18 symmetry: honor ?language_id= here too (Hindi 11 / Gujarati 12 / Marathi 13)
+  const sp = await searchParams;
+  const parsed = parseInt(sp.language_id || '');
+  const langId = Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+  const groups = await fetchSiteFaqs(langId); // item_type = 'general'
   const all = flattenFaqs(groups);
 
   return (
@@ -60,7 +64,7 @@ export default async function FaqPage() {
               </div>
             ) : (
               groups.map((g) => (
-                <div key={g.category_id ?? 'general'} id={`faq-cat-${g.category_id ?? 'general'}`} className="mt-10 scroll-mt-28">
+                <div key={g.category_id ?? 'general'} id={`faq-cat-${g.category_id ?? 'general'}`} className="mt-10 scroll-mt-36">
                   <h2 className="heading text-2xl text-slate-900">{g.category}</h2>
                   <FAQ items={g.items.map((i) => ({ question: i.question, answer: i.answer }))} inline />
                 </div>
