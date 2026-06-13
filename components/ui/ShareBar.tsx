@@ -91,7 +91,7 @@ export function ShareBar({ url, title, className, label = 'Share' }: ShareBarPro
     { label: 'LinkedIn', href: `https://www.linkedin.com/sharing/share-offsite/?url=${eUrl}`, Icon: LinkedInIcon, bg: 'bg-[#0A66C2] hover:bg-[#0857a6]' },
     { label: 'WhatsApp', href: `https://wa.me/?text=${encodeURIComponent(`${title} — ${abs}`)}`, Icon: WhatsAppIcon, bg: 'bg-[#25D366] hover:bg-[#1fb858]' },
     { label: 'Telegram', href: `https://t.me/share/url?url=${eUrl}&text=${eTitle}`, Icon: TelegramIcon, bg: 'bg-[#229ED9] hover:bg-[#1d8bbf]' },
-    { label: 'Email', href: `mailto:?subject=${eTitle}&body=${encodeURIComponent(`${title}\n${abs}`)}`, Icon: MailIcon, bg: 'bg-amber-500 hover:bg-amber-600' },
+    { label: 'Email (Gmail)', href: `https://mail.google.com/mail/?view=cm&fs=1&su=${eTitle}&body=${encodeURIComponent(`${title}\n${abs}`)}`, Icon: MailIcon, bg: 'bg-amber-500 hover:bg-amber-600' }, // BUG-29: Gmail compose, not the OS mail app
   ];
 
   const copy = async () => {

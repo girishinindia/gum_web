@@ -11,7 +11,7 @@ import { SITE } from '@/lib/seo';
  */
 
 const API = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5001/api/v1').replace(/\/$/, '');
-const REVALIDATE = 3600;
+const REVALIDATE = 600; // BUG-28: an API blip used to leave an EMPTY section cached for a full hour
 
 interface SlugRow { slug?: string | null; id?: number | null; updated_at?: string | null }
 

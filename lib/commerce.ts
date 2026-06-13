@@ -4,7 +4,36 @@
  * Import only from "use client" components.
  */
 import { apiBase } from '@/lib/api';
-import { getAccessToken } from '@/lib/auth/session';
+import { getAccessToken, getRefreshToken, setTokens } from '@/lib/auth/session';
+
+// BUG-33 fix (June 2026): expired access tokens made payments/orders fail with
+// "Token not provided". On 401 we now refresh ONCE (shared promise so parallel
+// calls don't stampede) and retry the request with the new token.
+let refreshInFlight: Promise<boolean> | null = null;
+async function tryRefreshToken(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      const rt = getRefreshToken();
+      if (!rt) return false;
+      try {
+        const res = await fetch(`${apiBase()}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: rt }),
+        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const j: any = await res.json().catch(() => null);
+        const d = j?.data ?? j;
+        if (res.ok && d?.access_token) {
+          setTokens({ access_token: d.access_token, refresh_token: d.refresh_token || rt });
+          return true;
+        }
+        return false;
+      } catch { return false; }
+    })().finally(() => { setTimeout(() => { refreshInFlight = null; }, 50); });
+  }
+  return refreshInFlight;
+}
 
 export type CommerceType = 'course' | 'bundle' | 'batch' | 'webinar';
 
@@ -47,6 +76,21 @@ async function authed<T>(path: string, opts: { method?: string; body?: unknown }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let json: any = null;
   try { json = await res.json(); } catch { /* no body */ }
+  if (res.status === 401 && tok && (await tryRefreshToken())) {
+    // retry once with the fresh token (BUG-33)
+    const tok2 = getAccessToken();
+    const res2 = await fetch(`${apiBase()}${path}`, {
+      method: opts.method ?? 'GET',
+      headers: { 'Content-Type': 'application/json', ...(tok2 ? { Authorization: `Bearer ${tok2}` } : {}) },
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      cache: 'no-store',
+    });
+    try { json = await res2.json(); } catch { json = null; }
+    if (!res2.ok || (json && json.success === false)) {
+      throw new CommerceError(json?.error || `Request failed (${res2.status})`, res2.status);
+    }
+    return (json?.data ?? json) as T;
+  }
   if (!res.ok || (json && json.success === false)) {
     throw new CommerceError(json?.error || `Request failed (${res.status})`, res.status);
   }
@@ -152,7 +196,7 @@ export function notifyCartAdded(title?: string | null) {
 // ── Checkout (Razorpay) ───────────────────────────────────────────────
 export const checkoutConfig = () => authed<{ keyId: string; currency: string }>('/checkout/config');
 export interface CheckoutPreview {
-  subtotal: number; discount_amount: number; tax_amount: number; total: number; item_count: number;
+  subtotal: number; discount_amount: number; tax_amount: number; gst_rate?: number; total: number; item_count: number;
   coupon: { code: string; valid: boolean; message?: string } | null;
   promo: { code: string; valid: boolean; message?: string } | null;
 }

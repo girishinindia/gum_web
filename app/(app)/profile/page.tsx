@@ -42,6 +42,8 @@ import { FieldError }         from '@/components/ui/FieldError';
 import { ImageEditorModal }   from '@/components/profile/ImageEditorModal';
 import { validateMaxLen, validateAge, validateRequired } from '@/lib/auth/validation';
 import { cn } from '@/lib/cn';
+import { apiBase } from '@/lib/api';
+import { getAccessToken } from '@/lib/auth/session';
 
 /**
  * Edit-profile page — single client component (intentionally), pulling
@@ -68,7 +70,22 @@ import { cn } from '@/lib/cn';
  */
 export default function ProfilePage() {
   const { user, loading: authLoading, updateUser } = useAuth();
-  const roleLevel = user?.max_role_level ?? 20; // default to student
+  // BUG-40 fix (June 2026): roles assigned by the admin only reached this page
+  // after a full re-login (it trusted the cached auth blob). Fetch the live
+  // role level once so a newly granted Instructor role reflects immediately.
+  const [freshLevel, setFreshLevel] = useState<number | null>(null);
+  useEffect(() => {
+    const t = getAccessToken();
+    if (!t) return;
+    fetch(`${apiBase()}/users/me`, { headers: { Authorization: `Bearer ${t}` }, cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => {
+        const lvl = j?.data?.max_role_level;
+        if (typeof lvl === 'number') setFreshLevel(lvl);
+      })
+      .catch(() => {});
+  }, []);
+  const roleLevel = freshLevel ?? user?.max_role_level ?? 20; // default to student
 
   // Visible section list — drives both the left-rail nav and the body.
   // Tuned by role: instructors get the income-related cards, admins

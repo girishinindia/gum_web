@@ -26,13 +26,18 @@ interface Props {
  * still not signed in, we push to `loginPath?next=<current>` so the
  * login page can deep-link the user back after a successful sign-in.
  */
+// BUG-38 fix (June 2026): pages that render their own friendly sign-in CARD
+// (wallet, payments, notifications, support, my-ideas, submit-idea) are no
+// longer hard-bounced to /login — guests see the inline card instead.
+const SELF_GATED = ['/wallet', '/payments', '/notifications', '/support', '/my-ideas', '/submit-idea'];
+
 export function RequireAuth({ children, loginPath = '/login', fallback, publicPaths = ['/cart'] }: Props) {
   const { loading, signedIn } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   // Guest-accessible routes (cart) skip the guard so a signed-out user can
   // build a cart; payment itself still requires login.
-  const isPublic = !!pathname && publicPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isPublic = !!pathname && [...publicPaths, ...SELF_GATED].some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   useEffect(() => {
     if (loading || signedIn || isPublic) return;

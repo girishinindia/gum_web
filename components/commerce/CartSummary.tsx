@@ -117,6 +117,15 @@ export function CartSummary({ basePath = '', signedIn, clientSubtotal }: { baseP
 
   useEffect(() => { if (signedIn) refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [signedIn]);
 
+  // BUG-32 fix (June 2026): removing/adding items now refreshes the summary
+  useEffect(() => {
+    if (!signedIn) return;
+    const h = () => refresh();
+    window.addEventListener('gum-cart-changed', h);
+    return () => window.removeEventListener('gum-cart-changed', h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedIn]);
+
   const subtotal = preview?.subtotal ?? clientSubtotal;
   const discount = preview?.discount_amount ?? 0;
   const total = preview?.total ?? clientSubtotal;
@@ -156,6 +165,9 @@ export function CartSummary({ basePath = '', signedIn, clientSubtotal }: { baseP
         <div className="flex justify-between"><dt className="text-slate-600">Subtotal</dt><dd className="font-semibold">{inr(subtotal)}</dd></div>
         {discount > 0 && (
           <div className="flex justify-between text-emerald-600"><dt>Discount{applied ? ` (${applied})` : ''}</dt><dd className="font-semibold">− {inr(discount)}</dd></div>
+        )}
+        {Number(preview?.tax_amount) > 0 && (
+          <div className="flex justify-between text-[12.5px] text-slate-400"><dt>Includes GST{preview?.gst_rate ? ` (${preview.gst_rate}%)` : ''}</dt><dd>{inr(Number(preview?.tax_amount))}</dd></div>
         )}
         <div className="flex justify-between pt-3 border-t border-slate-100 text-base"><dt className="font-semibold text-slate-900">Total</dt><dd className="heading text-slate-900">{inr(total)}</dd></div>
       </dl>

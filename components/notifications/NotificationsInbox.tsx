@@ -30,8 +30,13 @@ function inTab(type: string, tab: Tab): boolean {
 
 /** Best-effort click target for a notification, based on its reference. */
 function hrefFor(n: AppNotification): string | null {
+  // BUG-24 fix (June 2026): the admin-set action_url is the PRIMARY target —
+  // it was ignored entirely before.
+  const action = (n as { action_url?: string | null }).action_url;
+  if (action) return action;
   if (n.reference_type === 'order') return '/payments';
   if (n.reference_type === 'payout_request') return '/wallet';
+  if (n.reference_type === 'idea') return '/my-ideas';
   const url = (n.metadata && typeof n.metadata === 'object' && (n.metadata as Record<string, unknown>).url) as string | undefined;
   return url || null;
 }
@@ -68,7 +73,11 @@ export function NotificationsInbox({ variant = 'desktop' }: { variant?: 'desktop
       markNotificationRead(n.id);
     }
     const href = hrefFor(n);
-    if (href) router.push(href);
+    if (href) {
+      // External action URLs open in a new tab; internal paths navigate in-app (BUG-24)
+      if (/^https?:\/\//i.test(href)) window.open(href, '_blank', 'noopener');
+      else router.push(href);
+    }
   }
 
   async function onMarkAll() {
