@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { ShoppingCart, PlayCircle, Loader2, Check } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { enrolledMap, enrollFree, addToCart, addGuestCart, invalidateEnrollments, notifyCartAdded, type CommerceType, type GuestCartItem } from '@/lib/commerce';
+import { enrolledMap, cartMap, enrollFree, addToCart, addGuestCart, invalidateEnrollments, notifyCartAdded, type CommerceType, type GuestCartItem } from '@/lib/commerce';
 
 /** Primary CTA. Free items self-enroll (login required). Paid items add to the
  *  cart — allowed for guests too (login is only enforced at payment). */
@@ -18,21 +18,42 @@ export function EnrollButton({
   const { user, signedIn } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [state, setState] = useState<'idle' | 'enrolled' | 'busy' | 'added'>('idle');
+  // BUG-46: `incart` is a persistent state (survives reload) shown when a paid
+  // item is already in the cart — links to /cart instead of re-adding.
+  const [state, setState] = useState<'idle' | 'enrolled' | 'busy' | 'added' | 'incart'>('idle');
   const addedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Enrolled wins over in-cart; both re-check when auth or the cart changes.
+  // BUG-46: paid items also consult cartMap so the button reflects an existing
+  // cart membership (server cart when signed in, guest cart otherwise).
   useEffect(() => {
-    if (!signedIn || !user) return;
     let off = false;
-    enrolledMap(user.id).then((m) => { if (!off && m.has(`${itemType}:${itemId}`)) setState('enrolled'); });
-    return () => { off = true; };
-  }, [signedIn, user, itemType, itemId]);
+    const key = `${itemType}:${itemId}`;
+    async function sync() {
+      if (signedIn && user) {
+        const enrolled = await enrolledMap(user.id);
+        if (off) return;
+        if (enrolled.has(key)) { setState('enrolled'); return; }
+      }
+      if (isFree) return; // free items never use the cart
+      const cart = await cartMap(signedIn && user ? user.id : 0);
+      if (off) return;
+      // Don't clobber a transient "added"/"busy" — only set/clear the resting state.
+      setState((s) => (s === 'busy' || s === 'added') ? s : (cart.has(key) ? 'incart' : 'idle'));
+    }
+    sync();
+    const onCartChanged = () => sync();
+    window.addEventListener('gum-cart-changed', onCartChanged);
+    return () => { off = true; window.removeEventListener('gum-cart-changed', onCartChanged); };
+  }, [signedIn, user, itemType, itemId, isFree]);
 
   useEffect(() => () => { if (addedTimer.current) clearTimeout(addedTimer.current); }, []);
 
   async function onClick() {
     if (state === 'busy') return;
     if (state === 'enrolled') { router.push(learnHref || `${basePath}/my-courses`); return; }
+    // BUG-46: already in the cart → take the user to the cart, don't re-add.
+    if (state === 'incart') { router.push(`${basePath}/cart`); return; }
 
     if (isFree) {
       // Free enrolment grants course ownership → needs an account.
@@ -51,12 +72,14 @@ export function EnrollButton({
       else addGuestCart({ item_type: itemType, item_id: itemId, ...(item || {}) });
       notifyCartAdded(item?.title);
       setState('added');
+      // BUG-46: after the brief "Added" flash, settle into the persistent
+      // "In cart" state (so a reload keeps showing it, not "Add to cart").
       if (addedTimer.current) clearTimeout(addedTimer.current);
-      addedTimer.current = setTimeout(() => setState('idle'), 1800);
+      addedTimer.current = setTimeout(() => setState('incart'), 1800);
     } catch { setState('idle'); }
   }
 
-  const label = state === 'enrolled' ? 'Go to course' : state === 'busy' ? 'Please wait…' : state === 'added' ? 'Added' : isFree ? 'Enroll free' : 'Add to cart';
+  const label = state === 'enrolled' ? 'Go to course' : state === 'busy' ? 'Please wait…' : state === 'added' ? 'Added' : state === 'incart' ? 'In cart · Go to cart' : isFree ? 'Enroll free' : 'Add to cart';
   const Icon = state === 'enrolled' ? PlayCircle : state === 'busy' ? Loader2 : state === 'added' ? Check : ShoppingCart;
 
   return (

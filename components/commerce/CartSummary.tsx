@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tag, X, LogIn, CheckCircle2 } from 'lucide-react';
 import { CheckoutButton } from './CheckoutButton';
-import { checkoutPreview, type CheckoutPreview } from '@/lib/commerce';
+import { checkoutPreview, validateCode, type CheckoutPreview } from '@/lib/commerce';
 
 const inr = (n?: number | null) => `₹${Math.round(Number(n ?? 0)).toLocaleString('en-IN')}`;
 
@@ -46,46 +46,32 @@ export function CartSummary({ basePath = '', signedIn, clientSubtotal }: { baseP
       .finally(() => setBusy(false));
   }
 
-  /** Validate + apply a new code: coupon first, then instructor promo. */
+  /**
+   * BUG-27: validate + apply a new code in a SINGLE call. The API decides
+   * whether it's a coupon or an instructor promo (`kind`); we then recompute
+   * the authoritative totals once with the code passed as that kind so the
+   * displayed discount matches what the user pays.
+   */
   async function applyCode(c: string) {
     if (!signedIn) return;
     setBusy(true);
     try {
-      // 1) Try as a coupon
-      const asCoupon = await checkoutPreview({ coupon_code: c });
-      if (!(asCoupon.coupon && asCoupon.coupon.valid === false)) {
-        const name = (asCoupon.coupon && asCoupon.coupon.code) || c;
-        setPreview(asCoupon);
-        setApplied(name);
-        setAppliedKind('coupon');
+      const result = await validateCode(c);
+      if (result.valid && result.kind) {
+        setApplied(c);
+        setAppliedKind(result.kind);
         setCode('');
         setMsgOk(true);
-        setMsg(`Coupon ${name} applied.`);
+        setMsg(`${result.kind === 'promo' ? 'Promo' : 'Coupon'} ${c} applied.`);
+        setPreview(await previewWith(c, result.kind));
         return;
       }
-      const couponMsg = asCoupon.coupon?.message || 'This coupon is not valid for your cart.';
-
-      // 2) Not a coupon — try as an instructor promo code
-      const asPromo = await checkoutPreview({ promo_code: c });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const promoInfo: any = (asPromo as any).promo;
-      if (promoInfo && promoInfo.valid !== false) {
-        const name = promoInfo.code || c;
-        setPreview(asPromo);
-        setApplied(name);
-        setAppliedKind('promo');
-        setCode('');
-        setMsgOk(true);
-        setMsg(`Promo ${name} applied.`);
-        return;
-      }
-
-      // Both failed — prefer the promo's specific message when the code looked like a promo
+      // Invalid — clear any applied code and recompute clean totals.
       setApplied(null);
       setAppliedKind(null);
       setPreview(await checkoutPreview({}));
       setMsgOk(false);
-      setMsg(promoInfo?.message && promoInfo.message !== 'Invalid promo code' ? promoInfo.message : couponMsg);
+      setMsg(result.message || 'This code is not valid for your cart.');
     } catch (e) {
       setMsgOk(false);
       setMsg(e instanceof Error ? e.message : 'Could not apply this code. Please try again.');

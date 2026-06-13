@@ -1,9 +1,11 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { ChevronRight, HelpCircle, MessageCircle, LifeBuoy } from 'lucide-react';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { FAQ } from '@/components/home/FAQ';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { LanguageUrlSync } from '@/components/layout/LanguageUrlSync';
 import { faqLd, breadcrumbLd } from '@/lib/jsonld';
 import { fetchSiteFaqs, flattenFaqs } from '@/lib/legal';
 
@@ -31,6 +33,8 @@ export default async function FaqPage({ searchParams }: { searchParams: Promise<
 
   return (
     <section className="pt-10 sm:pt-14 pb-16">
+      {/* BUG-18/55: keep the navbar language selector in sync with ?language_id= */}
+      <Suspense fallback={null}><LanguageUrlSync /></Suspense>
       {all.length > 0 && <JsonLd data={faqLd(all)} />}
       <JsonLd data={breadcrumbLd([{ name: 'Home', url: '/' }, { name: 'FAQs', url: '/faq' }])} />
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">

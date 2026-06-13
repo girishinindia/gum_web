@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { MobileShell }       from '@/components/mobile/MobileShell';
 import { LanguageProvider }  from '@/components/layout/LanguageProvider';
+import { PresenceConnector } from '@/components/presence/PresenceConnector';
 import { api }               from '@/lib/api';
 
 // The /m tree mirrors the desktop content; mark it noindex so the canonical
@@ -18,6 +19,8 @@ export default async function MobileLayoutRoot({ children }: { children: React.R
   const languages = (await api.materialLanguages()) ?? [];
   return (
     <LanguageProvider languages={languages}>
+      {/* BUG-31: presence socket for signed-in mobile users too (no-op when signed out). */}
+      <PresenceConnector />
       <MobileShell>{children}</MobileShell>
     </LanguageProvider>
   );

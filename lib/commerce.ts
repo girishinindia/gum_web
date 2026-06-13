@@ -128,7 +128,7 @@ export interface DashboardSummary {
 export const fetchDashboard = () => authed<DashboardSummary>('/dashboard/me');
 
 // ── Orders / payment history (self-service — June 2026) ──────────────
-export interface MyOrderItem { id: number; item_type: string; item_id: number; original_price?: number | string | null; final_price?: number | string | null; quantity?: number | null }
+export interface MyOrderItem { id: number; item_type: string; item_id: number; item_name?: string | null; item_slug?: string | null; original_price?: number | string | null; discount_amount?: number | string | null; tax_amount?: number | string | null; final_price?: number | string | null; quantity?: number | null }
 export interface MyOrder {
   id: number; order_number?: string | null; order_status?: string | null; payment_status?: string | null;
   subtotal?: number | string | null; discount_amount?: number | string | null; tax_amount?: number | string | null; total_amount?: number | string | null;
@@ -203,6 +203,12 @@ export interface CheckoutPreview {
 /** Compute cart totals + coupon/promo discount without creating an order. */
 export const checkoutPreview = (p: { coupon_code?: string | null; promo_code?: string | null } = {}) =>
   authed<CheckoutPreview>('/checkout/preview', { method: 'POST', body: p });
+// BUG-27: single-call coupon/promo validation — the API tries the code as a
+// coupon first, then as an instructor promo, and tells us which kind applied
+// (or null) plus the rupee discount. Replaces the web's old 3× /preview dance.
+export interface ValidateCodeResult { kind: 'coupon' | 'promo' | null; valid: boolean; discount: number; message?: string }
+export const validateCode = (code: string) =>
+  authed<ValidateCodeResult>('/checkout/validate-code', { method: 'POST', body: { code } });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const checkoutInitiate = (p: { coupon_code?: string | null; promo_code?: string | null } = {}) => authed<any>('/checkout/initiate', { method: 'POST', body: p });
 export const checkoutVerify = (p: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
@@ -213,6 +219,8 @@ export const checkoutVerify = (p: { razorpay_order_id: string; razorpay_payment_
 const k = (t: string, id: number) => `${t}:${id}`;
 let wlCache: { uid?: number; p?: Promise<Map<string, number>> } = {};
 let enCache: { uid?: number; p?: Promise<Map<string, EnrollmentRow>> } = {};
+// BUG-46: cart-membership cache (mirrors enrolledMap). `uid === 0` = guest cart.
+let cartCache: { uid?: number; p?: Promise<Set<string>> } = {};
 
 export function wishlistMap(userId: number): Promise<Map<string, number>> {
   if (wlCache.uid !== userId || !wlCache.p) {
@@ -226,8 +234,30 @@ export function enrolledMap(userId: number): Promise<Map<string, EnrollmentRow>>
   }
   return enCache.p!;
 }
+/**
+ * BUG-46: set of `${item_type}:${item_id}` keys currently in the cart — drives
+ * the persistent "In cart" state on EnrollButton. Signed-in users (userId > 0)
+ * read the server cart; signed-out users (pass userId 0) read the localStorage
+ * guest cart. Invalidated by the `gum-cart-changed` window event (see below).
+ */
+export function cartMap(userId: number): Promise<Set<string>> {
+  if (cartCache.uid !== userId || !cartCache.p) {
+    const p = userId > 0
+      ? fetchCart(userId).then((rows) => new Set(rows.map((r) => k(r.item_type, r.item_id)))).catch(() => new Set<string>())
+      : Promise.resolve(new Set(getGuestCart().map((x) => k(x.item_type, x.item_id))));
+    cartCache = { uid: userId, p };
+  }
+  return cartCache.p!;
+}
 export function invalidateWishlist() { wlCache = {}; }
 export function invalidateEnrollments() { enCache = {}; }
+export function invalidateCart() { cartCache = {}; }
+
+// BUG-46: keep the cart-membership cache fresh — every add/remove (server or
+// guest) fires `gum-cart-changed`, so any button can re-read its in-cart state.
+if (typeof window !== 'undefined') {
+  window.addEventListener('gum-cart-changed', () => { cartCache = {}; });
+}
 
 // ── Guest cart (localStorage) — lets signed-out users build a cart; merged
 //    into the server cart on login. Payment still requires login. ──

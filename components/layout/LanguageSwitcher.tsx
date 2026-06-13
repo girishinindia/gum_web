@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Globe, ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useLanguage } from './LanguageProvider';
@@ -11,8 +12,28 @@ import { useLanguage } from './LanguageProvider';
  */
 export function LanguageSwitcher({ className }: { className?: string }) {
   const { languages, active, setActive } = useLanguage();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * BUG-18 / BUG-55: changing language must also update `?language_id=<id>` so
+   * server-rendered, language-aware pages (legal/[code], faq) re-fetch in the
+   * chosen language — previously this only flipped React state, leaving the
+   * already-rendered policy/FAQ content stuck on the old language. We persist
+   * the iso (existing behaviour, drives the mega-menu via `active.id`) AND
+   * rewrite the URL, preserving the current path + other query params.
+   */
+  function chooseLanguage(iso: string, id?: number) {
+    setActive(iso);
+    setOpen(false);
+    if (id == null) return;
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
+    params.set('language_id', String(id));
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -59,7 +80,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
                 <li key={l.id ?? l.iso_code}>
                   <button
                     type="button"
-                    onClick={() => { setActive(l.iso_code); setOpen(false); }}
+                    onClick={() => chooseLanguage(l.iso_code, l.id)}
                     className={cn(
                       'group w-full flex items-center justify-between gap-4 px-4 py-2.5 text-sm transition-colors text-left',
                       isActive

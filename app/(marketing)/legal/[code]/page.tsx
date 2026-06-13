@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { LegalPage } from '@/components/ui/LegalPage';
+import { LanguageUrlSync } from '@/components/layout/LanguageUrlSync';
 import { fetchPolicy, formatPolicyDate } from '@/lib/legal';
 
 export const revalidate = 300;
@@ -33,5 +35,11 @@ export default async function LegalCodePage({ params, searchParams }: { params: 
   const langId = langOf(await searchParams);
   const p = await fetchPolicy(code.toUpperCase(), langId);
   if (!p) return notFound();
-  return <LegalPage eyebrow="Legal" title={p.title} updated={formatPolicyDate(p.updated_at)} content={p.content} contentFormat={p.content_format} />;
+  return (
+    <>
+      {/* BUG-18/55: keep the navbar language selector in sync with ?language_id= */}
+      <Suspense fallback={null}><LanguageUrlSync /></Suspense>
+      <LegalPage eyebrow="Legal" title={p.title} updated={formatPolicyDate(p.updated_at)} content={p.content} contentFormat={p.content_format} />
+    </>
+  );
 }

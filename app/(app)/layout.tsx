@@ -4,6 +4,7 @@ import { AnnouncementBar }   from '@/components/home/AnnouncementBar';
 import { SecondaryNav }      from '@/components/layout/SecondaryNav';
 import { LanguageProvider }  from '@/components/layout/LanguageProvider';
 import { RequireAuth }       from '@/components/auth/RequireAuth';
+import { PresenceConnector } from '@/components/presence/PresenceConnector';
 import { api, recentAnnouncementsCount } from '@/lib/api';
 
 /**
@@ -41,6 +42,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <LanguageProvider languages={languages}>
+      {/* BUG-31: open the /chat presence socket for any signed-in user app-wide
+          (not only on chat pages) so the admin "Online Users" stat is accurate. */}
+      <PresenceConnector />
       <AnnouncementBar />
       <Header />
       <SecondaryNav newAnnouncementsCount={newAnnouncements} />
