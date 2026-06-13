@@ -76,6 +76,8 @@ export default function TicketPage() {
   const [uploading, setUploading] = useState(false);
   // BUG-08 fix: upload failures were swallowed silently — now they're shown.
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
+  // BUG-63: optimistic "Uploading…" entries shown in the timeline while files upload.
+  const [uploadingNames, setUploadingNames] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function load() {
@@ -102,6 +104,7 @@ export default function TicketPage() {
       if (pending.length) {
         setUploading(true);
         setUploadErrors([]);
+        setUploadingNames(pending.map((f) => f.name)); // optimistic indicator
         const errors: string[] = [];
         const stillPending: File[] = [];
         for (const f of pending) {
@@ -117,6 +120,7 @@ export default function TicketPage() {
         try { setAttachments(await fetchTicketAttachments(id)); } catch { /* keep current */ }
         setPending(stillPending);
         setUploadErrors(errors);
+        setUploadingNames([]);
         setUploading(false);
       }
     } catch { /* keep text on failure */ } finally { setSending(false); }
@@ -188,6 +192,17 @@ export default function TicketPage() {
                 </div>
               );
             })}
+
+            {/* BUG-63: optimistic "Uploading…" rows so a selected file appears in the
+                conversation immediately while it uploads, then resolves to the real one. */}
+            {uploadingNames.map((n, i) => (
+              <div key={`up-${i}`} className="flex items-center gap-2 text-[12px] text-slate-400">
+                <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                <FileText className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate max-w-[220px]">{n}</span>
+                <span className="italic">Uploading…</span>
+              </div>
+            ))}
           </div>
 
           {isClosed ? (

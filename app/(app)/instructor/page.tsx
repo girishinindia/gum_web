@@ -53,7 +53,7 @@ export default function InstructorDashboard() {
   ];
 
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <Eyebrow>Instructor</Eyebrow>
       <h1 className="mt-3 heading text-3xl sm:text-4xl text-slate-900 leading-tight tracking-tight">Hi {firstName} — here&apos;s your snapshot</h1>
 

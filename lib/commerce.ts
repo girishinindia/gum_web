@@ -143,6 +143,7 @@ export interface MyEarning {
   order_amount?: number | string | null; gst_amount?: number | string | null; instructor_share?: number | string | null;
   earning_amount?: number | string | null; platform_fee?: number | string | null; earning_status?: string | null; created_at?: string;
   orders?: { id: number; order_number?: string | null } | null;
+  student?: { id: number; first_name?: string | null; last_name?: string | null; full_name?: string | null } | null;
 }
 export interface MyEarningsSummary {
   total_earnings: number; pending_earnings: number; confirmed_earnings: number; paid_earnings: number; reversed_earnings: number; gross_sales: number;

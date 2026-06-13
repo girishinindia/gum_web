@@ -65,7 +65,7 @@ export default function BankAccountsPage() {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <Eyebrow>Bank accounts</Eyebrow>

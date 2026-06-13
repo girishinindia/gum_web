@@ -77,6 +77,8 @@ export default function MobileTicketPage() {
   const [attachments, setAttachments] = useState<TicketAttachment[]>([]);
   const [pending, setPending] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  // BUG-63: optimistic "Uploading…" entries while files upload.
+  const [uploadingNames, setUploadingNames] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -101,12 +103,14 @@ export default function MobileTicketPage() {
       }
       if (pending.length) {
         setUploading(true);
+        setUploadingNames(pending.map((f) => f.name)); // optimistic indicator
         const uploaded: TicketAttachment[] = [];
         for (const f of pending) {
           try { uploaded.push(await uploadTicketAttachment(id, f, msg?.id ?? null)); } catch { /* skip */ }
         }
         if (uploaded.length) setAttachments((a) => [...a, ...uploaded]);
         setPending([]);
+        setUploadingNames([]);
         setUploading(false);
       }
     } catch { /* keep */ } finally { setSending(false); }
@@ -167,6 +171,16 @@ export default function MobileTicketPage() {
                 </div>
               );
             })}
+
+            {/* BUG-63: optimistic "Uploading…" rows for in-flight attachments */}
+            {uploadingNames.map((n, i) => (
+              <div key={`up-${i}`} className="flex items-center gap-2 text-[11px] text-slate-400">
+                <Loader2 className="h-3 w-3 animate-spin shrink-0" />
+                <FileText className="h-3 w-3 shrink-0" />
+                <span className="truncate max-w-[160px]">{n}</span>
+                <span className="italic">Uploading…</span>
+              </div>
+            ))}
           </div>
 
           {isClosed ? (

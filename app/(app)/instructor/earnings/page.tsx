@@ -48,7 +48,7 @@ export default function EarningsPage() {
   ];
 
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div>
         <Eyebrow>Earnings</Eyebrow>
         <h1 className="mt-3 heading text-3xl sm:text-4xl text-slate-900 leading-tight tracking-tight">Your earnings</h1>
@@ -122,6 +122,7 @@ export default function EarningsPage() {
             <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
               <tr>
                 <th className="text-left px-5 py-3">Order</th>
+                <th className="text-left px-5 py-3">Student</th>
                 <th className="text-left px-5 py-3">Date</th>
                 <th className="text-right px-5 py-3">Full amount</th>
                 <th className="text-right px-5 py-3">Share</th>
@@ -133,6 +134,7 @@ export default function EarningsPage() {
               {rows.map((r) => (
                 <tr key={r.id} className="hover:bg-brand-50/20">
                   <td className="px-5 py-3 font-mono text-[12px] text-slate-700">{r.orders?.order_number || `#${r.order_id}`}</td>
+                  <td className="px-5 py-3 text-slate-700">{r.student ? (r.student.full_name || [r.student.first_name, r.student.last_name].filter(Boolean).join(' ') || '—') : '—'}</td>
                   <td className="px-5 py-3 text-slate-700">{fmtDate(r.created_at)}</td>
                   <td className="px-5 py-3 text-right text-slate-700">{inr(r.order_amount)}</td>
                   <td className="px-5 py-3 text-right text-slate-600">{Number(r.instructor_share) || 0}%</td>

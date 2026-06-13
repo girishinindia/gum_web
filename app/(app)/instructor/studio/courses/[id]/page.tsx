@@ -97,20 +97,20 @@ export default function CourseBuilderPage() {
   };
 
   if (!signedIn) {
-    return <div className="max-w-7xl"><div className="mt-6 rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-600">Sign in with your instructor account to use the course builder.</div></div>;
+    return <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="mt-6 rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-600">Sign in with your instructor account to use the course builder.</div></div>;
   }
   if (loadError) {
     return (
-      <div className="max-w-7xl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link href="/instructor/studio" className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-700"><ArrowLeft className="h-4 w-4" /> Back to Studio</Link>
         <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center text-sm text-rose-700">{loadError}</div>
       </div>
     );
   }
-  if (!course) return <div className="max-w-7xl"><div className="mt-6 rounded-2xl border border-slate-100 bg-white p-10 text-center text-sm text-slate-400">Loading builder…</div></div>;
+  if (!course) return <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="mt-6 rounded-2xl border border-slate-100 bg-white p-10 text-center text-sm text-slate-400">Loading builder…</div></div>;
 
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <Link href="/instructor/studio" className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-700"><ArrowLeft className="h-4 w-4" /> Studio</Link>

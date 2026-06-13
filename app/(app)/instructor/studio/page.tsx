@@ -316,7 +316,7 @@ export default function InstructorStudioPage() {
 
   if (!signedIn) {
     return (
-      <div className="max-w-7xl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Eyebrow>Instructor</Eyebrow>
         <h1 className="mt-3 heading text-3xl text-slate-900">Studio</h1>
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-10 text-center">
@@ -330,7 +330,7 @@ export default function InstructorStudioPage() {
   const cfg = SECTIONS[tab];
 
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <Eyebrow>Instructor</Eyebrow>
       <h1 className="mt-3 heading text-3xl sm:text-4xl text-slate-900 leading-tight tracking-tight">Studio</h1>
       <p className="mt-1 text-sm text-slate-500">Create and manage everything you teach and publish — courses, batches, webinars, sessions, blog, podcasts, FAQs and promo codes.</p>
