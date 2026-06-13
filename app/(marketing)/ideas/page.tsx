@@ -59,9 +59,17 @@ export default async function IdeasShowcasePage({ searchParams }: { searchParams
                 <p className="text-[13px] text-slate-600 mt-0.5">Best ideas may get a cash reward (paid to your GUM Wallet) or a partnership opportunity. Students and instructors both can submit.</p>
               </div>
             </div>
-            <Link href="/submit-idea" className="inline-flex items-center justify-center gap-1.5 rounded-md bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-btn hover:bg-brand-700 whitespace-nowrap">
-              Submit your idea <ArrowRight className="h-4 w-4" />
-            </Link>
+            {/* BUG-75: give signed-in users a way to reach their submissions.
+                Rendered unconditionally (page is ISR/anonymous) — /my-ideas
+                lives in the (app) group and bounces to sign-in if needed. */}
+            <div className="flex items-center gap-3 shrink-0">
+              <Link href="/my-ideas" className="inline-flex items-center justify-center gap-1.5 rounded-md border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50 whitespace-nowrap">
+                <Lightbulb className="h-4 w-4" /> My Ideas
+              </Link>
+              <Link href="/submit-idea" className="inline-flex items-center justify-center gap-1.5 rounded-md bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-btn hover:bg-brand-700 whitespace-nowrap">
+                Submit your idea <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
 
           {/* Filters */}

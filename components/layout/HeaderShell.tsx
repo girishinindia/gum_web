@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import {
   GraduationCap, Menu, X, ArrowRight, UserRound, Bell,
   BookOpen, Radio, Video, Calendar, FileText, MessagesSquare, UserSquare2, Star, Megaphone,
+  Lightbulb,
   type LucideIcon,
 } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
@@ -81,6 +82,8 @@ function SECONDARY_ITEMS(
     { href: '/instructors',   label: t.secondary.instructors,   Icon: UserSquare2    },
     { href: '/reviews',       label: t.secondary.reviews,       Icon: Star           },
     { href: '/announcements', label: t.secondary.announcements, Icon: Megaphone      },
+    // BUG-75: mobile parity — the public Ideas showcase had no mobile link.
+    { href: '/ideas',         label: 'Ideas',                   Icon: Lightbulb      },
   ];
   // Hide items whose section is explicitly disabled (false). Missing keys default to visible.
   return all.filter((it) => {

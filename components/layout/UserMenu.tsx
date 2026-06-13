@@ -7,6 +7,7 @@ import {
   LayoutDashboard, BookOpen, Heart, FileText,
   ShoppingCart, Receipt, Wallet,
   UserRound, Shield, Bell, MessagesSquare, LifeBuoy, Gift,
+  Lightbulb,
   GraduationCap, TrendingUp, Send, Landmark,
   ShieldCheck, KeyRound, Mail, Phone,
   LogOut, ChevronDown,
@@ -169,6 +170,9 @@ export function UserMenu({ className }: { className?: string }) {
             <MenuLink href="/my-courses"  icon={BookOpen}        label="My Courses" onClose={() => setOpen(false)} />
             <MenuLink href="/wishlist"    icon={Heart}           label="Wishlist"   onClose={() => setOpen(false)} />
             <MenuLink href="/referrals"   icon={Gift}            label="Refer & earn" onClose={() => setOpen(false)} />
+            {/* BUG-75: surface "My Ideas" in the user menu — previously the
+                only entry to /my-ideas was the post-submit success screen. */}
+            <MenuLink href="/my-ideas"    icon={Lightbulb}       label="My Ideas"   onClose={() => setOpen(false)} />
             <MenuLink href="/resume"      icon={FileText}        label="Resume"     onClose={() => setOpen(false)} />
           </Section>
 

@@ -63,6 +63,11 @@ export const withdrawMyIdea = (id: number) => authed<any>(`/ideas/me/${id}`, { m
 export const likeIdea = (id: number) => authed<{ liked: boolean; likes_count: number }>(`/ideas/${id}/like`, { method: 'POST' });
 export const unlikeIdea = (id: number) => authed<{ liked: boolean; likes_count: number }>(`/ideas/${id}/like`, { method: 'DELETE' });
 
+// BUG-80: the public showcase is ISR/anonymous, so liked-state can't be baked
+// into the static page. Clients fetch the signed-in user's liked idea ids once
+// on mount and hydrate each LikeButton's filled/red state from the result.
+export const fetchMyLikedIdeaIds = () => authed<number[]>('/ideas/my-likes');
+
 export async function uploadIdeaAttachment(id: number, file: File): Promise<{ attachment_url: string }> {
   const tok = getAccessToken();
   const fd = new FormData();
