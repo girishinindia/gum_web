@@ -30,8 +30,10 @@ function HeaderBell() {
       className="relative h-10 w-10 inline-flex items-center justify-center rounded-sm hover:bg-brand-50 text-slate-700"
     >
       <Bell className="h-5 w-5" />
+      {/* BUG-58: align with CartBadge — same -top-1.5 -right-1.5 offset on the
+          h-10 w-10 box so the badge hugs the icon corner identically. */}
       {count > 0 && (
-        <span className="absolute top-1 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+        <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold inline-flex items-center justify-center leading-none">
           {count > 99 ? '99+' : count}
         </span>
       )}

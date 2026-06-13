@@ -39,6 +39,25 @@ function senderName(m: TicketMessage): string {
   const n = u ? `${u.first_name || ''} ${u.last_name || ''}`.trim() : '';
   return n || 'Support';
 }
+
+// BUG-63: merge messages + ticket-level attachments (message_id == null) into a
+// single timeline sorted by created_at ascending, so attachments interleave in
+// chronological order instead of being dumped in a trailing block. Message-scoped
+// attachments are excluded here — they render inline under their message.
+type TimelineEntry =
+  | { kind: 'message'; at: number; message: TicketMessage }
+  | { kind: 'attachment'; at: number; attachment: TicketAttachment };
+
+function buildTimeline(messages: TicketMessage[], attachments: TicketAttachment[]): TimelineEntry[] {
+  const ts = (d?: string | null) => (d ? new Date(d).getTime() : 0);
+  const entries: TimelineEntry[] = [
+    ...messages.map((m): TimelineEntry => ({ kind: 'message', at: ts(m.created_at), message: m })),
+    ...attachments
+      .filter((a) => a.message_id == null)
+      .map((a): TimelineEntry => ({ kind: 'attachment', at: ts(a.created_at), attachment: a })),
+  ];
+  return entries.sort((a, b) => a.at - b.at);
+}
 function fmt(d?: string | null): string {
   if (!d) return '';
   return new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -67,6 +86,8 @@ export default function TicketPage() {
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
 
   const isClosed = ticket?.ticket_status === 'closed';
+  // BUG-63: chronological message + ticket-attachment timeline.
+  const timeline = ticket ? buildTimeline(ticket.messages, attachments) : [];
 
   async function onSend() {
     if ((!reply.trim() && pending.length === 0) || sending || !id) return;
@@ -138,7 +159,19 @@ export default function TicketPage() {
             {ticket.description && (
               <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 text-sm text-slate-700">{ticket.description}</div>
             )}
-            {ticket.messages.map((m) => {
+            {/* BUG-63: render one chronological timeline. Messages and ticket-level
+                attachments (message_id == null) are merged and sorted by created_at
+                ascending; message-scoped attachments stay inline under their message. */}
+            {timeline.map((entry) => {
+              if (entry.kind === 'attachment') {
+                return (
+                  <div key={`att-${entry.attachment.id}`}>
+                    <div className="text-[11px] text-slate-500 mb-1">Attachment · {fmt(entry.attachment.created_at)}</div>
+                    <AttachmentList items={[entry.attachment]} />
+                  </div>
+                );
+              }
+              const m = entry.message;
               const mine = m.sender_type === 'user';
               const system = m.sender_type === 'system';
               if (system) {
@@ -155,12 +188,6 @@ export default function TicketPage() {
                 </div>
               );
             })}
-            {attachments.some((a) => a.message_id == null) && (
-              <div>
-                <div className="text-[11px] text-slate-500 mb-1">Attachments</div>
-                <AttachmentList items={attachments.filter((a) => a.message_id == null)} />
-              </div>
-            )}
           </div>
 
           {isClosed ? (

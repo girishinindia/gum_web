@@ -170,6 +170,9 @@ export interface Webinar {
   scheduled_at?:     string | null;
   duration_minutes?: number | null;
   is_free?:          boolean;
+  price?:            number | null; // BUG-59 — API already returns this; surfaced on the card
+  original_price?:   number | null;
+  sale_price?:       number | null;
   is_active?:        boolean;
   webinar_status?:   string | null;
   thumbnail_url?:    string | null;

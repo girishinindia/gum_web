@@ -333,6 +333,10 @@ function blogData(item: BlogPost): CardData {
 function webinarData(item: Webinar): CardData {
   const instructor = personName(item.users);
   const date = item.scheduled_at ? new Date(item.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  // BUG-59: webinar cards showed a blank price — price was hardcoded null.
+  // Mirror courseData(): format the API-provided price and surface it for
+  // paid webinars (free ones still render the "Free" pill via isFree).
+  const price = formatPrice(item.price);
   return {
     type: 'webinars',
     // Prefer the slug: SEO-friendly URL + the by-slug endpoint returns the
@@ -349,7 +353,7 @@ function webinarData(item: Webinar): CardData {
       ...(date ? [{ icon: Calendar, label: date }] : []),
       ...(item.duration_minutes ? [{ icon: Clock, label: `${item.duration_minutes}m` }] : []),
     ],
-    price: null,
+    price: item.is_free ? undefined : price, // BUG-59
     isFree: !!item.is_free,
     extraInfo: !item.is_free ? null : undefined,
     rating: null,

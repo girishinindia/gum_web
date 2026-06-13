@@ -51,7 +51,15 @@ async function getJson<T>(path: string, opts: { method?: string; body?: unknown;
   if (!res.ok || (json && json.success === false)) {
     throw new Error(json?.error || `Request failed (${res.status})`);
   }
-  return (json?.data ?? json) as T;
+  // BUG-65: when the API returns a success envelope ({ success, ... }) we must
+  // read `data` only — the old `json?.data ?? json` returned the whole truthy
+  // envelope when `data` was omitted (e.g. "no review yet"), so callers like
+  // fetchMyReview saw a falsy-looking-but-truthy object and showed "Edit Review".
+  // Treat a missing/null `data` on a success envelope as null.
+  if (json && typeof json === 'object' && 'success' in json) {
+    return (json.data ?? null) as T;
+  }
+  return json as T;
 }
 
 export function fetchItemReviews(itemType: ReviewItemType, itemId: number, opts: { limit?: number; offset?: number } = {}) {
