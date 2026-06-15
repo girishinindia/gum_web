@@ -29,7 +29,7 @@ export default function MyIdeasPage() {
 
   if (!signedIn) {
     return (
-      <div className="max-w-5xl">
+      <div className="max-w-5xl mx-auto">
         <Eyebrow>Ideas</Eyebrow>
         <h1 className="mt-3 heading text-3xl text-slate-900">My Ideas</h1>
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-10 text-center">
@@ -41,7 +41,7 @@ export default function MyIdeasPage() {
   }
 
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-5xl mx-auto">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <Eyebrow>Ideas</Eyebrow>

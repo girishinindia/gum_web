@@ -58,7 +58,7 @@ export default function SubmitIdeaPage() {
 
   if (!signedIn) {
     return (
-      <div className="max-w-3xl">
+      <div className="max-w-3xl mx-auto">
         <Eyebrow>Ideas</Eyebrow>
         <h1 className="mt-3 heading text-3xl text-slate-900">Have an idea? Submit it and get rewarded.</h1>
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-10 text-center">
@@ -71,7 +71,7 @@ export default function SubmitIdeaPage() {
 
   if (doneId) {
     return (
-      <div className="max-w-3xl">
+      <div className="max-w-3xl mx-auto">
         <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-10 text-center">
           <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
           <h1 className="mt-3 heading text-2xl text-slate-900">Idea submitted! 🎉</h1>
@@ -86,7 +86,7 @@ export default function SubmitIdeaPage() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl mx-auto">
       <Eyebrow>Ideas</Eyebrow>
       <h1 className="mt-3 heading text-3xl sm:text-4xl text-slate-900 leading-tight tracking-tight">Have an idea? <span className="text-emerald-600">Submit it and get rewarded.</span></h1>
       <p className="mt-2 text-sm text-slate-500">If your idea is selected and implemented, you may receive a cash reward (credited to your GUM Wallet), recognition on the public showcase, or a partnership opportunity.</p>
