@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ComponentType } from 'react';
 import dynamic from 'next/dynamic';
 import { X, RotateCw, Loader2 } from 'lucide-react';
+import type { CropperProps } from 'react-easy-crop';
 
 /**
  * Profile-image editor modal — Phase 43.10 rewrite.
@@ -34,6 +35,9 @@ import { X, RotateCw, Loader2 } from 'lucide-react';
 // Dynamic import keeps the cropper out of the initial profile-page
 // bundle (it pulls a small amount of touch-gesture / drag code).
 // `ssr: false` because react-easy-crop reads `window` for pinch zoom.
+// next/dynamic with ssr:false infers an empty-prop component, so TS thought
+// <Cropper> took no props (the build-time "not assignable to IntrinsicAttributes"
+// error). Cast back to react-easy-crop's real CropperProps so prop types hold.
 const Cropper = dynamic(() => import('react-easy-crop'), {
   ssr: false,
   loading: () => (
@@ -42,7 +46,7 @@ const Cropper = dynamic(() => import('react-easy-crop'), {
       Loading editor…
     </div>
   ),
-});
+}) as unknown as ComponentType<Partial<CropperProps>>;
 
 export interface ImageEditorModalProps {
   /** Source file the user just picked. Required — modal can't open without one. */
