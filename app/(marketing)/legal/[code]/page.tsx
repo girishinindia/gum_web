@@ -25,9 +25,16 @@ export async function generateMetadata({ params, searchParams }: { params: Param
   const { code } = await params;
   const langId = langOf(await searchParams);
   const p = await fetchPolicy(code.toUpperCase(), langId);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const anyP: any = p;
-  return { title: anyP?.meta_title || p?.title || 'Policy', description: anyP?.meta_description || undefined };
+  const metaTitle = p?.meta_title || p?.title || 'Policy';
+  const metaDescription = p?.meta_description || undefined;
+  return {
+    // `absolute` so a configured meta_title (which already includes the brand,
+    // e.g. "… | GrowUpMore") isn't double-suffixed by the layout title template.
+    title: p?.meta_title ? { absolute: p.meta_title } : metaTitle,
+    description: metaDescription,
+    openGraph: { title: metaTitle, description: metaDescription },
+    twitter: { title: metaTitle, description: metaDescription },
+  };
 }
 
 export default async function LegalCodePage({ params, searchParams }: { params: Params; searchParams: Search }) {

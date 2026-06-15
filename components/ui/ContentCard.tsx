@@ -272,7 +272,9 @@ function batchData(item: CourseBatch): CardData {
   const price = formatPrice(item.price);
   return {
     type: 'batches',
-    href: courseSlug ? `/courses/${courseSlug}` : undefined,
+    // A batch card must open the BATCH detail page (/batches/:slug), not the
+    // parent course. Fall back to the course only if the batch has no slug.
+    href: item.slug ? `/batches/${item.slug}` : (courseSlug ? `/courses/${courseSlug}` : undefined),
     badge: item.batch_status ? item.batch_status.replace('_', ' ') : 'Batch',
     thumbnailUrl: item.translated_thumbnail || item.courses?.trailer_thumbnail_url || null,
     category: 'Batch',

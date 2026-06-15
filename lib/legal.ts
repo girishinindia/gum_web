@@ -14,6 +14,8 @@ export interface PolicyContent {
   version?: string | null;
   effective_from?: string | null;
   updated_at?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
 }
 
 export interface FaqGroup {

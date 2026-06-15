@@ -10,7 +10,7 @@ function mobileHref(item: UnifiedItem, fallback?: string): string | undefined {
   switch (item.type) {
     case 'courses':       return d.slug ? `/m/courses/${d.slug}` : fallback;
     case 'bundles':       return d.slug ? `/m/bundles/${d.slug}` : fallback;
-    case 'batches':       return d.courses?.slug ? `/m/courses/${d.courses.slug}` : fallback;
+    case 'batches':       return d.slug ? `/batches/${d.slug}` : (d.courses?.slug ? `/m/courses/${d.courses.slug}` : fallback);
     case 'webinars':      return `/m/webinars/${item.id}`;
     case 'live_sessions': return `/m/live-sessions/${item.id}`;
     case 'podcasts':      return `/m/podcasts/${item.id}`;

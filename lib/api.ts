@@ -1091,6 +1091,7 @@ export function fetchPodcastList(params: PodcastFilterParams = {}): Promise<Pagi
 export interface CourseBatch {
   id:                  number;
   title?:              string | null;
+  slug?:               string | null;
   code?:               string | null;
   batch_status?:       string | null;
   batch_owner?:        string | null;

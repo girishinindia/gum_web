@@ -15,11 +15,12 @@ const PREF_TYPES: { type: string; label: string }[] = [
   { type: 'payout_completed',     label: 'Payout updates' },
 ];
 
-type ChannelKey = 'in_app_enabled' | 'email_enabled' | 'push_enabled';
+type ChannelKey = 'in_app_enabled' | 'email_enabled' | 'push_enabled' | 'sms_enabled';
 const CHANNELS: { key: ChannelKey; label: string }[] = [
   { key: 'in_app_enabled', label: 'In-app' },
   { key: 'email_enabled',  label: 'Email' },
   { key: 'push_enabled',   label: 'Push' },
+  { key: 'sms_enabled',    label: 'SMS' },
 ];
 
 type PrefMap = Record<string, NotificationPreference>;
