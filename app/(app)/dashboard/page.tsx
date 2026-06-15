@@ -89,6 +89,9 @@ export default function DashboardPage() {
           <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {cont.map((c, i) => {
               const pct = Math.round(c.progress_pct || 0);
+              const total = Number(c.course.total_lessons) || 0;
+              const done = total ? Math.round((pct / 100) * total) : 0;
+              const left = Math.max(total - done, 0);
               return (
                 <Link key={c.enrollment_id} href={c.course.slug ? `/courses/${c.course.slug}` : '/my-courses'} className="group block rounded-md bg-white border border-slate-200 shadow-card overflow-hidden hover:-translate-y-1 hover:shadow-cardHover transition-all">
                   <div className={`relative aspect-[16/9] bg-gradient-to-br ${COVERS[i % COVERS.length]} flex items-center justify-center overflow-hidden`}>
@@ -97,11 +100,13 @@ export default function DashboardPage() {
                   </div>
                   <div className="p-4">
                     <h3 className="heading text-base text-slate-900 group-hover:text-brand-700 transition-colors truncate">{c.course.name}</h3>
-                    {c.course.total_lessons ? <p className="mt-1 text-[11.5px] text-slate-500">{c.course.total_lessons} lessons</p> : null}
+                    {total
+                      ? <p className="mt-1 text-[11.5px] text-slate-500">{done} of {total} lessons done{left > 0 ? ` · ${left} pending` : ' · all done'}</p>
+                      : <p className="mt-1 text-[11.5px] text-slate-500">{pct > 0 ? `${pct}% complete` : 'Not started yet'}</p>}
                     <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                       <div className="h-full bg-gradient-to-r from-brand-500 to-accent rounded-full" style={{ width: `${pct}%` }} />
                     </div>
-                    <div className="mt-2 text-[11.5px] text-slate-500 flex justify-between"><span>{pct}% complete</span><span>Continue →</span></div>
+                    <div className="mt-2 text-[11.5px] text-slate-500 flex justify-between"><span>{pct}% complete</span><span className="font-semibold text-brand-700">{pct > 0 && left === 0 && total ? 'Review →' : 'Resume →'}</span></div>
                   </div>
                 </Link>
               );
@@ -140,14 +145,17 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="rounded-md bg-gradient-to-br from-brand-600 to-accent text-white p-6 shadow-cardHover overflow-hidden relative">
-          <div aria-hidden className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
-          <Target className="h-9 w-9" />
-          <h3 className="mt-4 heading text-2xl">Keep the streak</h3>
-          <p className="mt-1 text-white/85 text-sm">
-            {data ? `${data.stats.completed} completed · ${data.stats.certificates} certificate${data.stats.certificates === 1 ? '' : 's'} earned` : 'Loading your progress…'}
-          </p>
-          <ButtonLink href="/my-courses" variant="white" size="sm" className="mt-5 text-brand-700 rounded-full">Pick up where you left off</ButtonLink>
+        <div>
+          <h2 className="heading text-xl text-slate-900">Keep the streak</h2>
+          <div className="mt-4 rounded-md bg-gradient-to-br from-brand-600 to-accent text-white p-6 shadow-cardHover overflow-hidden relative">
+            <div aria-hidden className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
+            <Target className="h-9 w-9" />
+            <p className="mt-4 text-white/90 text-sm font-semibold">Stay consistent</p>
+            <p className="mt-1 text-white/85 text-sm">
+              {data ? `${data.stats.completed} completed · ${data.stats.certificates} certificate${data.stats.certificates === 1 ? '' : 's'} earned` : 'Loading your progress…'}
+            </p>
+            <ButtonLink href="/my-courses" variant="white" size="sm" className="mt-5 text-brand-700 rounded-full">Pick up where you left off</ButtonLink>
+          </div>
         </div>
       </div>
 

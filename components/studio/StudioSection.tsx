@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  StudioType, studioList, studioCreate, studioUpdate, studioDelete,
+  StudioType, studioList, studioCreate, studioUpdate, studioDelete, studioUploadImage,
   myPublishedCourses, getPromotionCourses, setPromotionCourses,
 } from '@/lib/studio';
 
@@ -18,12 +18,16 @@ import {
 export interface Field {
   name: string;
   label: string;
-  kind: 'text' | 'textarea' | 'number' | 'select' | 'datetime' | 'date' | 'checkbox' | 'course';
+  kind: 'text' | 'textarea' | 'number' | 'select' | 'datetime' | 'date' | 'checkbox' | 'course' | 'image';
   options?: { value: string; label: string }[];
   placeholder?: string;
   required?: boolean;
   half?: boolean;       // render two-per-row
   hint?: string;
+  /** Transform stored value → form value (e.g. seconds → minutes). */
+  fromApi?: (v: any) => any;
+  /** Transform form value → API value (e.g. minutes → seconds). */
+  toApi?: (v: any) => any;
 }
 
 export interface Col {
@@ -73,6 +77,7 @@ export default function StudioSection({
   const [formError, setFormError] = useState('');
   const [courses, setCourses] = useState<{ id: number; name: string }[]>([]);
   const [pickedCourses, setPickedCourses] = useState<number[]>([]);
+  const [imgUploading, setImgUploading] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -98,6 +103,7 @@ export default function StudioSection({
       if (f.kind === 'checkbox') v[f.name] = row ? !!raw : f.name === 'is_active';
       else if (f.kind === 'datetime') v[f.name] = toLocalInput(raw);
       else if (f.kind === 'date') v[f.name] = toLocalInput(raw, true);
+      else if (f.fromApi) v[f.name] = (raw == null || raw === '') ? '' : f.fromApi(raw);
       else v[f.name] = raw ?? '';
     }
     setValues(v);
@@ -121,6 +127,7 @@ export default function StudioSection({
       for (const f of fields) {
         let v = values[f.name];
         if ((f.kind === 'datetime' || f.kind === 'date') && v) v = new Date(v).toISOString();
+        if (f.toApi && v !== '' && v != null) v = f.toApi(v);
         body[f.name] = v === '' ? null : v;
       }
       const saved = editing
@@ -225,6 +232,26 @@ export default function StudioSection({
                       <input type="checkbox" checked={!!values[f.name]} onChange={e => setValues(s => ({ ...s, [f.name]: e.target.checked }))} />
                       {f.placeholder || 'Yes'}
                     </label>
+                  ) : f.kind === 'image' ? (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input type="text" className={input} placeholder={f.placeholder || 'Paste an image URL or upload →'} value={values[f.name] ?? ''} onChange={e => setValues(s => ({ ...s, [f.name]: e.target.value }))} />
+                        <label className={`shrink-0 cursor-pointer rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:border-emerald-300 hover:text-emerald-700 ${imgUploading === f.name ? 'pointer-events-none opacity-60' : ''}`}>
+                          {imgUploading === f.name ? 'Uploading…' : 'Upload'}
+                          <input type="file" accept="image/*" className="hidden" disabled={imgUploading === f.name} onChange={async e => {
+                            const file = e.target.files?.[0]; if (!file) return;
+                            setImgUploading(f.name);
+                            try { const r = await studioUploadImage(file); setValues(s => ({ ...s, [f.name]: r.url })); }
+                            catch (er: any) { setFormError(er?.message || 'Image upload failed'); }
+                            finally { setImgUploading(null); }
+                          }} />
+                        </label>
+                      </div>
+                      {values[f.name] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={values[f.name]} alt="" className="h-20 w-auto rounded-lg border border-slate-100 object-cover" />
+                      ) : null}
+                    </div>
                   ) : (
                     <input
                       type={f.kind === 'number' ? 'number' : f.kind === 'datetime' ? 'datetime-local' : f.kind === 'date' ? 'date' : 'text'}

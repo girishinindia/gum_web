@@ -132,6 +132,7 @@ export const removeMiniProject = (id: number) => call<any>(`/authoring/mini-proj
 export const uploadMiniProjectFile = (id: number, kind: 'pdf' | 'solution', file: File) => { const fd = new FormData(); fd.append('file', file, file.name); return upload<DraftProject>(`/authoring/mini-projects/${id}/file?kind=${kind}`, fd); };
 
 // Reference data for forms
-export const studioCategories = () => call<any[]>('/sub-categories?is_active=true&limit=200&sort=name&order=asc');
+export const studioCategories = () => call<any[]>('/sub-categories?is_active=true&limit=200&sort=display_order&order=asc');
 export const studioLanguages = () => call<any[]>('/languages?is_active=true&limit=50');
 export const studioBlogCategories = () => call<any[]>('/blog-categories?is_active=true&limit=100&sort=name&order=asc');
+export const studioUploadImage = (file: File) => { const fd = new FormData(); fd.append('file', file, file.name); return upload<{ url: string }>('/studio/upload-image', fd); };

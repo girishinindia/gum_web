@@ -123,6 +123,8 @@ export function register(input: {
   email:      string;
   mobile:     string;
   password:   string;
+  /** Referral code from a `/signup?ref=CODE` link — attributes the signup. */
+  referral_code?: string;
   /**
    * UI hint, NOT persisted by /auth/register. The role chosen here is
    * stashed by the signup page in component state, then sent to

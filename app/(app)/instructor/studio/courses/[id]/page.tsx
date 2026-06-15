@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
   ArrowLeft, CheckCircle2, AlertTriangle, UploadCloud, Trash2, PlayCircle,
-  Plus, FileText, Send, Loader2, FolderPlus, ListPlus, Pencil,
+  Plus, FileText, Send, Loader2, FolderPlus, ListPlus, Pencil, Download,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Chip } from '@/components/studio/StudioSection';
@@ -29,6 +29,8 @@ import {
   studioCategories, studioLanguages,
   type DraftCourse, type DraftUnit, type DraftHighlight, type DraftFaq, type DraftProject, type UnitFileKind,
 } from '@/lib/studio';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { usePromptModal } from '@/components/ui/PromptModal';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -184,8 +186,12 @@ function BasicsTab({ course, editable, onSaved }: { course: DraftCourse; editabl
     });
   }, [course]);
   useEffect(() => {
-    studioCategories().then(setCats).catch(() => setCats([]));
-    studioLanguages().then(setLangs).catch(() => setLangs([]));
+    studioCategories()
+      .then((list: any[]) => setCats((list || []).slice().sort((a, b) => String(a.english_name || a.name || a.slug || '').localeCompare(String(b.english_name || b.name || b.slug || '')))))
+      .catch(() => setCats([]));
+    studioLanguages()
+      .then((list: any[]) => setLangs((list || []).filter((l: any) => l.is_active !== false)))
+      .catch(() => setLangs([]));
   }, []);
 
   const set = (k: string, v: any) => setF((s: any) => ({ ...s, [k]: v }));
@@ -221,10 +227,18 @@ function BasicsTab({ course, editable, onSaved }: { course: DraftCourse; editabl
               {LEVELS.map(l => <option key={l} value={l}>{l[0].toUpperCase() + l.slice(1)}</option>)}
             </select></div>
           <div><label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Category</label>
-            <select className={input} value={f.category_id ?? ''} onChange={e => set('category_id', e.target.value)} disabled={!editable}>
-              <option value="">— select —</option>
-              {cats.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select></div>
+            <SearchableSelect
+              value={f.category_id != null && f.category_id !== '' ? String(f.category_id) : ''}
+              onChange={(v) => set('category_id', v)}
+              options={cats}
+              getValue={(c: any) => String(c.id)}
+              getLabel={(c: any) => c.english_name || c.name || c.slug || `#${c.id}`}
+              getSublabel={(c: any) => c.category_name || (c.categories?.slug ? String(c.categories.slug).toUpperCase() : null)}
+              placeholder="— select —"
+              searchPlaceholder="Search category…"
+              emptyText="No categories"
+              disabled={!editable}
+            /></div>
           <div><label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Language</label>
             <select className={input} value={f.language_id ?? ''} onChange={e => set('language_id', e.target.value)} disabled={!editable}>
               <option value="">— select —</option>
@@ -336,8 +350,15 @@ function HighlightsTab({ courseId, editable, onChange }: { courseId: number; edi
 function CurriculumTab({ courseId, editable, onChange }: { courseId: number; editable: boolean; onChange: () => void }) {
   const [units, setUnits] = useState<DraftUnit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<number | 'import' | null>(null);
+  // Per-field busy map keyed by `${unitId}:${kind}` (or 'import') so each upload
+  // spins independently — uploading one PDF no longer blocks the other fields,
+  // and several files can upload in parallel.
+  const [busy, setBusy] = useState<Record<string, boolean>>({});
+  const isBusy = (k: string) => !!busy[k];
+  const startBusy = (k: string) => setBusy(p => ({ ...p, [k]: true }));
+  const endBusy = (k: string) => setBusy(p => { const n = { ...p }; delete n[k]; return n; });
   const [openTopic, setOpenTopic] = useState<number | null>(null);
+  const { ask, modal } = usePromptModal();
 
   const load = useCallback(() => {
     setLoading(true);
@@ -355,31 +376,101 @@ function CurriculumTab({ courseId, editable, onChange }: { courseId: number; edi
     }));
   }, [units]);
 
-  const refresh = () => { load(); onChange(); };
+  // Silent re-fetch (no full-tree loading skeleton) so an open topic stays open
+  // and in-progress uploads in other fields aren't interrupted.
+  const refresh = () => { listUnits(courseId).then(setUnits).catch(() => {}); onChange(); };
   const addUnit = async (unit_type: 'module' | 'chapter' | 'topic', parent: number | null) => {
-    const title = window.prompt(`New ${unit_type} title:`);
-    if (!title?.trim()) return;
-    try { await createUnit({ authoring_course_id: courseId, unit_type, parent_unit_id: parent, title: title.trim() }); refresh(); }
+    const label = unit_type[0].toUpperCase() + unit_type.slice(1);
+    const title = await ask({ title: `Add ${unit_type}`, label: `${label} title`, placeholder: `Enter the ${unit_type} title`, confirmText: 'Add', maxLength: 200 });
+    if (!title) return;
+    try { await createUnit({ authoring_course_id: courseId, unit_type, parent_unit_id: parent, title }); refresh(); }
     catch (e: any) { window.alert(e?.message || 'Failed'); }
   };
   const rename = async (u: DraftUnit) => {
-    const title = window.prompt('Title:', u.title);
-    if (!title?.trim() || title === u.title) return;
-    try { await updateUnit(u.id, { title: title.trim() }); refresh(); } catch (e: any) { window.alert(e?.message || 'Failed'); }
+    const title = await ask({ title: `Rename ${u.unit_type}`, label: 'Title', initial: u.title, confirmText: 'Save', maxLength: 200 });
+    if (!title || title === u.title) return;
+    try { await updateUnit(u.id, { title }); refresh(); } catch (e: any) { window.alert(e?.message || 'Failed'); }
   };
   const remove = async (u: DraftUnit) => {
     if (!window.confirm(`Delete "${u.title}"${u.unit_type !== 'topic' ? ' and everything inside it' : ''}?`)) return;
     try { await deleteUnit(u.id); refresh(); } catch (e: any) { window.alert(e?.message || 'Failed'); }
   };
+  // Downloadable example so instructors see the exact .txt format the importer
+  // accepts (same parser as the admin panel — [COURSE]/[HIGHLIGHTS]/[FAQ]/[CURRICULUM]).
+  const downloadSample = () => {
+    const sample = `# Sample course-structure import for GrowUpMore
+# All sections are optional — include only what you need.
+# Lines starting with # are comments (ignored).
+
+[COURSE]
+title: Introduction to Web Development
+subtitle: Build modern websites from scratch
+short_intro: Learn HTML, CSS, and JavaScript step by step
+level: beginner
+price: 499
+original_price: 999
+is_free: false
+has_certificate: true
+
+[HIGHLIGHTS]
+# Format -> kind: text   (kinds: prerequisite, outcome, skill, audience, requirement)
+prerequisite: Basic computer literacy
+outcome: Build responsive websites from scratch
+skill: HTML5
+audience: Aspiring web developers
+requirement: A code editor (VS Code recommended)
+
+[FAQ]
+Q: Do I need programming experience?
+A: No! This course starts from the very basics.
+Q: Will I get a certificate?
+A: Yes, on completing all modules and the final project.
+
+[CURRICULUM]
+# Indent with TABS: 0 tabs = Module, 1 tab = Chapter, 2 tabs = Topic | type
+# Topic types: video, article, quiz, exercise, project
+# Optional lines under a topic: summary, is_free_preview, points, youtube_url
+
+Introduction to Web Development
+\tsummary: Learn the fundamentals of building websites
+\tHTML Fundamentals
+\t\tsummary: Core HTML concepts and document structure
+\t\tWhat is HTML | video
+\t\t\tsummary: Overview of the HTML markup language
+\t\t\tis_free_preview: true
+\t\tHTML Document Structure | article
+\t\t\tsummary: DOCTYPE, head, and body explained
+\t\tHTML Tags Practice | exercise
+\t\t\tpoints: 10
+\tCSS Styling
+\t\tCSS Selectors and Properties | video
+\t\t\tis_free_preview: true
+\t\tBox Model Deep Dive | article
+JavaScript Essentials
+\tVariables and Data Types
+\t\tUnderstanding Variables | video
+\t\t\tis_free_preview: true
+\t\tData Types Explained | article
+`;
+    const blob = new Blob([sample], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'sample_course_import.txt'; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div>
+      {modal}
       {editable ? (
         <div className="mb-5 flex flex-wrap items-center gap-2">
           <button onClick={() => addUnit('module', null)} className={`${btn} inline-flex items-center gap-1.5`}><FolderPlus className="h-4 w-4" /> Add module</button>
-          <FileButton label="Import structure (.txt)" accept=".txt,text/plain" busy={busyId === 'import'}
-            onPick={async f => { setBusyId('import'); try { await importStructure(courseId, f); refresh(); } catch (e: any) { window.alert(e?.message || 'Import failed'); } finally { setBusyId(null); } }} />
-          <span className="text-[11px] text-slate-400">Tree: Module → Chapter → Topic. Each topic holds the video + PDFs.</span>
+          <FileButton label="Import structure (.txt)" accept=".txt,text/plain" busy={isBusy('import')}
+            onPick={async f => { startBusy('import'); try { await importStructure(courseId, f); refresh(); } catch (e: any) { window.alert(e?.message || 'Import failed'); } finally { endBusy('import'); } }} />
+          <button type="button" onClick={downloadSample} className={`${btnGhost} inline-flex items-center gap-1.5`} title="Download a ready-made example .txt — edit it, then import">
+            <Download className="h-3.5 w-3.5" /> Sample .txt
+          </button>
+          <span className="text-[11px] text-slate-400">New to the format? Download the sample, edit it, then import. Indent with tabs: Module → Chapter → Topic | type.</span>
         </div>
       ) : null}
 
@@ -443,9 +534,9 @@ function CurriculumTab({ courseId, editable, onChange }: { courseId: number; edi
                                   ) : t.youtube_url ? <span className="text-[11px] text-slate-500">YouTube: {t.youtube_url}</span> : <span className="text-[11px] text-slate-400">none</span>}
                                   {editable ? (
                                     <>
-                                      <FileButton label={t.video ? 'Replace video' : 'Upload video'} accept="video/*" busy={busyId === t.id}
-                                        onPick={async f => { setBusyId(t.id); try { await uploadUnitVideo(t.id, f); refresh(); } catch (e: any) { window.alert(e?.message || 'Upload failed'); } finally { setBusyId(null); } }} />
-                                      <button className={btnGhost} onClick={async () => { const y = window.prompt('YouTube URL (blank to clear):', t.youtube_url || ''); if (y === null) return; try { await updateUnit(t.id, { youtube_url: y.trim() || null }); refresh(); } catch (e: any) { window.alert(e?.message || 'Failed'); } }}>YouTube link</button>
+                                      <FileButton label={t.video ? 'Replace video' : 'Upload video'} accept="video/*" busy={isBusy(`${t.id}:video`)}
+                                        onPick={async f => { startBusy(`${t.id}:video`); try { await uploadUnitVideo(t.id, f); refresh(); } catch (e: any) { window.alert(e?.message || 'Upload failed'); } finally { endBusy(`${t.id}:video`); } }} />
+                                      <button className={btnGhost} onClick={async () => { const y = await ask({ title: 'YouTube link', label: 'YouTube URL', description: 'Leave blank to remove the linked video.', initial: t.youtube_url || '', placeholder: 'https://youtube.com/watch?v=…', required: false, confirmText: 'Save', maxLength: 500, validate: (v) => (v && !/^https?:\/\//i.test(v)) ? 'Enter a full URL starting with https://' : null }); if (y === null) return; try { await updateUnit(t.id, { youtube_url: y.trim() || null }); refresh(); } catch (e: any) { window.alert(e?.message || 'Failed'); } }}>YouTube link</button>
                                       <label className="ml-auto flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
                                         <input type="checkbox" checked={!!t.is_free_preview} onChange={async e => { try { await updateUnit(t.id, { is_free_preview: e.target.checked }); refresh(); } catch (er: any) { window.alert(er?.message || 'Failed'); } }} /> Free preview
                                       </label>
@@ -459,8 +550,8 @@ function CurriculumTab({ courseId, editable, onChange }: { courseId: number; edi
                                       <span className="flex items-center gap-1.5 text-[11px] text-slate-600"><FileText className="h-3 w-3 text-slate-300" /> {slot.label}{(t as any)[slot.col] ? <span className="text-emerald-600">✓</span> : null}</span>
                                       {editable ? (
                                         <span className="flex gap-1">
-                                          <FileButton label={(t as any)[slot.col] ? 'Replace' : 'Upload'} accept=".pdf,.zip,.doc,.docx,application/pdf" busy={busyId === t.id}
-                                            onPick={async f => { setBusyId(t.id); try { await uploadUnitFile(t.id, slot.kind, f); refresh(); } catch (e: any) { window.alert(e?.message || 'Upload failed'); } finally { setBusyId(null); } }} />
+                                          <FileButton label={(t as any)[slot.col] ? 'Replace' : 'Upload'} accept=".pdf,.zip,.doc,.docx,application/pdf" busy={isBusy(`${t.id}:${slot.kind}`)}
+                                            onPick={async f => { startBusy(`${t.id}:${slot.kind}`); try { await uploadUnitFile(t.id, slot.kind, f); refresh(); } catch (e: any) { window.alert(e?.message || 'Upload failed'); } finally { endBusy(`${t.id}:${slot.kind}`); } }} />
                                           {(t as any)[slot.col] ? <button className={`${btnGhost} text-rose-500`} onClick={async () => { try { await removeUnitFile(t.id, slot.kind); refresh(); } catch (e: any) { window.alert(e?.message || 'Failed'); } }} aria-label="Remove file"><Trash2 className="h-3 w-3" /></button> : null}
                                         </span>
                                       ) : (t as any)[slot.col] ? <a href={(t as any)[slot.col]} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-emerald-600">open</a> : null}
@@ -490,6 +581,8 @@ function ProjectsTab({ courseId, editable, mini, onChange }: { courseId: number;
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [git, setGit] = useState('');
+  const [unitId, setUnitId] = useState('');
+  const [units, setUnits] = useState<DraftUnit[]>([]);
   const [busy, setBusy] = useState<number | 0 | null>(null);
   const label = mini ? 'mini project' : 'capstone project';
 
@@ -497,14 +590,30 @@ function ProjectsTab({ courseId, editable, mini, onChange }: { courseId: number;
     (mini ? listMiniProjects(courseId) : listCapstones(courseId)).then(setItems).catch(() => setItems([]));
   }, [courseId, mini]);
   useEffect(() => { load(); }, [load]);
+  // Mini projects must attach to a module or chapter — load them for the picker.
+  useEffect(() => { if (mini) listUnits(courseId).then(setUnits).catch(() => setUnits([])); }, [mini, courseId]);
+  const unitOptions = useMemo(() => {
+    const mods = units.filter(u => u.unit_type === 'module').sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0) || a.id - b.id);
+    const out: { id: number; label: string }[] = [];
+    for (const m of mods) {
+      out.push({ id: m.id, label: `Module: ${m.title}` });
+      units.filter(u => u.unit_type === 'chapter' && u.parent_unit_id === m.id)
+        .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0) || a.id - b.id)
+        .forEach(c => out.push({ id: c.id, label: `    ${m.title} › ${c.title}` }));
+    }
+    return out;
+  }, [units]);
+  const unitLabel = (id?: number | null) => unitOptions.find(o => o.id === id)?.label?.trim() || null;
 
   const add = async () => {
     if (!title.trim()) return;
+    if (mini && !unitId) { window.alert('Choose the module or chapter this mini project belongs to.'); return; }
     setBusy(0);
     try {
-      const body = { authoring_course_id: courseId, title: title.trim(), description: desc.trim() || null, solution_github_url: git.trim() || null };
+      const body: any = { authoring_course_id: courseId, title: title.trim(), description: desc.trim() || null, solution_github_url: git.trim() || null };
+      if (mini) body.unit_id = Number(unitId);
       await (mini ? createMiniProject(body) : createCapstone(body));
-      setTitle(''); setDesc(''); setGit(''); load(); onChange();
+      setTitle(''); setDesc(''); setGit(''); setUnitId(''); load(); onChange();
     } catch (e: any) { window.alert(e?.message || 'Failed'); }
     finally { setBusy(null); }
   };
@@ -517,9 +626,16 @@ function ProjectsTab({ courseId, editable, mini, onChange }: { courseId: number;
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <input className={input} placeholder="Title *" value={title} onChange={e => setTitle(e.target.value)} />
             <input className={input} placeholder="Solution GitHub URL (optional)" value={git} onChange={e => setGit(e.target.value)} />
+            {mini ? (
+              <select className={`${input} sm:col-span-2`} value={unitId} onChange={e => setUnitId(e.target.value)}>
+                <option value="">Attach to module / chapter *</option>
+                {unitOptions.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            ) : null}
             <textarea rows={2} className={`${input} sm:col-span-2`} placeholder="Description" value={desc} onChange={e => setDesc(e.target.value)} />
           </div>
-          <button onClick={add} disabled={busy === 0 || !title.trim()} className={`${btn} mt-3`}>{busy === 0 ? 'Adding…' : `Add ${label}`}</button>
+          {mini ? <p className="mt-2 text-[11px] text-slate-400">Mini projects attach to a specific module or chapter.{unitOptions.length === 0 ? ' Add a module or chapter first.' : ''}</p> : null}
+          <button onClick={add} disabled={busy === 0 || !title.trim() || (mini && !unitId)} className={`${btn} mt-3`}>{busy === 0 ? 'Adding…' : `Add ${label}`}</button>
         </div>
       ) : null}
 
@@ -530,6 +646,7 @@ function ProjectsTab({ courseId, editable, mini, onChange }: { courseId: number;
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h4 className="truncate text-sm font-bold text-slate-900">{p.title}</h4>
+                  {mini && unitLabel(p.unit_id) ? <p className="mt-0.5 truncate text-[11px] font-semibold text-emerald-600">{unitLabel(p.unit_id)}</p> : null}
                   {p.description ? <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{p.description}</p> : null}
                 </div>
                 {editable ? <button onClick={async () => { if (window.confirm('Delete this project?')) { try { await (mini ? removeMiniProject(p.id) : removeCapstone(p.id)); load(); onChange(); } catch (e: any) { window.alert(e?.message || 'Failed'); } } }} className="text-slate-300 hover:text-rose-500" aria-label="Delete"><Trash2 className="h-4 w-4" /></button> : null}

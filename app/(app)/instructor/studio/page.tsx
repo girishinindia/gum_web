@@ -247,8 +247,8 @@ const SECTIONS: Record<string, { singular: string; fields: Field[]; columns: Col
       { name: 'short_summary', label: 'Short summary', kind: 'text' },
       { name: 'description', label: 'Description', kind: 'textarea' },
       { name: 'youtube_url', label: 'YouTube URL', kind: 'text', hint: 'Paste the episode link' },
-      { name: 'thumbnail_url', label: 'Thumbnail URL', kind: 'text' },
-      { name: 'duration_seconds', label: 'Duration (seconds)', kind: 'number', half: true },
+      { name: 'thumbnail_url', label: 'Thumbnail', kind: 'image', placeholder: 'Paste an image URL or upload' },
+      { name: 'duration_seconds', label: 'Duration (minutes)', kind: 'number', half: true, fromApi: (s: any) => Math.round(Number(s || 0) / 60) || '', toApi: (m: any) => Math.round(Number(m) * 60) },
       { name: 'is_active', label: 'Active', kind: 'checkbox', half: true },
     ],
     columns: [

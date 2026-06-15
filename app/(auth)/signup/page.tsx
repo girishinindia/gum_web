@@ -99,6 +99,7 @@ function SignupInner() {
         mobile:     mobile.trim(),  // 10-digit; server normalizes to +91…
         password,
         role,
+        referral_code: (params.get('ref') || '').trim().toUpperCase() || undefined,
       });
       const qs = new URLSearchParams({ pid: r.pending_id, email: r.email, mobile: r.mobile, role });
       router.push(`/verify-email?${qs.toString()}`);
