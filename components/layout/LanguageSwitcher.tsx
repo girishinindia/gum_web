@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Globe, ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -10,7 +10,21 @@ import { useLanguage } from './LanguageProvider';
  * Header language switcher — now driven by <LanguageProvider> so the mega-menu
  * and any other section can react to language changes.
  */
+/**
+ * Public wrapper — the inner component reads `useSearchParams`, which Next.js
+ * requires to sit under a <Suspense> boundary or the production build bails out
+ * ("useSearchParams() should be wrapped in a suspense boundary"). Wrapping here
+ * means every call site (the shared HeaderShell, etc.) is safe automatically.
+ */
 export function LanguageSwitcher({ className }: { className?: string }) {
+  return (
+    <Suspense fallback={null}>
+      <LanguageSwitcherInner className={className} />
+    </Suspense>
+  );
+}
+
+function LanguageSwitcherInner({ className }: { className?: string }) {
   const { languages, active, setActive } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();

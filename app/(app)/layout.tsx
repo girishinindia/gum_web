@@ -7,6 +7,12 @@ import { RequireAuth }       from '@/components/auth/RequireAuth';
 import { PresenceConnector } from '@/components/presence/PresenceConnector';
 import { api, recentAnnouncementsCount } from '@/lib/api';
 
+// The (app) group is auth-gated and per-user — it must never be statically
+// prerendered. Forcing dynamic rendering also stops the build-time
+// "useSearchParams() should be wrapped in a Suspense boundary" bailout that
+// failed the /cart export (the shared chrome uses search params at runtime).
+export const dynamic = 'force-dynamic';
+
 /**
  * App layout — wraps the authenticated `(app)` route group (dashboard,
  * my-courses, wishlist, profile, etc.) in **the same chrome the rest
