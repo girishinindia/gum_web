@@ -726,8 +726,8 @@ export const api = {
   upcomingWebinars: (limit = 4) =>
     request<Webinar[]>(`/webinars?is_active=true&exclude_webinar_status=draft&limit=${limit}&sort=scheduled_at&order=asc`, { revalidate: 300 }),
   /** Published, unexpired announcements — pinned first (public /announcements page). */
-  announcements: (limit = 50) =>
-    request<Announcement[]>(`/public-content/announcements?limit=${limit}`, { revalidate: 120 }),
+  announcements: (limit = 50, audience?: string) =>
+    request<Announcement[]>(`/public-content/announcements?limit=${limit}${audience ? `&audience=${audience}` : ''}`, { revalidate: 120 }),
 
   /** Featured bundles (for "Bundles & Savings" section). */
   featuredBundles: (limit = 3) =>
