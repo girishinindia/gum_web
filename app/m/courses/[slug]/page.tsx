@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
-import { Star, Users, Clock, PlayCircle, CheckCircle2, Award, BookOpen, Globe, ChevronRight, Share2, FileText } from 'lucide-react';
+import { Star, Users, Clock, PlayCircle, CheckCircle2, Award, BookOpen, Globe, ChevronRight, FileText } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
+import { MobileShareButton } from '@/components/mobile/MobileShareButton';
 import { TrailerPlayButton } from '@/components/course/TrailerPlayButton';
 import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
 import { Reviews } from '@/components/reviews/Reviews';
@@ -38,7 +39,7 @@ export default async function MobileCourseDetail({ params }: { params: Promise<{
       <MobilePageHeader
         title={title}
         subtitle="Course details"
-        action={<span className="h-9 w-9 inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700"><Share2 className="h-4 w-4" /></span>}
+        action={<MobileShareButton title={title} />}
       />
 
       <div className="px-3">

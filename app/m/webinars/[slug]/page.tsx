@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
-import { Calendar, Clock, Radio, User, Share2, Bell } from 'lucide-react';
+import { Calendar, Clock, Radio, User, Bell } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
+import { MobileShareButton } from '@/components/mobile/MobileShareButton';
 import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
 import { Reviews } from '@/components/reviews/Reviews';
 import { api } from '@/lib/api';
@@ -25,7 +26,7 @@ export default async function MobileWebinarDetail({ params }: { params: Promise<
 
   return (
     <div>
-      <MobilePageHeader title={title} subtitle="Webinar" action={<span className="h-9 w-9 inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700"><Share2 className="h-4 w-4" /></span>} />
+      <MobilePageHeader title={title} subtitle="Webinar" action={<MobileShareButton title={title} />} />
 
       <div className="px-3">
         <div className="relative aspect-video rounded-md overflow-hidden bg-gradient-to-br from-sky-600 via-brand-600 to-indigo-500 flex items-center justify-center">

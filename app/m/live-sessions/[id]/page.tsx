@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
-import { Calendar, Clock, Radio, User, Video, Share2 } from 'lucide-react';
+import { Calendar, Clock, Radio, User, Video } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
+import { MobileShareButton } from '@/components/mobile/MobileShareButton';
 import { MobileDetailBar } from '@/components/mobile/MobileDetailBar';
 import { Reviews } from '@/components/reviews/Reviews';
 import { api } from '@/lib/api';
@@ -28,7 +29,7 @@ export default async function MobileLiveSessionDetail({ params }: { params: Prom
 
   return (
     <div>
-      <MobilePageHeader title={s.title} subtitle="Live session" action={<span className="h-9 w-9 inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700"><Share2 className="h-4 w-4" /></span>} />
+      <MobilePageHeader title={s.title} subtitle="Live session" action={<MobileShareButton title={s.title} />} />
 
       <div className="px-3">
         <div className="relative aspect-video rounded-md overflow-hidden bg-gradient-to-br from-orange-600 via-brand-600 to-rose-500 flex items-center justify-center">
