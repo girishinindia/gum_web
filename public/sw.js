@@ -29,7 +29,9 @@ self.addEventListener('push', (event) => {
     body:  payload.body  || '',
     icon:  payload.icon  || '/icons/notification.png',
     badge: payload.badge || '/icons/badge.png',
-    tag:   payload.tag,
+    // `renotify` REQUIRES a non-empty tag, else the browser throws and the
+    // notification never shows. Always provide a tag fallback.
+    tag:   payload.tag || 'gum-notification',
     data: { url: payload.url || '/', ...(payload.data || {}) },
     renotify: true,
     requireInteraction: false,

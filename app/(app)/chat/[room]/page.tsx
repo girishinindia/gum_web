@@ -28,6 +28,7 @@ export default function ChatRoomPage() {
   const [error, setError] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Record<number, string>>({});
   const [reactionFor, setReactionFor] = useState<number | null>(null);
+  const [closed, setClosed] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -50,6 +51,8 @@ export default function ChatRoomPage() {
       if (!alive) return;
       setRoom(r);
       setMessages([...page.items].reverse()); // API returns newest-first
+      // A deleted/inactive room now 404s → fetchRoom returns null.
+      setClosed(r ? null : 'This conversation is no longer available.');
       setLoading(false);
       scrollToBottom(false);
     });
@@ -104,12 +107,19 @@ export default function ChatRoomPage() {
       }));
     };
 
+    // Room soft-deleted / deactivated while viewing → lock it down.
+    const onRoomClosed = (p: { roomId: number; reason?: string | null }) => {
+      if (p.roomId !== roomId) return;
+      setClosed(p.reason || 'This conversation has been closed.');
+    };
+
     socket.on('new_message', onNew);
     socket.on('message_deleted', onDeleted);
     socket.on('message_edited', onEdited);
     socket.on('user_typing', onTyping);
     socket.on('reaction_added', onReactionAdded);
     socket.on('reaction_removed', onReactionRemoved);
+    socket.on('room_closed', onRoomClosed);
 
     return () => {
       socket.emit('leave_room', { roomId });
@@ -120,6 +130,7 @@ export default function ChatRoomPage() {
       socket.off('user_typing', onTyping);
       socket.off('reaction_added', onReactionAdded);
       socket.off('reaction_removed', onReactionRemoved);
+      socket.off('room_closed', onRoomClosed);
     };
   }, [socket, roomId, me, scrollToBottom]);
 
@@ -226,6 +237,11 @@ export default function ChatRoomPage() {
         <div ref={scrollRef} className="flex-1 p-5 overflow-y-auto space-y-3">
           {loading ? (
             <div className="flex items-center justify-center h-full text-slate-400"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          ) : closed ? (
+            <div className="flex flex-col items-center justify-center h-full text-center gap-3 px-6">
+              <div className="text-sm text-slate-500">{closed}</div>
+              <Link href="/chat" className="text-sm text-brand-600 hover:text-brand-700 font-medium">Back to conversations</Link>
+            </div>
           ) : messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-sm text-slate-400">No messages yet — say hello 👋</div>
           ) : (
@@ -334,7 +350,7 @@ export default function ChatRoomPage() {
           <input ref={fileRef} type="file" className="hidden" onChange={onPickFile} />
           <button
             onClick={() => fileRef.current?.click()}
-            disabled={sending}
+            disabled={sending || !!closed}
             className="h-9 w-9 rounded-full hover:bg-brand-50 text-slate-500 hover:text-brand-700 flex items-center justify-center disabled:opacity-50"
             aria-label="Attach a file"
           >
@@ -344,13 +360,13 @@ export default function ChatRoomPage() {
             value={text}
             onChange={(e) => onChangeText(e.target.value)}
             onKeyDown={onKeyDown}
-            disabled={sending}
+            disabled={sending || !!closed}
             className="flex-1 rounded-full bg-slate-50 border border-slate-200 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400 disabled:opacity-60"
-            placeholder="Type a message…"
+            placeholder={closed ? 'Conversation closed' : 'Type a message…'}
           />
           <button
             onClick={send}
-            disabled={sending || !text.trim()}
+            disabled={sending || !!closed || !text.trim()}
             className="h-10 w-10 rounded-full bg-brand-500 text-white shadow-btn flex items-center justify-center hover:shadow-btnHover disabled:opacity-50"
             aria-label="Send"
           >
