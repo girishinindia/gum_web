@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BookOpen, Radio, Video, Calendar, FileText, MessagesSquare, UserSquare2, Star,
-  Megaphone, Lightbulb,
+  Megaphone, Lightbulb, Mic,
   type LucideIcon,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n/useT';
@@ -19,6 +19,7 @@ const HREF_TO_SECTION: Record<string, string> = {
   '/webinars':      'webinars',
   '/live-sessions': 'live_sessions',
   '/batches':       'live_classes',
+  '/podcasts':      'podcasts',
   '/blog':          'blogs',
   '/discussion':    'discussions',
   '/instructors':   'instructors',
@@ -49,6 +50,7 @@ export function SecondaryNav({ newAnnouncementsCount = 0, sectionVisibility = {}
     { href: '/webinars',       label: t.secondary.webinars,      Icon: Radio          },
     { href: '/live-sessions',  label: t.secondary.liveSessions,  Icon: Video          },
     { href: '/batches',        label: t.secondary.batches,       Icon: Calendar       },
+    { href: '/podcasts',       label: 'Podcasts',                Icon: Mic            },
     { href: '/blog',           label: t.secondary.blogs,         Icon: FileText       },
     { href: '/discussion',     label: t.secondary.discussion,    Icon: MessagesSquare },
     { href: '/instructors',    label: t.secondary.instructors,   Icon: UserSquare2    },
