@@ -64,9 +64,20 @@ export interface ChatRoom {
   member_count?: number;
   last_message?: ChatMessage | null;
   unread_count?: number;
+  /** Room creator (owner) — used to gate pin/unpin. */
+  created_by?: number | null;
   /** Resolved display fields from /chat-rooms/mine (DM → the other participant). */
   display_name?: string | null;
   display_avatar?: string | null;
+}
+
+export interface ChatReadReceipt {
+  id?: number;
+  room_id: number;
+  user_id: number;
+  last_read_message_id: number | null;
+  read_at?: string | null;
+  users?: ChatUserLite | null;
 }
 
 // ── Auth headers ────────────────────────────────────────────────────────────
@@ -126,6 +137,36 @@ export async function fetchRoomMessages(roomId: number, page = 1, limit = 40): P
     };
   } catch {
     return empty;
+  }
+}
+
+/** Pinned messages for a room (newest-first), mirrors GET /chat-messages/room/:id/pinned. */
+export async function fetchPinned(roomId: number): Promise<ChatMessage[]> {
+  try {
+    const res = await fetch(`${apiBase()}/chat-messages/room/${roomId}/pinned`, {
+      headers: authHeaders(),
+      cache: 'no-store',
+    });
+    if (!res.ok) return [];
+    const j = await res.json();
+    return (j?.data ?? []) as ChatMessage[];
+  } catch {
+    return [];
+  }
+}
+
+/** Read receipts for a room (newest-first), mirrors GET /chat-read-receipts/room/:id. */
+export async function fetchReadReceipts(roomId: number): Promise<ChatReadReceipt[]> {
+  try {
+    const res = await fetch(`${apiBase()}/chat-read-receipts/room/${roomId}`, {
+      headers: authHeaders(),
+      cache: 'no-store',
+    });
+    if (!res.ok) return [];
+    const j = await res.json();
+    return (j?.data ?? []) as ChatReadReceipt[];
+  } catch {
+    return [];
   }
 }
 
