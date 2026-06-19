@@ -286,7 +286,7 @@ function batchData(item: CourseBatch): CardData {
     ],
     price: item.is_free ? undefined : price,
     isFree: !!item.is_free,
-    rating: null,
+    rating: item.rating_average,
   };
 }
 
