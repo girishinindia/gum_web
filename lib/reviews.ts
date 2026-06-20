@@ -86,3 +86,16 @@ export function deleteMyReview(itemType: ReviewItemType, itemId: number) {
   const qs = new URLSearchParams({ item_type: itemType, item_id: String(itemId) });
   return getJson(`/public-reviews/mine?${qs.toString()}`, { method: 'DELETE', auth: true });
 }
+
+export interface HelpfulResult { review_id: number; helpful_count: number; viewer_has_voted: boolean; }
+
+/** Toggle the signed-in user's "helpful" vote on a review. */
+export function markHelpful(reviewId: number) {
+  return getJson<HelpfulResult>('/public-reviews/helpful', { method: 'POST', auth: true, body: { review_id: reviewId } });
+}
+
+/** Review ids the signed-in user has marked helpful for an item (to pre-fill button state). */
+export function fetchMyHelpful(itemType: ReviewItemType, itemId: number) {
+  const qs = new URLSearchParams({ item_type: itemType, item_id: String(itemId) });
+  return getJson<number[]>(`/public-reviews/my-helpful?${qs.toString()}`, { auth: true });
+}

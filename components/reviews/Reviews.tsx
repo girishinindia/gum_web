@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Star, ThumbsUp, BadgeCheck, Loader2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import {
-  fetchItemReviews, fetchMyReview, submitReview,
+  fetchItemReviews, fetchMyReview, submitReview, markHelpful, fetchMyHelpful,
   type ReviewItemType, type PublicReview, type ReviewSummary, type MyReview,
 } from '@/lib/reviews';
 
@@ -66,6 +66,7 @@ export function Reviews({
   const [reviews, setReviews] = useState<PublicReview[]>(initialReviews || []);
   const [loading, setLoading] = useState(!initialReviews);
   const [mine, setMine] = useState<MyReview | null>(null);
+  const [voted, setVoted] = useState<Set<number>>(new Set());
 
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
@@ -94,6 +95,23 @@ export function Reviews({
     }).catch(() => {});
     return () => { off = true; };
   }, [signedIn, itemType, itemId]);
+
+  // Which of these reviews the signed-in user has already marked helpful.
+  useEffect(() => {
+    if (!signedIn) { setVoted(new Set()); return; }
+    let off = false;
+    fetchMyHelpful(itemType, itemId).then((ids) => { if (!off) setVoted(new Set(ids || [])); }).catch(() => {});
+    return () => { off = true; };
+  }, [signedIn, itemType, itemId]);
+
+  async function onHelpful(reviewId: number) {
+    if (!signedIn) { router.push(`${basePath}/login?next=${encodeURIComponent(pathname || '/')}`); return; }
+    try {
+      const res = await markHelpful(reviewId);
+      setVoted((prev) => { const n = new Set(prev); if (res.viewer_has_voted) n.add(reviewId); else n.delete(reviewId); return n; });
+      setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, helpful_count: res.helpful_count } : r)));
+    } catch { /* ignore */ }
+  }
 
   async function onSubmit() {
     if (!signedIn) { router.push(`${basePath}/login?next=${encodeURIComponent(pathname || '/')}`); return; }
@@ -234,9 +252,17 @@ export function Reviews({
                   </div>
                   {r.title && <h5 className="mt-2 text-sm font-semibold text-slate-800">{r.title}</h5>}
                   {r.review_text && <p className="mt-1 text-sm text-slate-600 leading-relaxed">{r.review_text}</p>}
-                  {r.helpful_count != null && r.helpful_count > 0 && (
-                    <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-400"><ThumbsUp className="h-3 w-3" /> {r.helpful_count} found helpful</div>
-                  )}
+                  <div className="mt-2.5">
+                    <button
+                      type="button"
+                      onClick={() => onHelpful(r.id)}
+                      aria-pressed={voted.has(r.id)}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${voted.has(r.id) ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                    >
+                      <ThumbsUp className={`h-3.5 w-3.5 ${voted.has(r.id) ? 'fill-brand-600 text-brand-600' : ''}`} />
+                      Helpful{r.helpful_count ? ` · ${r.helpful_count}` : ''}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

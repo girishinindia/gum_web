@@ -1,5 +1,6 @@
-import { Star, ThumbsUp, BadgeCheck } from 'lucide-react';
+import { Star, BadgeCheck } from 'lucide-react';
 import type { CourseReview, ReviewSummary } from '@/lib/api';
+import { HelpfulButton } from '@/components/reviews/HelpfulButton';
 
 interface Props {
   reviews: CourseReview[];
@@ -96,11 +97,7 @@ export function ReviewSection({ reviews, summary }: Props) {
                   </div>
                   {r.title && <h4 className="mt-2 text-sm font-semibold text-slate-800">{r.title}</h4>}
                   {r.review_text && <p className="mt-1 text-sm text-slate-600 leading-relaxed">{r.review_text}</p>}
-                  {r.helpful_count != null && r.helpful_count > 0 && (
-                    <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-400">
-                      <ThumbsUp className="h-3 w-3" /> {r.helpful_count} found helpful
-                    </div>
-                  )}
+                  <HelpfulButton reviewId={r.id} initialCount={r.helpful_count ?? 0} />
                 </div>
               </div>
             </div>
