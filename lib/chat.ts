@@ -225,6 +225,24 @@ export async function createDirectChat(userId: number): Promise<ChatRoom | null>
   }
 }
 
+/** Leave a group room (POST /chat-rooms/:id/leave). Returns ok, or an error message to show. */
+export async function leaveRoom(roomId: number): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${apiBase()}/chat-rooms/${roomId}/leave`, {
+      method: 'POST',
+      headers: authHeaders(true),
+      cache: 'no-store',
+    });
+    const j = await res.json().catch(() => ({} as any));
+    if (!res.ok || j?.success === false) {
+      return { ok: false, error: j?.error || j?.message || 'Could not leave the group.' };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Could not leave the group.' };
+  }
+}
+
 // ── Presentation helpers ────────────────────────────────────────────────────
 export function displayName(u?: ChatUserLite | null): string {
   if (!u) return 'Member';

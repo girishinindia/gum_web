@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { ChevronLeft, Send, Paperclip, SmilePlus, Trash2, Loader2, FileText, Pencil, Pin, PinOff, X, Check } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { ChevronLeft, Send, Paperclip, SmilePlus, Trash2, Loader2, FileText, Pencil, Pin, PinOff, X, Check, LogOut } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import {
-  fetchRoom, fetchRoomMessages, fetchPinned, fetchReadReceipts, uploadChatAttachment, useChatSocket,
+  fetchRoom, fetchRoomMessages, fetchPinned, fetchReadReceipts, uploadChatAttachment, useChatSocket, leaveRoom,
   displayName, avatarOf, initials, messageTime,
   type ChatRoom, type ChatMessage, type ChatReaction, type ChatReadReceipt,
 } from '@/lib/chat';
@@ -19,6 +19,7 @@ export default function ChatRoomPage() {
   const { user } = useAuth();
   const me = user?.id ?? 0;
   const socket = useChatSocket();
+  const router = useRouter();
 
   const [room, setRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -38,6 +39,9 @@ export default function ChatRoomPage() {
   const [receipts, setReceipts] = useState<Record<number, { lastReadMessageId: number; user?: { id: number; name?: string } }>>({});
   // Online roster for this room (userIds), powering presence dots.
   const [online, setOnline] = useState<Set<number>>(new Set());
+  // Leave-group confirm dialog + in-flight state.
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -307,6 +311,18 @@ export default function ChatRoomPage() {
   // Only the room creator may pin/unpin.
   const isOwner = useMemo(() => !!(room && me && room.created_by === me), [room, me]);
 
+  // Leave group (non-owner members of a group only). Soft-leaves server-side,
+  // drops presence, then returns to the chat list.
+  const handleLeave = useCallback(async () => {
+    setLeaving(true);
+    setError(null);
+    const r = await leaveRoom(roomId);
+    setLeaving(false);
+    if (!r.ok) { setError(r.error || 'Could not leave the group.'); setConfirmLeave(false); return; }
+    try { socket?.emit('leave_room', { roomId }); } catch {}
+    router.push('/chat');
+  }, [roomId, socket, router]);
+
   // Readers grouped by the last of MY messages they've seen → drives the "Seen"
   // row under my latest read message. We anchor on the highest message id that
   // any other member has read (and that is one of mine).
@@ -366,7 +382,46 @@ export default function ChatRoomPage() {
                     : ''}
             </div>
           </div>
+          {room?.room_type !== 'direct' && !isOwner && !closed && (
+            <button
+              onClick={() => setConfirmLeave(true)}
+              className="shrink-0 h-9 px-3 rounded-full text-sm font-medium text-rose-600 hover:bg-rose-50 inline-flex items-center gap-1.5"
+              title="Leave group"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Leave</span>
+            </button>
+          )}
         </header>
+
+        {/* Leave-group confirm */}
+        {confirmLeave && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+            onClick={() => { if (!leaving) setConfirmLeave(false); }}
+          >
+            <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-base font-semibold text-slate-900">Leave this group?</h3>
+              <p className="mt-1 text-sm text-slate-500">You&rsquo;ll stop receiving its messages. You can rejoin later with an invite.</p>
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  onClick={() => setConfirmLeave(false)}
+                  disabled={leaving}
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLeave}
+                  disabled={leaving}
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-60 inline-flex items-center gap-1.5"
+                >
+                  {leaving && <Loader2 className="h-4 w-4 animate-spin" />} Leave group
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Pinned banner */}
         {!closed && pinned.length > 0 && (
