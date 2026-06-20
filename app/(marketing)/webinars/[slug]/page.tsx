@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
   Calendar, Clock, Radio, Users, ChevronRight, Bell,
-  Share2, CheckCircle2, Star, Award, PlayCircle, Video,
+  CheckCircle2, Star, Award, PlayCircle, Video,
 } from 'lucide-react';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
@@ -14,6 +14,7 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { eventLd, breadcrumbLd } from '@/lib/jsonld';
 import { metaFromTranslation } from '@/lib/seo';
 import { ShareBar } from '@/components/ui/ShareBar';
+import { EnrollButton } from '@/components/commerce/EnrollButton';
 
 export const revalidate = 60; // SEO fix: og/meta changes propagate within a minute
 
@@ -293,15 +294,18 @@ export default async function WebinarDetailPage({ params }: { params: Promise<{ 
 
               <div className="mt-5 space-y-2.5">
                 {hasRecording ? (
-                  <Button variant="primary" className="w-full rounded-full">
+                  <ButtonLink href={webinar.recording_url || '#'} className="w-full rounded-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-semibold py-2.5">
                     <PlayCircle className="h-4 w-4" /> Watch now
-                  </Button>
+                  </ButtonLink>
                 ) : (
-                  <Button variant="primary" className="w-full rounded-full">Reserve seat</Button>
+                  <EnrollButton
+                    itemType="webinar"
+                    itemId={webinar.id}
+                    isFree={isFree}
+                    item={{ title, price, is_free: isFree, slug }}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-600 to-brand-500 text-white font-semibold py-2.5 shadow-btn hover:from-brand-700 hover:to-brand-600 transition-all disabled:opacity-70"
+                  />
                 )}
-                <Button variant="outline" className="w-full rounded-full">
-                  <Share2 className="h-4 w-4" /> Share
-                </Button>
               </div>
 
               {isUpcoming && (

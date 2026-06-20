@@ -35,7 +35,7 @@ async function tryRefreshToken(): Promise<boolean> {
   return refreshInFlight;
 }
 
-export type CommerceType = 'course' | 'bundle' | 'batch' | 'webinar';
+export type CommerceType = 'course' | 'bundle' | 'batch' | 'webinar' | 'live_session';
 
 export interface ItemSummary {
   id: number;

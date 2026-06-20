@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
-  Users, Clock, Calendar, Star, CheckCircle2, ShoppingCart,
-  Heart, ChevronRight, Award, Globe, PlayCircle, BookOpen,
+  Users, Clock, Calendar, Star, CheckCircle2,
+  ChevronRight, Award, Globe, PlayCircle, BookOpen,
   Video, ExternalLink,
 } from 'lucide-react';
 import { ButtonLink, Button } from '@/components/ui/Button';
@@ -15,6 +15,8 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { eventLd, breadcrumbLd } from '@/lib/jsonld';
 import { metaFromTranslation } from '@/lib/seo';
 import { ShareBar } from '@/components/ui/ShareBar';
+import { EnrollButton } from '@/components/commerce/EnrollButton';
+import { WishlistButton } from '@/components/commerce/WishlistButton';
 
 export const revalidate = 60; // SEO fix: og/meta changes propagate within a minute
 
@@ -257,12 +259,14 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ sl
                   )}
 
                   <div className="mt-4 space-y-2.5">
-                    <Button variant="primary" className="w-full rounded-full">
-                      <ShoppingCart className="h-4 w-4" /> Enroll in batch
-                    </Button>
-                    <Button variant="outline" className="w-full rounded-full">
-                      <Heart className="h-4 w-4" /> Save to wishlist
-                    </Button>
+                    <EnrollButton
+                      itemType="batch"
+                      itemId={batch.id}
+                      isFree={isFree}
+                      item={{ title, price, is_free: isFree, thumbnail_url: thumbnail || undefined, slug, course_slug: parentCourseSlug }}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-600 to-brand-500 text-white font-semibold py-2.5 shadow-btn hover:from-brand-700 hover:to-brand-600 active:scale-[0.99] transition-all disabled:opacity-70"
+                    />
+                    <WishlistButton itemType="batch" itemId={batch.id} variant="full" />
                   </div>
 
                   <ul className="mt-5 space-y-2.5 pt-5 border-t border-slate-100">

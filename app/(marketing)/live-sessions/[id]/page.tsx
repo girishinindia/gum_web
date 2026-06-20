@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Calendar, Clock, Radio, Video, User, ChevronRight, Share2, Users, Repeat, Star } from 'lucide-react';
+import { Calendar, Clock, Radio, Video, User, ChevronRight, Users, Repeat, Star } from 'lucide-react';
 import { Button, ButtonLink } from '@/components/ui/Button';
+import { EnrollButton } from '@/components/commerce/EnrollButton';
+import { ShareBar } from '@/components/ui/ShareBar';
 import { Reveal } from '@/components/ui/Reveal';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Reviews } from '@/components/reviews/Reviews';
@@ -105,8 +107,14 @@ export default async function LiveSessionDetailPage({ params }: { params: Promis
                 ) : null}
               </div>
               <div className="mt-5 space-y-2.5">
-                <Button variant="primary" className="w-full rounded-full">{isLive ? 'Join now' : 'Register'}</Button>
-                <Button variant="outline" className="w-full rounded-full"><Share2 className="h-4 w-4" /> Share</Button>
+                <EnrollButton
+                  itemType="live_session"
+                  itemId={session.id}
+                  isFree
+                  item={{ title: session.title }}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-600 to-brand-500 text-white font-semibold py-2.5 shadow-btn hover:from-brand-700 hover:to-brand-600 transition-all disabled:opacity-70"
+                />
+                <ShareBar url={`/live-sessions/${id}`} title={session.title} />
               </div>
             </div>
           </Reveal>
