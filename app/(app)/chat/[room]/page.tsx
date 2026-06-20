@@ -415,7 +415,7 @@ export default function ChatRoomPage() {
                       {avatarOf(m.users)
                         // eslint-disable-next-line @next/next/no-img-element
                         ? <img src={avatarOf(m.users)!} alt="" className="h-8 w-8 rounded-full object-cover shrink-0 mt-0.5" />
-                        : <div className="h-8 w-8 rounded-full bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{initials(displayName(m.users))}</div>}
+                        : <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0 mt-0.5 overflow-hidden" title={displayName(m.users)}><svg viewBox="0 0 24 24" className="h-7 w-7 text-slate-400" fill="currentColor" aria-hidden="true"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5Z"/></svg></div>}
                       {online.has(m.sender_id) && (
                         <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" aria-label="online" />
                       )}
