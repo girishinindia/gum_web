@@ -112,6 +112,8 @@ export default function ChatRoomPage() {
     const onDeleted = (p: { roomId: number; messageId: number }) => {
       if (p.roomId !== roomId) return;
       setMessages((prev) => prev.filter((m) => m.id !== p.messageId));
+      // A deleted message must also drop out of the pinned banner live (not only on refresh).
+      setPinned((prev) => prev.filter((m) => m.id !== p.messageId));
     };
     const onEdited = (p: { roomId: number; message: ChatMessage }) => {
       if (p.roomId !== roomId) return;

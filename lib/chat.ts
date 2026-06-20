@@ -113,6 +113,25 @@ export async function fetchRoom(roomId: number): Promise<ChatRoom | null> {
   }
 }
 
+export interface AcceptInviteResult {
+  room_id: number;
+  room_name?: string | null;
+}
+
+/** Accept a chat invite by token (POST /chat-invites/accept/:token) and return the joined room. */
+export async function acceptChatInvite(token: string): Promise<AcceptInviteResult> {
+  const res = await fetch(`${apiBase()}/chat-invites/accept/${encodeURIComponent(token)}`, {
+    method: 'POST',
+    headers: authHeaders(true),
+    cache: 'no-store',
+  });
+  const j = await res.json().catch(() => ({} as any));
+  if (!res.ok || j?.success === false) {
+    throw new Error(j?.error || j?.message || 'This invite link is invalid or has expired.');
+  }
+  return (j?.data ?? {}) as AcceptInviteResult;
+}
+
 export interface MessagePage {
   items: ChatMessage[];
   total: number;
