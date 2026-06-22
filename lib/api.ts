@@ -706,6 +706,20 @@ export async function recentAnnouncementsCount(days = 7): Promise<number> {
   }
 }
 
+export interface TeamMember {
+  id: number;
+  name: string;
+  role: string | null;
+  bio: string | null;
+  image_url: string | null;
+  section: 'leadership' | 'team';
+  linkedin_url: string | null;
+  twitter_url: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
+  display_order: number;
+}
+
 export const api = {
   featuredCourses: () =>
     request<Course[]>('/courses?is_featured=true&limit=9&sort=display_order&order=asc'),
@@ -736,6 +750,10 @@ export const api = {
   /** Featured, verified instructors — public endpoint (for "Meet the Instructors" section). */
   featuredInstructors: (limit = 6) =>
     request<InstructorProfile[]>(`/instructor-profiles/public?is_featured=true&is_active=true&limit=${limit}`, { revalidate: 300 }),
+
+  /** Active team members, ordered — for the public "Our Team" page. */
+  team: () =>
+    request<TeamMember[]>('/team-members?is_active=true&sort=display_order&order=asc&limit=100', { revalidate: 300 }),
 
   /** Published blog posts, newest first (for "Latest from the Blog" section). */
   latestBlogPosts: (limit = 3) =>
