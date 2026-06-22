@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
+import { Mail, MessageCircle } from 'lucide-react';
 import { PageHero } from '@/components/ui/PageHero';
 import { Reveal } from '@/components/ui/Reveal';
 import { ContactForm } from '@/components/contact/ContactForm';
@@ -27,10 +27,8 @@ export default function ContactPage() {
           <Reveal delay={0.1}>
             <div className="space-y-4">
               {[
-                { Icon: Mail,          label: 'Email us',      value: 'hello@growupmore.com',  href: 'mailto:hello@growupmore.com' },
-                { Icon: Phone,         label: 'Call us',       value: '+91 90000 00000',       href: 'tel:+919000000000' },
-                { Icon: MessageCircle, label: 'WhatsApp',      value: 'Chat now (fastest)',    href: '#' },
-                { Icon: MapPin,        label: 'Office',        value: '4th floor, Tower B, Bengaluru — 560034', href: '#' },
+                { Icon: Mail,          label: 'Email us', value: 'info@growupmore.com', href: 'mailto:info@growupmore.com' },
+                { Icon: MessageCircle, label: 'WhatsApp', value: '+91 9099097255',      href: 'https://wa.me/919099097255' },
               ].map((c) => (
                 <a key={c.label} href={c.href} className="block rounded-md bg-white border border-slate-200 shadow-card p-4 hover:border-brand-300 hover:shadow-cardHover transition-all">
                   <div className="flex items-start gap-3">
