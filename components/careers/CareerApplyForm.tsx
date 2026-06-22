@@ -56,6 +56,13 @@ function validateField(name: TextField, raw: string): string {
     case 'linkedin_url':
       if (v && !URL_RE.test(v)) return 'Enter a valid URL (https://…).';
       return '';
+    case 'current_ctc':
+    case 'expected_ctc':
+      // Optional, but if filled it must look like a real amount — reject
+      // free-text like "ckmnsfc". Accepts "4.5 LPA", "6 LPA", "450000", "₹6,00,000", "6L".
+      if (v && (!/\d/.test(v) || !/^[₹$]?\s*\d[\d,]*(\.\d+)?\s*(lpa|l|lakh|lakhs|k|cr|crore|inr|pa|p\.a\.|per\s?annum|\/-)?\s*$/i.test(v)))
+        return 'Enter a valid amount (e.g. 4.5 LPA or 450000).';
+      return '';
     case 'cover_letter':
       if (v && v.length > 2000) return 'Keep your cover letter under 2000 characters.';
       return '';
@@ -64,7 +71,7 @@ function validateField(name: TextField, raw: string): string {
   }
 }
 
-const REQUIRED_TEXT: TextField[] = ['full_name', 'email', 'phone', 'experience_years', 'portfolio_url', 'linkedin_url', 'cover_letter'];
+const REQUIRED_TEXT: TextField[] = ['full_name', 'email', 'phone', 'experience_years', 'current_ctc', 'expected_ctc', 'portfolio_url', 'linkedin_url', 'cover_letter'];
 
 function validateResume(file: File | null): string {
   if (!file || !file.size) return 'Please upload your résumé.';
@@ -185,11 +192,13 @@ export function CareerApplyForm({ positionId, positionTitle }: Props) {
           </div>
           <div>
             <label className={labelCls}>Current CTC (annual)</label>
-            <input value={values.current_ctc} onChange={(e) => setField('current_ctc', e.target.value)} className={cls('current_ctc')} placeholder="e.g. 4.5 LPA" />
+            <input value={values.current_ctc} onChange={(e) => setField('current_ctc', e.target.value)} onBlur={() => onBlur('current_ctc')} aria-invalid={!!errors.current_ctc} className={cls('current_ctc')} placeholder="e.g. 4.5 LPA" />
+            <Err n="current_ctc" />
           </div>
           <div>
             <label className={labelCls}>Expected CTC (annual)</label>
-            <input value={values.expected_ctc} onChange={(e) => setField('expected_ctc', e.target.value)} className={cls('expected_ctc')} placeholder="e.g. 6 LPA" />
+            <input value={values.expected_ctc} onChange={(e) => setField('expected_ctc', e.target.value)} onBlur={() => onBlur('expected_ctc')} aria-invalid={!!errors.expected_ctc} className={cls('expected_ctc')} placeholder="e.g. 6 LPA" />
+            <Err n="expected_ctc" />
           </div>
         </div>
       </div>
