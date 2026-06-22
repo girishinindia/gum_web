@@ -33,7 +33,7 @@ function Socials({ m }: { m: TeamMember }) {
   ].filter((l) => l.url);
   if (links.length === 0) return null;
   return (
-    <div className="mt-3 flex items-center justify-center gap-1.5">
+    <div className="mt-3 flex items-center justify-start gap-1.5">
       {links.map(({ url, Icon }, i) => (
         <a key={i} href={url as string} target="_blank" rel="noopener noreferrer" className="h-8 w-8 rounded-full bg-slate-100 hover:bg-brand-50 text-slate-600 hover:text-brand-700 flex items-center justify-center transition-colors">
           <Icon className="h-3.5 w-3.5" />
@@ -43,20 +43,24 @@ function Socials({ m }: { m: TeamMember }) {
   );
 }
 
-// Single shared card — every member uses the same layout (PHP "team__card").
+// Single shared card — full-width portrait photo on top, details below.
 function MemberCard({ m, index }: { m: TeamMember; index: number }) {
   return (
-    <div className="rounded-md bg-white border border-slate-200 shadow-card p-6 text-center hover:-translate-y-1 hover:shadow-cardHover transition-all">
-      {m.image_url ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img src={m.image_url} alt={m.name} className="mx-auto h-24 w-24 rounded-full object-cover shadow-btn" />
-      ) : (
-        <div className={`mx-auto h-24 w-24 rounded-full bg-gradient-to-br ${ACCENTS[index % ACCENTS.length]} text-white heading text-3xl flex items-center justify-center shadow-btn`}>{initials(m.name)}</div>
-      )}
-      <h3 className="mt-4 heading text-base text-slate-900">{m.name}</h3>
-      {m.role && <p className="text-[12px] text-brand-700 font-semibold mt-0.5">{m.role}</p>}
-      {m.bio && <p className="mt-2 text-[12px] text-slate-500 leading-relaxed">{m.bio}</p>}
-      <Socials m={m} />
+    <div className="rounded-lg bg-white border border-slate-200 shadow-card overflow-hidden hover:-translate-y-1 hover:shadow-cardHover transition-all">
+      <div className="relative w-full aspect-[3/4] bg-slate-100">
+        {m.image_url ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={m.image_url} alt={m.name} className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className={`absolute inset-0 bg-gradient-to-br ${ACCENTS[index % ACCENTS.length]} text-white heading text-5xl flex items-center justify-center`}>{initials(m.name)}</div>
+        )}
+      </div>
+      <div className="p-5">
+        <h3 className="heading text-base text-slate-900">{m.name}</h3>
+        {m.role && <p className="text-[12px] text-brand-700 font-semibold mt-0.5">{m.role}</p>}
+        {m.bio && <p className="mt-2 text-[12px] text-slate-500 leading-relaxed">{m.bio}</p>}
+        <Socials m={m} />
+      </div>
     </div>
   );
 }

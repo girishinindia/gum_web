@@ -31,20 +31,25 @@ export default async function MobileTeamPage() {
       ) : (
         <div className="px-3 pt-2 grid grid-cols-2 gap-3 pb-4">
           {members.map((m, i) => (
-            <div key={m.id} className="rounded-md bg-white border border-slate-200 shadow-card p-3 text-center">
-              {m.image_url ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={m.image_url} alt={m.name} className="mx-auto h-16 w-16 rounded-full object-cover" />
-              ) : (
-                <div className={`mx-auto h-16 w-16 rounded-full bg-gradient-to-br ${ACCENTS[i % ACCENTS.length]} text-white heading text-xl flex items-center justify-center`}>{initials(m.name)}</div>
-              )}
-              <h3 className="mt-2 heading text-[13px] font-bold text-slate-900">{m.name}</h3>
-              {m.role && <p className="text-[10.5px] text-brand-700 font-semibold">{m.role}</p>}
-              {m.linkedin_url && (
-                <div className="mt-2 flex justify-center">
-                  <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" className="h-7 w-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center"><Linkedin className="h-3.5 w-3.5" /></a>
-                </div>
-              )}
+            <div key={m.id} className="rounded-lg bg-white border border-slate-200 shadow-card overflow-hidden">
+              <div className="relative w-full aspect-[3/4] bg-slate-100">
+                {m.image_url ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={m.image_url} alt={m.name} className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className={`absolute inset-0 bg-gradient-to-br ${ACCENTS[i % ACCENTS.length]} text-white heading text-3xl flex items-center justify-center`}>{initials(m.name)}</div>
+                )}
+              </div>
+              <div className="p-3">
+                <h3 className="heading text-[13px] font-bold text-slate-900 leading-tight">{m.name}</h3>
+                {m.role && <p className="text-[10.5px] text-brand-700 font-semibold mt-0.5">{m.role}</p>}
+                {m.bio && <p className="mt-1 text-[10.5px] text-slate-500 leading-relaxed">{m.bio}</p>}
+                {m.linkedin_url && (
+                  <div className="mt-2 flex">
+                    <a href={m.linkedin_url} target="_blank" rel="noopener noreferrer" className="h-7 w-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center"><Linkedin className="h-3.5 w-3.5" /></a>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
