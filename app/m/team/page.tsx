@@ -18,7 +18,11 @@ function initials(name: string) {
 }
 
 export default async function MobileTeamPage() {
-  const members = (await api.team()) || [];
+  const members = ((await api.team()) || []).sort((a, b) =>
+    a.section === b.section
+      ? a.display_order - b.display_order
+      : (a.section === 'leadership' ? -1 : 1)
+  );
   return (
     <div>
       <MobilePageHeader title="Team" subtitle="People behind the platform" />

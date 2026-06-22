@@ -43,7 +43,8 @@ function Socials({ m }: { m: TeamMember }) {
   );
 }
 
-function LeadCard({ m, index }: { m: TeamMember; index: number }) {
+// Single shared card — every member uses the same layout (PHP "team__card").
+function MemberCard({ m, index }: { m: TeamMember; index: number }) {
   return (
     <div className="rounded-md bg-white border border-slate-200 shadow-card p-6 text-center hover:-translate-y-1 hover:shadow-cardHover transition-all">
       {m.image_url ? (
@@ -60,18 +61,21 @@ function LeadCard({ m, index }: { m: TeamMember; index: number }) {
   );
 }
 
-function TeamCard({ m, index }: { m: TeamMember; index: number }) {
+function TeamSection({ label, members }: { label: string; members: TeamMember[] }) {
+  if (members.length === 0) return null;
   return (
-    <div className="rounded-md bg-white border border-slate-200 shadow-card p-4 text-center">
-      {m.image_url ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img src={m.image_url} alt={m.name} className="mx-auto h-16 w-16 rounded-full object-cover" />
-      ) : (
-        <div className={`mx-auto h-16 w-16 rounded-full bg-gradient-to-br ${ACCENTS[index % ACCENTS.length]} text-white heading text-xl flex items-center justify-center`}>{initials(m.name)}</div>
-      )}
-      <h4 className="mt-2 text-xs font-semibold text-slate-900 leading-tight">{m.name}</h4>
-      {m.role && <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{m.role}</p>}
-    </div>
+    <section className="py-12">
+      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+        <Eyebrow>{label}</Eyebrow>
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {members.map((m, i) => (
+            <Reveal key={m.id} delay={(i % 3) * 0.06}>
+              <MemberCard m={m} index={i} />
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -88,35 +92,8 @@ export default async function TeamPage() {
         subtitle="A small, opinionated team of developers, designers and engineers building the platform."
       />
 
-      {leadership.length > 0 && (
-        <section className="py-12">
-          <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-            <Eyebrow>Leadership</Eyebrow>
-            <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-5">
-              {leadership.map((m, i) => (
-                <Reveal key={m.id} delay={(i % 4) * 0.06}>
-                  <LeadCard m={m} index={i} />
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {team.length > 0 && (
-        <section className="py-12">
-          <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-            <Eyebrow>Mentors &amp; Operations</Eyebrow>
-            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {team.map((m, i) => (
-                <Reveal key={m.id} delay={(i % 6) * 0.04}>
-                  <TeamCard m={m} index={i} />
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      <TeamSection label="Leadership" members={leadership} />
+      <TeamSection label="Mentors & Operations" members={team} />
     </>
   );
 }
