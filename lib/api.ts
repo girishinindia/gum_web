@@ -720,6 +720,22 @@ export interface TeamMember {
   display_order: number;
 }
 
+export interface JobPosition {
+  id: number;
+  title: string;
+  slug: string;
+  department: string | null;
+  location: string | null;
+  employment_type: string;
+  experience: string | null;
+  description: string;
+  requirements: string | null;
+  skills: string | null;
+  salary_range: string | null;
+  expires_at: string | null;
+  created_at?: string | null;
+}
+
 export const api = {
   featuredCourses: () =>
     request<Course[]>('/courses?is_featured=true&limit=9&sort=display_order&order=asc'),
@@ -754,6 +770,13 @@ export const api = {
   /** Active team members, ordered — for the public "Our Team" page. */
   team: () =>
     request<TeamMember[]>('/team-members?is_active=true&sort=display_order&order=asc&limit=100', { revalidate: 300 }),
+
+  /** Open (active, non-expired) job positions — for the public Careers page. */
+  jobs: () =>
+    request<JobPosition[]>('/job-positions', { revalidate: 120 }),
+  /** Single open job position by slug (404s if closed/expired). */
+  jobBySlug: (slug: string) =>
+    request<JobPosition>(`/job-positions/slug/${slug}`, { revalidate: 120 }),
 
   /** Published blog posts, newest first (for "Latest from the Blog" section). */
   latestBlogPosts: (limit = 3) =>
