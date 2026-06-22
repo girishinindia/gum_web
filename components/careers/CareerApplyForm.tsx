@@ -23,7 +23,10 @@ type TextField =
   | 'portfolio_url' | 'linkedin_url' | 'cover_letter';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_RE = /^\+?[0-9\s\-()]{7,20}$/;
+// First + last name: alphabetic words separated by a single space (allows a middle name).
+const NAME_RE = /^[A-Za-z]+(?: [A-Za-z]+)+$/;
+const PHONE_RE = /^\d{10}$/;            // exactly 10 digits
+const LOCATION_RE = /^[A-Za-z][A-Za-z ,]*$/; // letters, spaces, commas (e.g. "Surat, Gujarat")
 const URL_RE = /^https?:\/\/.+\..+/i;
 const MAX_RESUME = 5 * 1024 * 1024;
 const RESUME_EXT = /\.(pdf|doc|docx)$/i;
@@ -39,7 +42,7 @@ function validateField(name: TextField, raw: string): string {
   switch (name) {
     case 'full_name':
       if (!v) return 'Please enter your full name.';
-      if (v.length < 2) return 'Name is too short.';
+      if (!NAME_RE.test(v)) return 'Enter first and last name — letters only, single space.';
       return '';
     case 'email':
       if (!v) return 'Please enter your email.';
@@ -47,7 +50,10 @@ function validateField(name: TextField, raw: string): string {
       return '';
     case 'phone':
       if (!v) return 'Please enter your phone number.';
-      if (!PHONE_RE.test(v) || v.replace(/\D/g, '').length < 7) return 'Enter a valid phone number.';
+      if (!PHONE_RE.test(v)) return 'Phone must be exactly 10 digits.';
+      return '';
+    case 'current_location':
+      if (v && !LOCATION_RE.test(v)) return 'Location can contain letters only.';
       return '';
     case 'experience_years':
       if (!v) return 'Please select your experience.';
@@ -71,7 +77,7 @@ function validateField(name: TextField, raw: string): string {
   }
 }
 
-const REQUIRED_TEXT: TextField[] = ['full_name', 'email', 'phone', 'experience_years', 'current_ctc', 'expected_ctc', 'portfolio_url', 'linkedin_url', 'cover_letter'];
+const REQUIRED_TEXT: TextField[] = ['full_name', 'email', 'phone', 'current_location', 'experience_years', 'current_ctc', 'expected_ctc', 'portfolio_url', 'linkedin_url', 'cover_letter'];
 
 function validateResume(file: File | null): string {
   if (!file || !file.size) return 'Please upload your résumé.';
@@ -152,7 +158,7 @@ export function CareerApplyForm({ positionId, positionTitle }: Props) {
         <div className="grid sm:grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>Full name *</label>
-            <input value={values.full_name} onChange={(e) => setField('full_name', e.target.value)} onBlur={() => onBlur('full_name')} aria-invalid={!!errors.full_name} className={cls('full_name')} placeholder="Your full name" />
+            <input value={values.full_name} onChange={(e) => setField('full_name', e.target.value)} onBlur={() => onBlur('full_name')} aria-invalid={!!errors.full_name} className={cls('full_name')} placeholder="First Last" />
             <Err n="full_name" />
           </div>
           <div>
@@ -162,12 +168,13 @@ export function CareerApplyForm({ positionId, positionTitle }: Props) {
           </div>
           <div>
             <label className={labelCls}>Phone *</label>
-            <input type="tel" value={values.phone} onChange={(e) => setField('phone', e.target.value)} onBlur={() => onBlur('phone')} aria-invalid={!!errors.phone} className={cls('phone')} placeholder="+91 XXXXX XXXXX" />
+            <input type="tel" inputMode="numeric" maxLength={10} value={values.phone} onChange={(e) => setField('phone', e.target.value.replace(/\D/g, ''))} onBlur={() => onBlur('phone')} aria-invalid={!!errors.phone} className={cls('phone')} placeholder="10-digit mobile number" />
             <Err n="phone" />
           </div>
           <div>
             <label className={labelCls}>Current location</label>
-            <input value={values.current_location} onChange={(e) => setField('current_location', e.target.value)} className={cls('current_location')} placeholder="City, State" />
+            <input value={values.current_location} onChange={(e) => setField('current_location', e.target.value)} onBlur={() => onBlur('current_location')} aria-invalid={!!errors.current_location} className={cls('current_location')} placeholder="City, State" />
+            <Err n="current_location" />
           </div>
         </div>
       </div>
