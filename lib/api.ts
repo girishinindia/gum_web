@@ -61,7 +61,10 @@ async function request<T>(path: string, opts: { revalidate?: number } = {}): Pro
     // Use `apiBase()` so client-side calls automatically swap localhost
     // for the page hostname when the user is on a different machine than
     // the API host. Server-side calls still use the unmodified BASE.
-    const res = await fetch(`${apiBase()}${path}`, { next: { revalidate } });
+    // Tag every public (ISR) fetch with a shared cache tag so an admin save
+    // can invalidate them all at once via POST /api/revalidate (on-demand,
+    // instant refresh instead of waiting out the revalidate window).
+    const res = await fetch(`${apiBase()}${path}`, { next: { revalidate, tags: ['public-content'] } });
     if (!res.ok) return null;
     const json = (await res.json()) as ApiResponse<T>;
     return json.success ? (json.data ?? null) : null;
