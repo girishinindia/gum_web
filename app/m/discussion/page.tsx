@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { MessagesSquare, MessageCircle, Pin, CheckCircle2, Eye, Search, X } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
 import { fetchDiscussionsList, type DiscussionThread } from '@/lib/api';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 type FilterKey = 'all' | 'unanswered' | 'answered' | 'pinned';
 
@@ -39,6 +40,8 @@ function authorName(u?: DiscussionThread['users']): string {
  * App-native thread list with status filters; posting still requires sign-in.
  */
 export default function MobileDiscussionPage() {
+  // Hide the "Sign in to post" CTA once the visitor is authenticated.
+  const { signedIn, loading: authLoading } = useAuth();
   const [threads, setThreads] = useState<DiscussionThread[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -156,18 +159,20 @@ export default function MobileDiscussionPage() {
           </button>
         )}
 
-        {/* CTA */}
-        <div className="mt-4 rounded-md bg-gradient-to-br from-brand-500 to-accent text-white p-4 text-center shadow-cardHover">
-          <MessagesSquare className="h-5 w-5 mx-auto" />
-          <div className="heading mt-1.5 text-[14px]">Join the conversation</div>
-          <p className="text-[11px] opacity-90 mt-0.5">Sign in to post questions and answer your peers.</p>
-          <Link
-            href="/m/login?next=%2Fm%2Fdiscussion"
-            className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-white text-brand-700 px-3.5 py-1.5 text-[11.5px] font-bold active:scale-95 transition-all"
-          >
-            Sign in
-          </Link>
-        </div>
+        {/* CTA — only for signed-out visitors */}
+        {!signedIn && !authLoading && (
+          <div className="mt-4 rounded-md bg-gradient-to-br from-brand-500 to-accent text-white p-4 text-center shadow-cardHover">
+            <MessagesSquare className="h-5 w-5 mx-auto" />
+            <div className="heading mt-1.5 text-[14px]">Join the conversation</div>
+            <p className="text-[11px] opacity-90 mt-0.5">Sign in to post questions and answer your peers.</p>
+            <Link
+              href="/m/login?next=%2Fm%2Fdiscussion"
+              className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-white text-brand-700 px-3.5 py-1.5 text-[11.5px] font-bold active:scale-95 transition-all"
+            >
+              Sign in
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -33,6 +33,7 @@ import {
   type DiscussionThread,
   type DiscussionFilterParams,
 } from '@/lib/api';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 // ─── Constants ──────────────────────────────────────────────────────────
 
@@ -209,6 +210,8 @@ function ThreadCard({ thread }: { thread: DiscussionThread }) {
 function DiscussionPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Hide the "Sign in to post" CTA once the visitor is authenticated.
+  const { signedIn, loading: authLoading } = useAuth();
 
   const [threads, setThreads] = useState<DiscussionThread[]>([]);
   const [total, setTotal] = useState(0);
@@ -333,20 +336,22 @@ function DiscussionPageInner() {
             <div className="hidden lg:block">
               {sidebarContent}
 
-              {/* CTA card */}
-              <div className="mt-6 rounded-lg bg-gradient-to-br from-brand-500 to-accent text-white p-6 text-center shadow-cardHover">
-                <MessagesSquare className="h-7 w-7 mx-auto" />
-                <h3 className="heading mt-2 text-base font-bold">Join the conversation</h3>
-                <p className="mt-1 text-[12px] opacity-90">
-                  Sign in to post questions and connect with the community.
-                </p>
-                <Link
-                  href="/login"
-                  className="mt-3 inline-flex items-center gap-2 rounded-full bg-white text-brand-700 px-4 py-2 text-[12px] font-bold hover:shadow-lg transition-all"
-                >
-                  Sign in
-                </Link>
-              </div>
+              {/* CTA card — only for signed-out visitors */}
+              {!signedIn && !authLoading && (
+                <div className="mt-6 rounded-lg bg-gradient-to-br from-brand-500 to-accent text-white p-6 text-center shadow-cardHover">
+                  <MessagesSquare className="h-7 w-7 mx-auto" />
+                  <h3 className="heading mt-2 text-base font-bold">Join the conversation</h3>
+                  <p className="mt-1 text-[12px] opacity-90">
+                    Sign in to post questions and connect with the community.
+                  </p>
+                  <Link
+                    href="/login"
+                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-white text-brand-700 px-4 py-2 text-[12px] font-bold hover:shadow-lg transition-all"
+                  >
+                    Sign in
+                  </Link>
+                </div>
+              )}
             </div>
 
             <div>
