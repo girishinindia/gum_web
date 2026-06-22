@@ -736,6 +736,17 @@ export interface JobPosition {
   created_at?: string | null;
 }
 
+export interface AboutStat { value: string; label: string }
+export interface AboutValue { title: string; description: string }
+export interface AboutPageContent {
+  hero_eyebrow: string | null; hero_title: string | null; hero_subtitle: string | null;
+  stats: AboutStat[] | null;
+  story_eyebrow: string | null; story_heading: string | null; story_body: string | null;
+  values_eyebrow: string | null; values_heading: string | null; values: AboutValue[] | null;
+  mission_title: string | null; mission_body: string | null; vision_title: string | null; vision_body: string | null;
+  cta_heading: string | null; cta_subtitle: string | null;
+}
+
 export const api = {
   featuredCourses: () =>
     request<Course[]>('/courses?is_featured=true&limit=9&sort=display_order&order=asc'),
@@ -770,6 +781,10 @@ export const api = {
   /** Active team members, ordered — for the public "Our Team" page. */
   team: () =>
     request<TeamMember[]>('/team-members?is_active=true&sort=display_order&order=asc&limit=100', { revalidate: 300 }),
+
+  /** Editable About-page content (single record). */
+  aboutPage: () =>
+    request<AboutPageContent>('/about-page', { revalidate: 120 }),
 
   /** Open (active, non-expired) job positions — for the public Careers page. */
   jobs: () =>

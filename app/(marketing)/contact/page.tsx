@@ -1,7 +1,7 @@
-import { Mail, Phone, MapPin, MessageCircle, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
 import { PageHero } from '@/components/ui/PageHero';
-import { Button } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
+import { ContactForm } from '@/components/contact/ContactForm';
 
 export const metadata = {
   title: 'Contact Us',
@@ -21,39 +21,7 @@ export default function ContactPage() {
       <section className="pb-16">
         <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8 grid lg:grid-cols-[1fr_360px] gap-8">
           <Reveal>
-            <form className="rounded-md bg-white border border-slate-200 shadow-card p-6 sm:p-8 space-y-4">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[12px] font-semibold text-slate-700 mb-1.5">Full name</label>
-                  <input className="w-full px-3.5 py-2.5 rounded-sm border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400" placeholder="Your name" />
-                </div>
-                <div>
-                  <label className="block text-[12px] font-semibold text-slate-700 mb-1.5">Email</label>
-                  <input type="email" className="w-full px-3.5 py-2.5 rounded-sm border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400" placeholder="you@example.com" />
-                </div>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[12px] font-semibold text-slate-700 mb-1.5">Phone (WhatsApp)</label>
-                  <input type="tel" className="w-full px-3.5 py-2.5 rounded-sm border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400" placeholder="+91 …" />
-                </div>
-                <div>
-                  <label className="block text-[12px] font-semibold text-slate-700 mb-1.5">Topic</label>
-                  <select className="w-full px-3.5 py-2.5 rounded-sm border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400">
-                    <option>General enquiry</option>
-                    <option>Course information</option>
-                    <option>Placement assistance</option>
-                    <option>Bulk / corporate enrolment</option>
-                    <option>Partnership</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-[12px] font-semibold text-slate-700 mb-1.5">Message</label>
-                <textarea rows={6} className="w-full px-3.5 py-2.5 rounded-sm border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400" placeholder="Tell us a bit about what you need…" />
-              </div>
-              <Button variant="primary" className="rounded-full"><Send className="h-4 w-4" /> Send message</Button>
-            </form>
+            <ContactForm />
           </Reveal>
 
           <Reveal delay={0.1}>

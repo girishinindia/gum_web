@@ -1,5 +1,6 @@
-import { Mail, Phone, MapPin, MessageCircle, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
 import { MobilePageHeader } from '@/components/mobile/MobilePageHeader';
+import { ContactForm } from '@/components/contact/ContactForm';
 
 export default function MobileContactPage() {
   const CHANNELS = [
@@ -23,14 +24,9 @@ export default function MobileContactPage() {
           </a>
         ))}
 
-        <form className="rounded-md bg-white border border-slate-200 p-4 shadow-card space-y-3 mt-2">
-          <input className="w-full px-3 py-2.5 rounded-sm border border-slate-200 text-sm" placeholder="Your name" />
-          <input className="w-full px-3 py-2.5 rounded-sm border border-slate-200 text-sm" placeholder="Email" type="email" />
-          <textarea rows={4} className="w-full px-3 py-2.5 rounded-sm border border-slate-200 text-sm" placeholder="Message" />
-          <button className="w-full inline-flex items-center justify-center gap-1.5 rounded-full bg-brand-500 text-white px-5 py-2.5 text-sm font-semibold shadow-btn active:scale-95 transition-all">
-            <Send className="h-4 w-4" /> Send
-          </button>
-        </form>
+        <div className="mt-2">
+          <ContactForm />
+        </div>
       </div>
     </div>
   );
