@@ -16,15 +16,24 @@ import { cn } from '@/lib/cn';
  */
 const DEVANAGARI_LIKE = new Set(['hi', 'mr', 'ne', 'sa']);
 
-export function Hero() {
+interface HeroCms {
+  hero_title?: string | null; hero_highlight?: string | null; hero_subtitle?: string | null;
+  hero_primary_label?: string | null; hero_primary_href?: string | null;
+  hero_secondary_label?: string | null; hero_secondary_href?: string | null;
+  hero_stats?: { value?: string; suffix?: string; label?: string }[] | null;
+}
+
+export function Hero({ cms }: { cms?: HeroCms | null }) {
   const t = useT();
   const { active } = useLanguage();
   const isDevanagari = DEVANAGARI_LIKE.has(active?.iso_code ?? 'en');
-  const STATS = [
-    { value: '50K',  suffix: '+',   label: t.hero.stat1Label },
-    { value: '95',   suffix: '%',   label: t.hero.stat2Label },
-    { value: '4.9',  suffix: '/5',  label: t.hero.stat3Label },
-  ];
+  const STATS = (cms?.hero_stats && cms.hero_stats.length)
+    ? cms.hero_stats.map((s) => ({ value: s.value || '', suffix: s.suffix || '', label: s.label || '' }))
+    : [
+        { value: '50K',  suffix: '+',   label: t.hero.stat1Label },
+        { value: '95',   suffix: '%',   label: t.hero.stat2Label },
+        { value: '4.9',  suffix: '/5',  label: t.hero.stat3Label },
+      ];
   return (
     <section className="relative pt-10 sm:pt-14 pb-14 overflow-hidden">
 
@@ -61,27 +70,36 @@ export function Hero() {
                   : 'mt-6 leading-[1.04]',
               )}
             >
-              {t.hero.titleA} <span className="text-gradient">{t.hero.titleB}</span><br />
-              {t.hero.titleC} <span className="text-gradient">{t.hero.titleD}</span>
-              {t.hero.titleE ? <><br /><span className="text-slate-900">{t.hero.titleE}</span></> : null}
+              {cms?.hero_title ? (
+                <>
+                  {cms.hero_title}
+                  {cms.hero_highlight ? <> <span className="text-gradient">{cms.hero_highlight}</span></> : null}
+                </>
+              ) : (
+                <>
+                  {t.hero.titleA} <span className="text-gradient">{t.hero.titleB}</span><br />
+                  {t.hero.titleC} <span className="text-gradient">{t.hero.titleD}</span>
+                  {t.hero.titleE ? <><br /><span className="text-slate-900">{t.hero.titleE}</span></> : null}
+                </>
+              )}
             </motion.h1>
 
             <motion.p
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
               className="mt-6 max-w-xl text-base sm:text-lg text-slate-600 leading-relaxed"
             >
-              {t.hero.desc}
+              {cms?.hero_subtitle || t.hero.desc}
             </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
               className="mt-7 flex flex-wrap items-center gap-3"
             >
-              <ButtonLink href="/courses" variant="primary" size="lg" className="rounded-full">
-                {t.common.explore} <ArrowRight className="h-4 w-4" />
+              <ButtonLink href={cms?.hero_primary_href || '/courses'} variant="primary" size="lg" className="rounded-full">
+                {cms?.hero_primary_label || t.common.explore} <ArrowRight className="h-4 w-4" />
               </ButtonLink>
-              <ButtonLink href="#how-it-works" variant="outline" size="lg" className="rounded-full">
-                <PlayCircle className="h-5 w-5" /> {t.common.watchDemo}
+              <ButtonLink href={cms?.hero_secondary_href || '#how-it-works'} variant="outline" size="lg" className="rounded-full">
+                <PlayCircle className="h-5 w-5" /> {cms?.hero_secondary_label || t.common.watchDemo}
               </ButtonLink>
             </motion.div>
 

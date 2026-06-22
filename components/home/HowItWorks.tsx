@@ -9,25 +9,38 @@ interface Step {
   Icon:  LucideIcon;
 }
 
-const STEPS: Step[] = [
-  { num: 1, title: 'Choose Your Course',  desc: 'Browse 200+ industry-ready courses across 20 tech domains.',                       Icon: Search    },
-  { num: 2, title: 'Learn at Your Pace',  desc: 'HD video lessons, live sessions, mentorship & doubt support in your language.',    Icon: Code2     },
-  { num: 3, title: 'Build Real Projects', desc: 'Work on industry-grade capstone projects to build your portfolio.',                 Icon: Hammer    },
-  { num: 4, title: 'Get Placed',          desc: '100% placement support with resume building, mock interviews & referrals.',         Icon: Briefcase },
+const STEP_ICONS: LucideIcon[] = [Search, Code2, Hammer, Briefcase];
+
+const STEPS_DEFAULT = [
+  { title: 'Choose Your Course',  desc: 'Browse 200+ industry-ready courses across 20 tech domains.' },
+  { title: 'Learn at Your Pace',  desc: 'HD video lessons, live sessions, mentorship & doubt support in your language.' },
+  { title: 'Build Real Projects', desc: 'Work on industry-grade capstone projects to build your portfolio.' },
+  { title: 'Get Placed',          desc: '100% placement support with resume building, mock interviews & referrals.' },
 ];
 
-export function HowItWorks() {
+interface HowItWorksCms {
+  hiw_eyebrow?: string | null; hiw_heading?: string | null; hiw_subtitle?: string | null;
+  hiw_steps?: { title?: string; desc?: string }[] | null;
+}
+
+export function HowItWorks({ cms }: { cms?: HowItWorksCms | null }) {
+  const eyebrow = cms?.hiw_eyebrow || 'How It Works';
+  const heading = cms?.hiw_heading || 'Your Journey to a Tech Career';
+  const subtitle = cms?.hiw_subtitle || 'A simple 4-step process to go from beginner to job-ready professional.';
+  const src = (cms?.hiw_steps && cms.hiw_steps.length) ? cms.hiw_steps : STEPS_DEFAULT;
+  const STEPS: Step[] = src.map((s, i) => ({ num: i + 1, title: s.title || '', desc: s.desc || '', Icon: STEP_ICONS[i % STEP_ICONS.length] }));
+
   return (
     <section id="how-it-works" className="py-14 sm:py-16">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <Reveal>
           <div className="text-center max-w-3xl mx-auto">
-            <Eyebrow className="justify-center"><span className="text-center">How It Works</span></Eyebrow>
+            <Eyebrow className="justify-center"><span className="text-center">{eyebrow}</span></Eyebrow>
             <h2 className="mt-3 heading text-4xl sm:text-5xl text-slate-900 leading-tight tracking-tight">
-              Your Journey to a Tech Career
+              {heading}
             </h2>
             <p className="mt-4 text-slate-600">
-              A simple 4-step process to go from beginner to job-ready professional.
+              {subtitle}
             </p>
           </div>
         </Reveal>

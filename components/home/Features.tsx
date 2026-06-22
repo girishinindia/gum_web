@@ -3,25 +3,35 @@ import { Eyebrow } from '@/components/ui/Eyebrow';
 import { FEATURES } from '@/lib/homeContent';
 import { Languages, Briefcase, IndianRupee, Hammer, MessageSquare, BadgeCheck, type LucideIcon } from 'lucide-react';
 
-const ICONS: Record<string, LucideIcon> = {
-  Languages, Briefcase, IndianRupee, Hammer, MessageSquare, BadgeCheck,
-};
+const ICON_LIST: LucideIcon[] = [Languages, Briefcase, IndianRupee, Hammer, MessageSquare, BadgeCheck];
 
-export function Features() {
+interface FeaturesCms {
+  feat_eyebrow?: string | null; feat_heading?: string | null; feat_subtitle?: string | null;
+  features?: { title?: string; desc?: string }[] | null;
+}
+
+export function Features({ cms }: { cms?: FeaturesCms | null }) {
+  const eyebrow = cms?.feat_eyebrow || 'Why Us';
+  const heading = cms?.feat_heading || "Built for India's Next IT Generation";
+  const subtitle = cms?.feat_subtitle || 'Six things we obsess over so you can ship a career, not just complete a course.';
+  const items = (cms?.features && cms.features.length)
+    ? cms.features.map((x, i) => ({ num: String(i + 1).padStart(2, '0'), title: x.title || '', desc: x.desc || '', icon: '' }))
+    : FEATURES;
+
   return (
     <section className="py-14 sm:py-16">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <Reveal>
           <div className="text-center max-w-3xl mx-auto">
-            <Eyebrow className="justify-center">Why Us</Eyebrow>
-            <h2 className="mt-3 heading text-4xl sm:text-5xl text-slate-900 leading-tight tracking-tight">Built for India&apos;s Next IT Generation</h2>
-            <p className="mt-4 text-slate-600">Six things we obsess over so you can ship a career, not just complete a course.</p>
+            <Eyebrow className="justify-center">{eyebrow}</Eyebrow>
+            <h2 className="mt-3 heading text-4xl sm:text-5xl text-slate-900 leading-tight tracking-tight">{heading}</h2>
+            <p className="mt-4 text-slate-600">{subtitle}</p>
           </div>
         </Reveal>
 
         <div className="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURES.map((f, i) => {
-            const Icon = ICONS[f.icon] ?? BadgeCheck;
+          {items.map((f, i) => {
+            const Icon = ICON_LIST[i % ICON_LIST.length] ?? BadgeCheck;
             return (
               <Reveal key={f.num} delay={(i % 3) * 0.08}>
                 <div className="group h-full rounded-md bg-white border border-slate-200 shadow-card p-6 hover:-translate-y-1 hover:shadow-cardHover hover:border-brand-200 transition-all">

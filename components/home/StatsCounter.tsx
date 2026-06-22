@@ -35,13 +35,14 @@ function CountTile({ target, label, suffix, isFloat }: { target: number; label: 
   );
 }
 
-export function StatsCounter() {
+export function StatsCounter({ tiles }: { tiles?: { target?: number; label?: string; suffix?: string; isFloat?: boolean }[] }) {
+  const data = (tiles && tiles.length) ? tiles : STATS_TILES;
   return (
     <section className="py-10">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {STATS_TILES.map((s) => (
-            <CountTile key={s.label} {...s} />
+          {data.map((s, i) => (
+            <CountTile key={`${s.label}-${i}`} target={Number(s.target) || 0} label={s.label || ''} suffix={s.suffix} isFloat={s.isFloat} />
           ))}
         </div>
       </div>

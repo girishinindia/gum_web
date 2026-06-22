@@ -736,6 +736,22 @@ export interface JobPosition {
   created_at?: string | null;
 }
 
+export interface HomeStat { value?: string; suffix?: string; label?: string }
+export interface HomeTile { target?: number; label?: string; suffix?: string; isFloat?: boolean }
+export interface HomeItem { title?: string; desc?: string }
+export interface HomePageContent {
+  hero_title: string | null; hero_highlight: string | null; hero_subtitle: string | null;
+  hero_primary_label: string | null; hero_primary_href: string | null;
+  hero_secondary_label: string | null; hero_secondary_href: string | null;
+  hero_stats: HomeStat[] | null; stats_tiles: HomeTile[] | null;
+  hiw_eyebrow: string | null; hiw_heading: string | null; hiw_subtitle: string | null; hiw_steps: HomeItem[] | null;
+  feat_eyebrow: string | null; feat_heading: string | null; feat_subtitle: string | null; features: HomeItem[] | null;
+  nl_eyebrow: string | null; nl_heading: string | null; nl_subtitle: string | null; nl_whatsapp_url: string | null; nl_telegram_url: string | null;
+  app_eyebrow: string | null; app_heading: string | null; app_subtitle: string | null; app_playstore_url: string | null; app_appstore_url: string | null;
+  cta_heading: string | null; cta_subtitle: string | null;
+  cta_primary_label: string | null; cta_primary_href: string | null; cta_secondary_label: string | null; cta_secondary_href: string | null;
+}
+
 export interface AboutStat { value: string; label: string }
 export interface AboutValue { title: string; description: string }
 export interface AboutPageContent {
@@ -785,6 +801,10 @@ export const api = {
   /** Editable About-page content (single record). */
   aboutPage: () =>
     request<AboutPageContent>('/about-page', { revalidate: 120 }),
+
+  /** Editable homepage content (single record). */
+  homePage: () =>
+    request<HomePageContent>('/home-page', { revalidate: 120 }),
 
   /** Open (active, non-expired) job positions — for the public Careers page. */
   jobs: () =>

@@ -23,7 +23,7 @@ import { api }                from '@/lib/api';
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [faqs, webinars, bundles, instructors, blogPosts, podcasts, vis] = await Promise.all([
+  const [faqs, webinars, bundles, instructors, blogPosts, podcasts, vis, home] = await Promise.all([
     api.faqs(),
     api.upcomingWebinars(),
     api.featuredBundles(),
@@ -31,6 +31,7 @@ export default async function HomePage() {
     api.latestBlogPosts(),
     api.latestPodcasts(),
     api.sectionVisibility(),
+    api.homePage(),
   ]);
 
   /** Helper: section shows unless explicitly toggled off (defaults visible). */
@@ -40,15 +41,15 @@ export default async function HomePage() {
     <>
       <JsonLd data={[organizationLd(), websiteLd()]} />
       {faqs && faqs.length > 0 && <JsonLd data={faqLd(faqs.map((f) => ({ question: f.question, answer: f.answer })))} />}
-      <Hero />
+      <Hero cms={home} />
       <TrustedStrip />
       {show('categories')      && <Categories />}
-      {show('stats')           && <StatsCounter />}
-      {show('how_it_works')    && <HowItWorks />}
+      {show('stats')           && <StatsCounter tiles={home?.stats_tiles ?? undefined} />}
+      {show('how_it_works')    && <HowItWorks cms={home} />}
       {show('webinars')        && <UpcomingWebinars data={webinars} />}
       {show('languages')       && <LanguagesBanner />}
       {show('courses')         && <PopularCourses />}
-      {show('features')        && <Features />}
+      {show('features')        && <Features cms={home} />}
       {show('bundles')         && <Bundles data={bundles} />}
       {show('instructors')     && <Instructors data={instructors} />}
       {show('certificate')     && <CertificatePreview />}
@@ -56,8 +57,8 @@ export default async function HomePage() {
       {show('blogs')           && <LatestBlog data={blogPosts} />}
       {show('podcasts')        && <Podcasts data={podcasts} />}
       {show('faq')             && <FAQ items={faqs && faqs.length > 0 ? faqs.map((f) => ({ question: f.question, answer: f.answer })) : undefined} />}
-      {show('newsletter')      && <Newsletter />}
-      {show('cta')             && <CTA />}
+      {show('newsletter')      && <Newsletter cms={home} />}
+      {show('cta')             && <CTA cms={home} />}
     </>
   );
 }
